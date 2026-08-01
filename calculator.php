@@ -1,4 +1,5 @@
 <?php
+// Bootstrap the authenticated calculator index without merge markers or stray output.
 require_once __DIR__ . '/includes/admin_auth.php';
 require_login();
 ?>
