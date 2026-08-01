@@ -3,6 +3,7 @@ error_reporting(0);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/app_header.php';
 require_login();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/admin_schema.php';
@@ -171,20 +172,11 @@ table.data-table tr.total-row td { border-top: 2px solid #2563eb; }
 }
 .export-print { display: none; }
 </style>
+<?php echo app_header_styles(); ?>
 </head>
 <body>
 
-<header class="header">
-    <div style="width:100%;display:flex;align-items:center;gap:16px;">
-        <a href="calculator.php">&larr; Калькуляторы</a>
-        <h1 style="flex:1;text-align:center;margin:0;">Расчёт подсистемы</h1>
-        <?php if ($editCalc && !empty($editCalc['version_number']) && $editCalc['version_number'] > 1): ?>
-            <span style="background:#1d4ed8;color:#fff;padding:3px 10px;border-radius:12px;font-size:13px;font-weight:600;">v<?php echo (int)$editCalc['version_number']; ?></span>
-        <?php endif; ?>
-        <a href="logout.php">Выйти</a>
-    </div>
-</header>
-
+<?php render_app_header(); ?>
 <main class="container">
 
 <div class="export-print">

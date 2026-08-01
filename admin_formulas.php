@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/app_header.php';
 require_admin();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/admin_schema.php';
@@ -349,15 +350,10 @@ input.md-input{width:100px;padding:4px 8px;font-size:13px;border:1px solid #cbd5
 .photo-preview-box .no-photo{color:#94a3b8;font-size:12px;text-align:center;padding:8px}
 @media (max-width:700px){.grid,.grid-2,.grid-3{grid-template-columns:1fr}}
 </style>
+<?php echo app_header_styles(); ?>
 </head>
 <body>
-<header class="header">
-    <div style="width:100%;display:flex;align-items:center;gap:16px;">
-        <a href="admin.php">← Админ-панель</a>
-        <h1 style="flex:1;text-align:center;margin:0;">Формулы расчёта</h1>
-        <a href="logout.php">Выйти</a>
-    </div>
-</header>
+<?php render_app_header(); ?>
 <main class="container">
     <div class="quick-links">
         <a class="quick-link <?php echo $activeTab==='countertop'?'active':'';?>" href="admin_formulas.php?tab=countertop">🪵 Столешницы</a>
