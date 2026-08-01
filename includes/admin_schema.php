@@ -485,7 +485,7 @@ function upload_file(string $fieldName, string $subdir, array &$errors, ?string 
             $errors[] = 'Не удалось создать директорию для загрузки файлов.';
             return $currentPath;
         }
-        @chmod($absoluteDir, 0777);
+        @chmod($absoluteDir, 0755);
     }
     $relativePath = $relativeDir . '/' . bin2hex(random_bytes(12)) . '.' . $extension;
     $absolutePath = $baseDir . '/' . $relativePath;
@@ -493,7 +493,7 @@ function upload_file(string $fieldName, string $subdir, array &$errors, ?string 
         $errors[] = 'Не удалось сохранить файл. Проверьте права доступа к папке uploads.';
         return $currentPath;
     }
-    @chmod($absolutePath, 0666);
+    @chmod($absolutePath, 0644);
     return $relativePath;
 }
 
@@ -542,7 +542,7 @@ function upload_image(string $fieldName, string $subdir, array &$errors, ?string
             $errors[] = 'Не удалось создать директорию для загрузки изображений.';
             return $currentPath;
         }
-        @chmod($absoluteDir, 0777);
+        @chmod($absoluteDir, 0755);
     }
 
     $ext = $extensions[$imageType];
@@ -559,7 +559,7 @@ function upload_image(string $fieldName, string $subdir, array &$errors, ?string
         $errors[] = 'Не удалось сохранить изображение. Проверьте права доступа к папке uploads.';
         return $currentPath;
     }
-    @chmod($absolutePath, 0666);
+    @chmod($absolutePath, 0644);
 
     return $relativePath;
 }

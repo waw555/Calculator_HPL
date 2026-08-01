@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/admin_auth.php';
+require_valid_post_request();
 require_once __DIR__ . '/includes/db.php';
 
 $error = '';
@@ -16,13 +17,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($user) {
         $storedPassword = (string)$user['password'];
-        $passwordMatches = password_verify($password, $storedPassword) || hash_equals($storedPassword, md5($password));
+        $passwordMatches = password_verify($password, $storedPassword);
+        $legacyMd5Matches = !$passwordMatches && hash_equals($storedPassword, md5($password));
+        $passwordMatches = $passwordMatches || $legacyMd5Matches;
     }
 
     if ($user && $passwordMatches) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
         $_SESSION['role'] = $user['role'];
+
+        if (!empty($legacyMd5Matches)) {
+            $rehash = $pdo->prepare('UPDATE users SET password = :password WHERE id = :id');
+            $rehash->execute([
+                'password' => password_hash($password, PASSWORD_DEFAULT),
+                'id' => (int)$user['id'],
+            ]);
+        }
 
         if ($user['role'] === 'admin') {
             header('Location: admin.php');
@@ -49,10 +60,12 @@ input { display: block; margin-bottom: 15px; padding: 10px; width: 250px; }
 button { padding: 10px 20px; }
 .error { color: red; margin-bottom: 10px; }
 .header h1 { margin: 0; font-size: clamp(24px, 3.5vw, 36px); letter-spacing: -.02em; font-weight: 900; }
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;display=swap"></style>
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;display=swap">
 </head>
 <body>
 <form method="post">
+    <input type="hidden" name="csrf_token" value="<?php echo e(csrf_token()); ?>">
     <h2>Вход</h2>
     <?php if($error) echo "<div class='error'>$error</div>"; ?>
     <input type="text" name="username" placeholder="Логин" required>
