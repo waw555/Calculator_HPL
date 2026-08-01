@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/app_header.php';
 require_admin();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/admin_schema.php';
@@ -53,15 +54,10 @@ button:hover { background: #1d4ed8; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
 </style>
+<?php echo app_header_styles(); ?>
 </head>
 <body>
-<header class="header">
-    <div style="width:100%;display:flex;align-items:center;gap:16px;">
-        <a href="admin.php">← Админ-панель</a>
-        <h1 style="flex:1;text-align:center;margin:0;">Настройка расчёта столешниц</h1>
-        <a href="logout.php">Выйти</a>
-    </div>
-</header>
+<?php render_app_header(); ?>
 <main class="container">
 
     <?php if (isset($_GET['saved'])): ?>

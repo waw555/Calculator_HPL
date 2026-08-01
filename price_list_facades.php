@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/app_header.php';
 require_login();
 ?>
 <!DOCTYPE html>
@@ -15,9 +16,10 @@ body { font-family: Inter, Arial, sans-serif; margin: 0; background: #f5f7fb; co
 .panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; box-shadow: 0 8px 24px rgba(15, 23, 42, .08); }
 .button { display: inline-block; margin-top: 16px; padding: 10px 16px; border-radius: 8px; background: #2563eb; color: #fff; text-decoration: none; font-weight: 700; }
 </style>
+<?php echo app_header_styles(); ?>
 </head>
 <body>
-<header class="header"><a href="calculator.php">← К калькуляторам</a><h1>Прайс-лист фасадных панелей</h1></header>
+<?php render_app_header(); ?>
 <main class="container">
     <section class="panel">
         <h2>Раздел в подготовке</h2>

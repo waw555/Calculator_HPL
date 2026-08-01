@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/app_header.php';
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
@@ -146,15 +147,10 @@ th { background: #edf6ff; color: #0f172a; font-size: 12px; text-transform: upper
 .offer-table td input, .offer-table td select { width:100%; padding:4px 6px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; background:#fff; }
 .offer-table td.no-edit { background:#f8fafc; }
 </style>
+<?php echo app_header_styles(); ?>
 </head>
 <body>
-<header class="header">
-    <div style="width:100%;display:flex;align-items:center;gap:16px;">
-        <a href="calculator.php">← Калькуляторы</a>
-        <h1 style="flex:1;text-align:center;margin:0;">Калькулятор сантехнических кабин</h1>
-        <a href="logout.php">Выйти</a>
-    </div>
-</header>
+<?php render_app_header(); ?>
 <main class="container">
     <div class="tabs-bar">
         <button class="tab-btn active" onclick="switchTab('calc')" id="tab-btn-calc">

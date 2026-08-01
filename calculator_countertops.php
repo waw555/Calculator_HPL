@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/app_header.php';
 require_login();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/admin_schema.php';
@@ -199,17 +200,11 @@ button.add-btn:hover { background: #dbeafe; }
 .currency-row > div { flex: 1; }
 .currency-row .auto-hint { font-size: 11px; color: #16a34a; font-weight: 600; }
 </style>
+<?php echo app_header_styles(); ?>
 </head>
 <body>
 
-<header class="header">
-    <div style="width:100%;display:flex;align-items:center;gap:16px;">
-        <a href="calculator.php">&larr; Калькуляторы</a>
-        <h1 style="flex:1;text-align:center;margin:0;">Калькулятор столешниц</h1>
-        <a href="logout.php">Выйти</a>
-    </div>
-</header>
-
+<?php render_app_header(); ?>
 <main class="container">
 
 <section class="panel">

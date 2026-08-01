@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/app_header.php';
 require_admin();
 ?>
 <!DOCTYPE html>
@@ -25,15 +26,10 @@ body { font-family: 'Inter', Arial, sans-serif; background: #f5f7fb; margin: 0; 
 .section-label { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin: 28px 0 12px; }
 .header h1 { margin: 0; font-size: clamp(24px, 3.5vw, 36px); letter-spacing: -.02em; font-weight: 900; }
 </style>
+<?php echo app_header_styles(); ?>
 </head>
 <body>
-<header class="header">
-    <div style="width:100%;display:flex;align-items:center;gap:16px;">
-        <a href="admin.php">← Админ-панель</a>
-        <h1 style="flex:1;text-align:center;margin:0;">Настройка панелей</h1>
-        <a href="logout.php">Выйти</a>
-    </div>
-</header>
+<?php render_app_header(); ?>
 <main class="container">
 
     <div class="section-label">Основное</div>

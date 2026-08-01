@@ -1,6 +1,7 @@
 <?php
 // Bootstrap the authenticated calculator index without merge markers or stray output.
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/app_header.php';
 require_login();
 ?>
 <!DOCTYPE html>
@@ -23,15 +24,10 @@ body { font-family: Arial, sans-serif; margin: 0; color: #1f2937; background: li
 .card a:hover { background: #1d4ed8; }
 .topline { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
 </style>
+<?php echo app_header_styles(); ?>
 </head>
 <body>
-<header class="header">
-    <div style="width:100%;display:flex;align-items:center;gap:16px;">
-        <a href="admin.php">← Админ-панель</a>
-        <h1 style="flex:1;text-align:center;margin:0;">Калькуляторы</h1>
-        <a href="logout.php" style="color:#dbeafe">Выйти</a>
-    </div>
-</header>
+<?php render_app_header(); ?>
 <main class="container">
     <div class="cards">
         <section class="card">

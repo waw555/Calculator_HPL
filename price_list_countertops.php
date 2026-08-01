@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/app_header.php';
 require_login();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/admin_schema.php';
@@ -51,15 +52,10 @@ td.na { color: #cbd5e1; text-align: center; }
 .info-bar { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
 .info-chip { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #dbeafe; padding: 6px 14px; border-radius: 8px; font-size: 14px; }
 </style>
+<?php echo app_header_styles(); ?>
 </head>
 <body>
-<header class="header">
-    <div style="width:100%;display:flex;align-items:center;gap:16px;">
-        <a href="calculator.php">← Калькуляторы</a>
-        <h1 style="flex:1;text-align:center;margin:0;">Прайс-лист — Столешницы</h1>
-        <a href="logout.php" style="color:#dbeafe">Выйти</a>
-    </div>
-</header>
+<?php render_app_header(); ?>
 <main class="container">
     <a href="calculator.php" class="back-link">← Назад к калькуляторам</a>
 

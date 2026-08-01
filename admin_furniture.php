@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/app_header.php';
 require_admin();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/admin_schema.php';
@@ -286,15 +287,10 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
 .tab-pane{display:none}
 .tab-pane.active{display:block}
 </style>
+<?php echo app_header_styles(); ?>
 </head>
 <body>
-<header class="header">
-    <div style="width:100%;display:flex;align-items:center;gap:16px;">
-        <a href="admin.php">← Админ-панель</a>
-        <h1 style="flex:1;text-align:center;margin:0;">Фурнитура</h1>
-        <a href="logout.php">Выйти</a>
-    </div>
-</header>
+<?php render_app_header(); ?>
 <main class="container">
     <div class="quick-links">
         <a class="quick-link <?php echo $activeTab==='furniture'?'active':'';?>" href="admin_furniture.php?tab=furniture">🔩 Фурнитура</a>
