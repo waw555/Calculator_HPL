@@ -232,6 +232,7 @@ table.parts-table tr.editing { background: #eff6ff; }
 .material-mode{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:#f8fafc;border-radius:10px}.material-mode label{margin:0}.material-mode input{width:auto;margin-right:6px}#panel_select{margin-top:8px;min-height:150px}.part-entry-row td{background:#eff6ff;border-top:2px solid #93c5fd!important}
 .materials-list{display:grid;gap:8px;margin-top:14px}.material-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#f8fafc;border:1px solid #dbeafe;border-radius:8px}.material-item span{font-size:13px}.material-item button{padding:5px 10px}.material-empty{color:#64748b;font-size:13px;padding:10px 0}
 .source-panel{padding:28px 30px}.source-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding-bottom:14px;border-bottom:1px solid #e8edf4}.source-heading{margin:0;font-size:17px;font-weight:850}.source-heading:before{content:'▱';color:#ed174c;font-size:22px;margin-right:9px}.source-subtitle{margin:3px 0 0;color:#64748b;font-size:12px}.source-actions{display:flex;gap:9px}.source-actions button{padding:9px 15px}.source-actions .manual-source-btn{background:#172033}.source-actions .button-icon{font-size:17px;margin-right:7px;font-weight:400}.source-table-wrap{overflow-x:auto;margin-top:16px}.source-table{width:100%;min-width:850px;border-collapse:collapse}.source-table th{padding:13px 12px;background:#f0f4f8;color:#07152d;font-size:11px;text-align:left;text-transform:uppercase}.source-table td{padding:12px;border-bottom:1px solid #e7edf4;color:#71809a;font-size:13px}.source-table input{height:31px;padding:6px 10px;font-size:12px;border-color:#c8d5e5}.source-table .source-number{font-weight:700;color:#8b9ab4}.source-table .source-unit{display:flex;align-items:center;gap:5px}.source-table .source-unit small{color:#91a0bd;font-size:9px;text-transform:uppercase}.source-table .unlimited-qty{color:#4185ff;border-color:#9ec3ff}.source-table .remove-source{display:flex;margin:auto;padding:4px;background:transparent;color:#9bacbf;font-size:17px}.source-table .remove-source:hover{color:#e9164d}.source-empty{text-align:center!important;color:#91a0bd!important;padding:22px!important}.source-picker{margin-top:14px;padding:16px;background:#f8fafc;border:1px solid #dfe6ef;border-radius:10px}.source-picker__top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}.source-picker__top strong{font-size:13px}.source-picker__close{background:transparent;color:#71809a;padding:4px 8px}.source-picker select{margin-top:8px;min-height:130px}.source-picker .grid-3{align-items:end}.source-picker .add-row-btn{margin-top:10px}.source-price-settings{display:none}
+.material-library{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,23,42,.42)}.material-library__dialog{display:flex;flex-direction:column;width:min(860px,96vw);height:min(700px,92vh);padding:14px;background:#fff;border-radius:16px;box-shadow:0 24px 70px rgba(15,23,42,.24)}.material-library__header{display:flex;align-items:flex-start;gap:10px;padding:2px 0 14px;border-bottom:1px solid #e8edf4}.material-library__icon{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:#eef0ff;color:#5147e8;font-size:21px}.material-library__title{flex:1}.material-library__title strong{display:block;font-size:17px}.material-library__title small{display:block;margin-top:4px;color:#7d8ba3;font-size:11px}.material-library__close{padding:5px 8px;background:transparent;color:#91a0b5;font-size:20px}.material-library__tools{display:flex;justify-content:space-between;gap:16px;padding:20px 0}.material-library__search{position:relative;width:min(320px,100%)}.material-library__search span{position:absolute;left:12px;top:9px;color:#91a0b5}.material-library__search input{padding-left:35px;background:#f8fafc}.library-tabs{display:flex;padding:4px;background:#f1f4f8;border-radius:11px}.library-tabs button{padding:8px 13px;background:transparent;color:#263650;font-size:11px}.library-tabs button.active{background:#fff;color:#101c31;box-shadow:0 1px 4px #dce3ec}.material-library__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;overflow-y:auto;padding-right:6px}.library-card{display:flex;flex-direction:column;min-height:128px;padding:16px;border:1px solid #dfe6ef;border-radius:15px;background:#f8fafc}.library-card__meta{display:flex;justify-content:space-between;gap:8px;color:#91a0b5;font-size:9px}.library-card__badge{padding:4px 8px;border:1px solid #c5d2ff;border-radius:12px;background:#e6ebff;color:#453fd0;font-weight:800}.library-card.decor .library-card__badge{border-color:#ffc5cb;background:#ffebed;color:#d82c45}.library-card strong{margin:8px 0;color:#101827;font-family:Georgia,serif;font-size:13px;line-height:1.3}.library-card__size{align-self:flex-start;padding:5px 10px;border:1px solid #dfe6ef;border-radius:7px;background:#fff;color:#344258;font-size:11px;font-weight:800}.library-card button{width:100%;margin-top:auto;padding:8px;background:#5045e8}.material-library__footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid #e8edf4;color:#71809a;font-size:11px}.material-library__footer button{background:#f1f4f8;color:#56647b}.library-empty{grid-column:1/-1;padding:50px;text-align:center;color:#71809a}@media(max-width:700px){.material-library__tools{align-items:stretch;flex-direction:column}.material-library__grid{grid-template-columns:1fr 1fr}.library-tabs{overflow-x:auto}.library-tabs button{white-space:nowrap}}@media(max-width:460px){.material-library__grid{grid-template-columns:1fr}}
 .btn-icon { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border:none; border-radius:8px; cursor:pointer; font-size:16px; transition:all .2s; }
 .btn-icon.btn-edit { color:#2563eb; background:#eff6ff; }
 .btn-icon.btn-edit:hover { background:#dbeafe; }
@@ -293,17 +294,16 @@ table.parts-table tr.editing { background: #eff6ff; }
             <div><h2 class="source-heading">Исходные листы (Форматы и Запас плит)</h2><p class="source-subtitle">Выберите готовые плиты из базы декоров/форматов или введите размеры вручную.</p></div>
             <div class="source-actions"><button type="button" id="show-db-material"><span class="button-icon">▤</span>Выбрать из базы</button><button type="button" class="manual-source-btn" id="show-custom-material"><span class="button-icon">＋</span>Указать вручную</button></div>
         </div>
-        <div id="db-material-fields" class="source-picker hidden">
-            <div class="source-picker__top"><strong>Выбор листа из базы</strong><button type="button" class="source-picker__close" aria-label="Закрыть">✕</button></div>
-            <input id="panel_search" type="search" placeholder="Введите производителя, артикул, декор или размер" autocomplete="off">
-            <select id="panel_select" size="5" aria-label="Найденные панели"></select><div class="hint" id="panel-search-result"></div>
-            <button type="button" class="add-row-btn" id="add-db-material">+ Добавить выбранный лист</button>
+        <div id="db-material-fields" class="material-library hidden" role="dialog" aria-modal="true" aria-labelledby="material-library-title">
+          <div class="material-library__dialog"><div class="material-library__header"><span class="material-library__icon">▤</span><div class="material-library__title"><strong id="material-library-title">База исходных плит и декоров</strong><small>Выберите готовый формат или декор из каталога для добавления в раскрой</small></div><button type="button" class="material-library__close source-picker__close" aria-label="Закрыть">×</button></div>
+          <div class="material-library__tools"><div class="material-library__search"><span>⌕</span><input id="panel_search" type="search" placeholder="Поиск по названию, декору, габаритам..." autocomplete="off"></div><div class="library-tabs"><button type="button" class="active" data-library-filter="all">Все</button><button type="button" data-library-filter="format">Форматы плит</button><button type="button" data-library-filter="decor">Декоры каталога</button></div></div>
+          <div id="material-library-grid" class="material-library__grid"></div><div class="material-library__footer"><span id="panel-search-result"></span><button type="button" class="source-picker__close">Закрыть</button></div></div>
         </div>
         <div id="custom-material-fields" class="source-picker hidden"><div class="source-picker__top"><strong>Размеры листа</strong><button type="button" class="source-picker__close" aria-label="Закрыть">✕</button></div><div class="grid-3">
             <div><label for="custom_name">Наименование / формат</label><input id="custom_name" type="text" value="Остаток склада"></div>
             <div><label for="custom_length">Длина, мм</label><input id="custom_length" type="number" min="1" value="2800"></div>
             <div><label for="custom_width">Ширина, мм</label><input id="custom_width" type="number" min="1" value="1300"></div>
-            <div><label for="custom_qty">В наличии, шт.</label><input id="custom_qty" type="number" min="1" step="1" value="1"></div>
+            <div><label for="custom_qty">В наличии, шт.</label><input id="custom_qty" type="text" inputmode="numeric" placeholder="Авто (без лимита)" value=""></div>
         </div><button type="button" class="add-row-btn" id="add-custom-material">+ Добавить лист</button></div>
         <div class="source-table-wrap"><table class="source-table"><thead><tr><th>№</th><th>Наименование / формат</th><th>Длина (мм)</th><th>Ширина (мм)</th><th>Торцевание (мм)</th><th>В наличии (шт)</th><th>Удалить</th></tr></thead><tbody id="materials-list"></tbody></table></div>
         <div class="grid source-price-settings">
@@ -415,80 +415,83 @@ document.querySelectorAll('[name="strategy"]').forEach(option => option.addEvent
 
 /* ═══════════ ИСХОДНЫЙ МАТЕРИАЛ ═══════════ */
 const panelSearch = document.getElementById('panel_search');
-const panelSelect = document.getElementById('panel_select');
 const dbMaterialFields = document.getElementById('db-material-fields');
 const customMaterialFields = document.getElementById('custom-material-fields');
+const libraryGrid = document.getElementById('material-library-grid');
 const priceM2Input = document.getElementById('material_price_m2');
 const sheetCurrencyInput = document.getElementById('sheet_currency');
 const cutPriceInput = document.getElementById('cut_price');
 const materialsList = document.getElementById('materials-list');
 let sourceMaterials = [];
 let nextMaterialId = 1;
+let libraryFilter = 'all';
 
 function panelLabel(panel) {
     const size = panel.height_mm && panel.width_mm ? `${panel.height_mm}×${panel.width_mm} мм` : '';
     return [panel.manufacturer_name, panel.decor_number, panel.decor_name || panel.name, size].filter(Boolean).join(' · ');
 }
+function libraryItems() {
+    const formats = PANEL_SIZES.map(size => ({...size, type:'format', label:`Формат ${size.manufacturer_name || 'плиты'} ${size.height_mm}×${size.width_mm}`}));
+    const decors = PANELS.filter(panel => Number(panel.height_mm)>0 && Number(panel.width_mm)>0).map(panel => ({...panel, type:'decor', label:panelLabel(panel)}));
+    return [...formats, ...decors];
+}
 function renderPanelSearch() {
     const query = panelSearch.value.trim().toLocaleLowerCase('ru');
-    const selected = panelSelect.value;
-    panelSelect.innerHTML = '';
-    const matches = PANELS.filter(panel => !query || panelLabel(panel).toLocaleLowerCase('ru').includes(query));
-    matches.forEach(panel => {
-        const option = document.createElement('option');
-        option.value = panel.id;
-        option.textContent = panelLabel(panel);
-        option.selected = String(panel.id) === selected;
-        panelSelect.appendChild(option);
-    });
-    document.getElementById('panel-search-result').textContent = `Найдено панелей: ${matches.length}`;
+    const matches = libraryItems().filter(item => (libraryFilter === 'all' || item.type === libraryFilter) && (!query || item.label.toLocaleLowerCase('ru').includes(query)));
+    libraryGrid.innerHTML = matches.map((item, index) => `<article class="library-card ${item.type}"><div class="library-card__meta"><span class="library-card__badge">${item.type === 'format' ? 'Формат плиты' : 'Декор плит'}</span><span>${escapeHtml(item.manufacturer_name || '')}</span></div><strong>${escapeHtml(item.label)}</strong><span class="library-card__size">${Number(item.height_mm)} × ${Number(item.width_mm)} мм</span><button type="button" data-library-index="${index}">＋ Добавить в раскрой</button></article>`).join('') || '<div class="library-empty">Материалы не найдены</div>';
+    libraryGrid.querySelectorAll('[data-library-index]').forEach(button => button.addEventListener('click', () => addLibraryMaterial(matches[Number(button.dataset.libraryIndex)])));
+    document.getElementById('panel-search-result').textContent = `Доступно в базе: ${matches.length} видов листов`;
 }
-function selectedPanel() { return PANELS.find(panel => String(panel.id) === panelSelect.value) || null; }
-function updatePanelPrice() {
-    const panel = selectedPanel();
-    if (!panel) return;
-    priceM2Input.value = panel.price_per_m2 || panel.cost || 0;
-    sheetCurrencyInput.value = panel.currency || 'RUB';
+function addLibraryMaterial(item) {
+    const isDecor = item.type === 'decor';
+    if (isDecor) {
+        priceM2Input.value = item.price_per_m2 || item.cost || 0;
+        sheetCurrencyInput.value = item.currency || 'RUB';
+    }
+    addSourceMaterial({height:Number(item.height_mm),width:Number(item.width_mm),qty:null,panelId:isDecor ? item.id : null,manufacturerId:item.manufacturer_id || null,label:item.label,margin:Number(document.getElementById('margin').value)||0});
 }
 function getSelectedFormats() { return sourceMaterials.map(({materialId, ...format}) => ({...format})); }
 function selectedManufacturerIds() { return [...new Set(sourceMaterials.map(m => m.manufacturerId).filter(Boolean).map(String))]; }
 function addManufacturerRow() {}
-function addFormatRow(selectedKey, customH, customW, qty=1) {
+function addFormatRow(selectedKey, customH, customW, qty=null) {
     const customName = document.getElementById('custom_name').value.trim() || 'Свой формат';
-    addSourceMaterial({height:Number(customH),width:Number(customW),qty:Math.max(1,Number(qty)||1),label:`${customName} ${customH}×${customW}`,margin:Number(document.getElementById('margin').value)||0});
+    const parsedQty = String(qty ?? '').trim() === '' ? null : Math.max(1, Number(qty) || 1);
+    addSourceMaterial({height:Number(customH),width:Number(customW),qty:parsedQty,label:`${customName} ${customH}×${customW}`,margin:0});
 }
 function renderSourceMaterials() {
     if (!sourceMaterials.length) {
         materialsList.innerHTML = '<tr><td colspan="7" class="source-empty">Добавьте лист из базы или укажите его размеры вручную.</td></tr>';
         return;
     }
-    materialsList.innerHTML = sourceMaterials.map((m, index) => `<tr data-id="${m.materialId}"><td class="source-number">${index + 1}</td><td><input data-field="label" value="${escapeHtml(m.label)}"></td><td><input type="number" min="1" data-field="height" value="${m.height}"></td><td><input type="number" min="1" data-field="width" value="${m.width}"></td><td><div class="source-unit"><input type="number" min="0" step="0.1" data-field="margin" value="${m.margin ?? 0}"><small>мм</small></div></td><td><input class="${m.qty == null ? 'unlimited-qty' : ''}" type="${m.qty == null ? 'text' : 'number'}" min="1" data-field="qty" value="${m.qty == null ? 'Авто (без лимита)' : m.qty}" ${m.qty == null ? 'readonly' : ''}></td><td><button type="button" class="remove-source remove-material" data-id="${m.materialId}" aria-label="Удалить материал">&#128465;</button></td></tr>`).join('');
+    materialsList.innerHTML = sourceMaterials.map((m, index) => `<tr data-id="${m.materialId}"><td class="source-number">${index + 1}</td><td><input data-field="label" value="${escapeHtml(m.label)}"></td><td><input type="number" min="1" data-field="height" value="${m.height}"></td><td><input type="number" min="1" data-field="width" value="${m.width}"></td><td><div class="source-unit"><input type="number" min="0" step="0.1" data-field="margin" value="${m.margin ?? 0}"><small>мм</small></div></td><td><input class="${m.qty == null ? 'unlimited-qty' : ''}" type="${m.qty == null ? 'text' : 'number'}" min="1" data-field="qty" value="${m.qty == null ? 'Авто (без лимита)' : m.qty}" aria-label="Количество листов; оставьте пустым для автоматического количества"></td><td><button type="button" class="remove-source remove-material" data-id="${m.materialId}" aria-label="Удалить материал">&#128465;</button></td></tr>`).join('');
 }
 function addSourceMaterial(format) {
     if (!(format.height > 0 && format.width > 0)) { alert('Укажите корректные размеры материала.'); return; }
-    sourceMaterials.push({...format, materialId:nextMaterialId++});
+    sourceMaterials.push({...format, qty:format.qty ?? null, materialId:nextMaterialId++});
     renderSourceMaterials();
 }
 function showMaterialPicker(picker) {
     dbMaterialFields.classList.toggle('hidden', picker !== dbMaterialFields);
     customMaterialFields.classList.toggle('hidden', picker !== customMaterialFields);
+    document.body.style.overflow = picker === dbMaterialFields ? 'hidden' : '';
+    if (picker === dbMaterialFields) { renderPanelSearch(); panelSearch.focus(); }
 }
 document.getElementById('show-db-material').addEventListener('click', () => showMaterialPicker(dbMaterialFields));
-document.getElementById('show-custom-material').addEventListener('click', () => showMaterialPicker(customMaterialFields));
-document.querySelectorAll('.source-picker__close').forEach(button => button.addEventListener('click', () => showMaterialPicker(null)));
-panelSearch.addEventListener('input', renderPanelSearch);
-panelSelect.addEventListener('change', updatePanelPrice);
-document.getElementById('add-db-material').addEventListener('click', () => {
-    const panel=selectedPanel();
-    if (!panel) { alert('Выберите панель из базы.'); return; }
-    addSourceMaterial({height:Number(panel.height_mm),width:Number(panel.width_mm),qty:null,panelId:panel.id,manufacturerId:panel.manufacturer_id,label:panelLabel(panel),margin:Number(document.getElementById('margin').value)||0});
-    showMaterialPicker(null);
+document.getElementById('show-custom-material').addEventListener('click', () => {
+    addSourceMaterial({height:2800,width:1300,qty:null,label:'Новый материал',margin:0});
+    requestAnimationFrame(() => { const input=materialsList.querySelector('tr:last-child input[data-field="label"]'); input?.focus(); input?.select(); });
 });
+document.querySelectorAll('.source-picker__close').forEach(button => button.addEventListener('click', () => showMaterialPicker(null)));
+dbMaterialFields.addEventListener('click', event => { if (event.target === dbMaterialFields) showMaterialPicker(null); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && !dbMaterialFields.classList.contains('hidden')) showMaterialPicker(null); });
+panelSearch.addEventListener('input', renderPanelSearch);
+document.querySelectorAll('[data-library-filter]').forEach(button => button.addEventListener('click', () => { libraryFilter=button.dataset.libraryFilter; document.querySelectorAll('[data-library-filter]').forEach(tab => tab.classList.toggle('active',tab===button)); renderPanelSearch(); }));
 document.getElementById('add-custom-material').addEventListener('click', () => { addFormatRow('custom',document.getElementById('custom_length').value,document.getElementById('custom_width').value,document.getElementById('custom_qty').value); showMaterialPicker(null); });
 materialsList.addEventListener('click', event => { const button=event.target.closest('.remove-material');if(!button)return;sourceMaterials=sourceMaterials.filter(m=>m.materialId!==Number(button.dataset.id));renderSourceMaterials(); });
-materialsList.addEventListener('change', event => { const row=event.target.closest('tr[data-id]');if(!row||!event.target.dataset.field)return;const material=sourceMaterials.find(m=>m.materialId===Number(row.dataset.id));if(!material)return;const field=event.target.dataset.field;if(field==='label')material.label=event.target.value.trim()||material.label;else{const value=Number(event.target.value);if(field==='margin' ? value>=0 : value>0)material[field]=value;}renderSourceMaterials(); });
+materialsList.addEventListener('focusin', event => { if (event.target.dataset.field === 'qty' && event.target.value === 'Авто (без лимита)') { event.target.type='number'; event.target.value=''; event.target.placeholder='Авто (без лимита)'; } });
+materialsList.addEventListener('change', event => { const row=event.target.closest('tr[data-id]');if(!row||!event.target.dataset.field)return;const material=sourceMaterials.find(m=>m.materialId===Number(row.dataset.id));if(!material)return;const field=event.target.dataset.field;if(field==='label')material.label=event.target.value.trim()||material.label;else if(field==='qty')material.qty=event.target.value === '' ? null : Math.max(1,Number(event.target.value)||1);else{const value=Number(event.target.value);if(field==='margin' ? value>=0 : value>0)material[field]=value;}renderSourceMaterials(); });
+materialsList.addEventListener('focusout', event => { if (event.target.dataset.field === 'qty' && event.target.value === '') { const material=sourceMaterials.find(m=>m.materialId===Number(event.target.closest('tr').dataset.id)); if(material) material.qty=null; renderSourceMaterials(); } });
 renderPanelSearch();
-if (panelSelect.options.length) { panelSelect.selectedIndex=0; updatePanelPrice(); }
 renderSourceMaterials();
 window.addEventListener('appcurrencychange', event => { const code=event.detail?.code; if(!code)return; if(!Array.from(sheetCurrencyInput.options).some(o=>o.value===code)) sheetCurrencyInput.add(new Option(code,code)); sheetCurrencyInput.value=code; });
 
@@ -869,7 +872,7 @@ window.loadLayout = async function(id) {
         (s.formats || []).forEach(f => {
             const panel = f.panelId ? PANELS.find(p => String(p.id) === String(f.panelId)) : null;
             addSourceMaterial({
-                height:Number(f.height), width:Number(f.width), qty:f.qty ?? null,
+                height:Number(f.height), width:Number(f.width), qty:f.qty ?? null, margin:Number(f.margin ?? (panel ? (s.margin ?? 5) : 0)),
                 panelId:panel?.id || f.panelId || null,
                 manufacturerId:panel?.manufacturer_id || null,
                 label:f.label || (panel ? panelLabel(panel) : `${f.height}×${f.width} мм (свой)`)
