@@ -231,6 +231,7 @@ table.parts-table tr.editing { background: #eff6ff; }
 .hidden { display:none !important; }
 .material-mode{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:#f8fafc;border-radius:10px}.material-mode label{margin:0}.material-mode input{width:auto;margin-right:6px}#panel_select{margin-top:8px;min-height:150px}.part-entry-row td{background:#eff6ff;border-top:2px solid #93c5fd!important}
 .materials-list{display:grid;gap:8px;margin-top:14px}.material-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#f8fafc;border:1px solid #dbeafe;border-radius:8px}.material-item span{font-size:13px}.material-item button{padding:5px 10px}.material-empty{color:#64748b;font-size:13px;padding:10px 0}
+.source-panel{padding:28px 30px}.source-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding-bottom:14px;border-bottom:1px solid #e8edf4}.source-heading{margin:0;font-size:17px;font-weight:850}.source-heading:before{content:'▱';color:#ed174c;font-size:22px;margin-right:9px}.source-subtitle{margin:3px 0 0;color:#64748b;font-size:12px}.source-actions{display:flex;gap:9px}.source-actions button{padding:9px 15px}.source-actions .manual-source-btn{background:#172033}.source-actions .button-icon{font-size:17px;margin-right:7px;font-weight:400}.source-table-wrap{overflow-x:auto;margin-top:16px}.source-table{width:100%;min-width:850px;border-collapse:collapse}.source-table th{padding:13px 12px;background:#f0f4f8;color:#07152d;font-size:11px;text-align:left;text-transform:uppercase}.source-table td{padding:12px;border-bottom:1px solid #e7edf4;color:#71809a;font-size:13px}.source-table input{height:31px;padding:6px 10px;font-size:12px;border-color:#c8d5e5}.source-table .source-number{font-weight:700;color:#8b9ab4}.source-table .source-unit{display:flex;align-items:center;gap:5px}.source-table .source-unit small{color:#91a0bd;font-size:9px;text-transform:uppercase}.source-table .unlimited-qty{color:#4185ff;border-color:#9ec3ff}.source-table .remove-source{display:flex;margin:auto;padding:4px;background:transparent;color:#9bacbf;font-size:17px}.source-table .remove-source:hover{color:#e9164d}.source-empty{text-align:center!important;color:#91a0bd!important;padding:22px!important}.source-picker{margin-top:14px;padding:16px;background:#f8fafc;border:1px solid #dfe6ef;border-radius:10px}.source-picker__top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}.source-picker__top strong{font-size:13px}.source-picker__close{background:transparent;color:#71809a;padding:4px 8px}.source-picker select{margin-top:8px;min-height:130px}.source-picker .grid-3{align-items:end}.source-picker .add-row-btn{margin-top:10px}.source-price-settings{display:none}
 .btn-icon { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border:none; border-radius:8px; cursor:pointer; font-size:16px; transition:all .2s; }
 .btn-icon.btn-edit { color:#2563eb; background:#eff6ff; }
 .btn-icon.btn-edit:hover { background:#dbeafe; }
@@ -238,7 +239,7 @@ table.parts-table tr.editing { background: #eff6ff; }
 .btn-icon.btn-delete:hover { background:#fee2e2; }
 .header h1 { margin: 0; font-size: clamp(24px, 3.5vw, 36px); letter-spacing: -.02em; font-weight: 900; }
 @media(max-width:900px){.top-grid{grid-template-columns:1fr}.cost-card__stats{margin:25px 0}}
-@media(max-width:600px){.container{padding:0}.panel{padding:18px}.grid,.strategy-options,.cut-settings{grid-template-columns:1fr}.settings-title__note{display:none}.parts-table,.history-table{display:block;overflow-x:auto}}
+@media(max-width:600px){.container{padding:0}.panel{padding:18px}.grid,.strategy-options,.cut-settings{grid-template-columns:1fr}.settings-title__note{display:none}.parts-table,.history-table{display:block;overflow-x:auto}.source-header{display:block}.source-actions{margin-top:14px;flex-wrap:wrap}.source-actions button{flex:1;white-space:nowrap}}
 </style>
 <?php echo app_header_styles(); ?>
 </head>
@@ -287,32 +288,34 @@ table.parts-table tr.editing { background: #eff6ff; }
     </aside>
     </div>
 
-    <section class="panel">
-        <div class="section-title main">Исходный материал</div>
-        <div class="grid" style="margin-bottom:18px">
-            <div><label for="object_name">Название объекта</label><input id="object_name" type="text" placeholder="Например, ЖК Северный, корпус 2"></div>
-            <div><label for="cutting_name">Название раскроя</label><input id="cutting_name" type="text" placeholder="Например, Фасады кухни"></div>
+    <section class="panel source-panel">
+        <div class="source-header">
+            <div><h2 class="source-heading">Исходные листы (Форматы и Запас плит)</h2><p class="source-subtitle">Выберите готовые плиты из базы декоров/форматов или введите размеры вручную.</p></div>
+            <div class="source-actions"><button type="button" id="show-db-material"><span class="button-icon">▤</span>Выбрать из базы</button><button type="button" class="manual-source-btn" id="show-custom-material"><span class="button-icon">＋</span>Указать вручную</button></div>
         </div>
-        <div class="section-title">Выбор материала</div>
-        <div class="material-mode" role="group" aria-label="Источник материала">
-            <label><input type="radio" name="material_mode" value="db" checked> Выбрать панель из базы</label>
-            <label><input type="radio" name="material_mode" value="custom"> Указать свой материал</label>
+        <div id="db-material-fields" class="source-picker hidden">
+            <div class="source-picker__top"><strong>Выбор листа из базы</strong><button type="button" class="source-picker__close" aria-label="Закрыть">✕</button></div>
+            <input id="panel_search" type="search" placeholder="Введите производителя, артикул, декор или размер" autocomplete="off">
+            <select id="panel_select" size="5" aria-label="Найденные панели"></select><div class="hint" id="panel-search-result"></div>
+            <button type="button" class="add-row-btn" id="add-db-material">+ Добавить выбранный лист</button>
         </div>
-        <div id="db-material-fields">
-            <label for="panel_search">Поиск панели</label><input id="panel_search" type="search" placeholder="Введите производителя, артикул, декор или размер" autocomplete="off">
-            <select id="panel_select" size="6" aria-label="Найденные панели"></select><div class="hint" id="panel-search-result"></div>
-            <button type="button" class="add-row-btn" id="add-db-material" style="margin-top:10px">+ Добавить материал</button>
-        </div>
-        <div id="custom-material-fields" class="hidden"><div class="grid-3">
-            <div><label for="custom_length">Длина, мм</label><input id="custom_length" type="number" min="1" value="3050"></div>
+        <div id="custom-material-fields" class="source-picker hidden"><div class="source-picker__top"><strong>Размеры листа</strong><button type="button" class="source-picker__close" aria-label="Закрыть">✕</button></div><div class="grid-3">
+            <div><label for="custom_name">Наименование / формат</label><input id="custom_name" type="text" value="Остаток склада"></div>
+            <div><label for="custom_length">Длина, мм</label><input id="custom_length" type="number" min="1" value="2800"></div>
             <div><label for="custom_width">Ширина, мм</label><input id="custom_width" type="number" min="1" value="1300"></div>
-            <div><label for="custom_qty">Количество панелей</label><input id="custom_qty" type="number" min="1" step="1" value="1"></div>
-        </div><button type="button" class="add-row-btn" id="add-custom-material" style="margin-top:10px">+ Добавить материал</button></div>
-        <div class="grid" style="margin-top:14px">
+            <div><label for="custom_qty">В наличии, шт.</label><input id="custom_qty" type="number" min="1" step="1" value="1"></div>
+        </div><button type="button" class="add-row-btn" id="add-custom-material">+ Добавить лист</button></div>
+        <div class="source-table-wrap"><table class="source-table"><thead><tr><th>№</th><th>Наименование / формат</th><th>Длина (мм)</th><th>Ширина (мм)</th><th>Торцевание (мм)</th><th>В наличии (шт)</th><th>Удалить</th></tr></thead><tbody id="materials-list"></tbody></table></div>
+        <div class="grid source-price-settings">
             <div><label for="material_price_m2">Цена за м²</label><input id="material_price_m2" type="number" min="0" step="0.01" value="0"></div>
             <div><label for="sheet_currency">Валюта</label><select id="sheet_currency"><option value="RUB">RUB</option><option value="EUR">EUR</option><option value="USD">USD</option></select></div>
-        </div><div id="materials-list" class="materials-list" aria-live="polite"></div>
+        </div>
     </section>
+
+    <div class="grid" style="margin-bottom:24px">
+        <div><label for="object_name">Название объекта</label><input id="object_name" type="text" placeholder="Например, ЖК Северный, корпус 2"></div>
+        <div><label for="cutting_name">Название раскроя</label><input id="cutting_name" type="text" placeholder="Например, Фасады кухни"></div>
+    </div>
 
     <section class="panel">
         <div class="section-title main">Детали для раскроя</div>
@@ -447,40 +450,43 @@ function updatePanelPrice() {
     priceM2Input.value = panel.price_per_m2 || panel.cost || 0;
     sheetCurrencyInput.value = panel.currency || 'RUB';
 }
-function materialMode() { return document.querySelector('[name="material_mode"]:checked').value; }
 function getSelectedFormats() { return sourceMaterials.map(({materialId, ...format}) => ({...format})); }
 function selectedManufacturerIds() { return [...new Set(sourceMaterials.map(m => m.manufacturerId).filter(Boolean).map(String))]; }
 function addManufacturerRow() {}
 function addFormatRow(selectedKey, customH, customW, qty=1) {
-    addSourceMaterial({height:Number(customH),width:Number(customW),qty:Math.max(1,Number(qty)||1),label:`${customH}×${customW} мм (свой)`});
+    const customName = document.getElementById('custom_name').value.trim() || 'Свой формат';
+    addSourceMaterial({height:Number(customH),width:Number(customW),qty:Math.max(1,Number(qty)||1),label:`${customName} ${customH}×${customW}`,margin:Number(document.getElementById('margin').value)||0});
 }
 function renderSourceMaterials() {
     if (!sourceMaterials.length) {
-        materialsList.innerHTML = '<div class="material-empty">Материалы пока не добавлены.</div>';
+        materialsList.innerHTML = '<tr><td colspan="7" class="source-empty">Добавьте лист из базы или укажите его размеры вручную.</td></tr>';
         return;
     }
-    materialsList.innerHTML = sourceMaterials.map((m, index) => `<div class="material-item"><span><b>${index + 1}.</b> ${escapeHtml(m.label)}${m.qty ? ` · ${m.qty} шт.` : ''}</span><button type="button" class="danger remove-material" data-id="${m.materialId}" aria-label="Удалить материал">Удалить</button></div>`).join('');
+    materialsList.innerHTML = sourceMaterials.map((m, index) => `<tr data-id="${m.materialId}"><td class="source-number">${index + 1}</td><td><input data-field="label" value="${escapeHtml(m.label)}"></td><td><input type="number" min="1" data-field="height" value="${m.height}"></td><td><input type="number" min="1" data-field="width" value="${m.width}"></td><td><div class="source-unit"><input type="number" min="0" step="0.1" data-field="margin" value="${m.margin ?? 0}"><small>мм</small></div></td><td><input class="${m.qty == null ? 'unlimited-qty' : ''}" type="${m.qty == null ? 'text' : 'number'}" min="1" data-field="qty" value="${m.qty == null ? 'Авто (без лимита)' : m.qty}" ${m.qty == null ? 'readonly' : ''}></td><td><button type="button" class="remove-source remove-material" data-id="${m.materialId}" aria-label="Удалить материал">&#128465;</button></td></tr>`).join('');
 }
 function addSourceMaterial(format) {
     if (!(format.height > 0 && format.width > 0)) { alert('Укажите корректные размеры материала.'); return; }
     sourceMaterials.push({...format, materialId:nextMaterialId++});
     renderSourceMaterials();
 }
-function toggleMaterialMode() {
-    const custom = materialMode() === 'custom';
-    dbMaterialFields.classList.toggle('hidden', custom);
-    customMaterialFields.classList.toggle('hidden', !custom);
+function showMaterialPicker(picker) {
+    dbMaterialFields.classList.toggle('hidden', picker !== dbMaterialFields);
+    customMaterialFields.classList.toggle('hidden', picker !== customMaterialFields);
 }
-document.querySelectorAll('[name="material_mode"]').forEach(radio => radio.addEventListener('change', toggleMaterialMode));
+document.getElementById('show-db-material').addEventListener('click', () => showMaterialPicker(dbMaterialFields));
+document.getElementById('show-custom-material').addEventListener('click', () => showMaterialPicker(customMaterialFields));
+document.querySelectorAll('.source-picker__close').forEach(button => button.addEventListener('click', () => showMaterialPicker(null)));
 panelSearch.addEventListener('input', renderPanelSearch);
 panelSelect.addEventListener('change', updatePanelPrice);
 document.getElementById('add-db-material').addEventListener('click', () => {
     const panel=selectedPanel();
     if (!panel) { alert('Выберите панель из базы.'); return; }
-    addSourceMaterial({height:Number(panel.height_mm),width:Number(panel.width_mm),qty:null,panelId:panel.id,manufacturerId:panel.manufacturer_id,label:panelLabel(panel)});
+    addSourceMaterial({height:Number(panel.height_mm),width:Number(panel.width_mm),qty:null,panelId:panel.id,manufacturerId:panel.manufacturer_id,label:panelLabel(panel),margin:Number(document.getElementById('margin').value)||0});
+    showMaterialPicker(null);
 });
-document.getElementById('add-custom-material').addEventListener('click', () => addFormatRow('custom',document.getElementById('custom_length').value,document.getElementById('custom_width').value,document.getElementById('custom_qty').value));
+document.getElementById('add-custom-material').addEventListener('click', () => { addFormatRow('custom',document.getElementById('custom_length').value,document.getElementById('custom_width').value,document.getElementById('custom_qty').value); showMaterialPicker(null); });
 materialsList.addEventListener('click', event => { const button=event.target.closest('.remove-material');if(!button)return;sourceMaterials=sourceMaterials.filter(m=>m.materialId!==Number(button.dataset.id));renderSourceMaterials(); });
+materialsList.addEventListener('change', event => { const row=event.target.closest('tr[data-id]');if(!row||!event.target.dataset.field)return;const material=sourceMaterials.find(m=>m.materialId===Number(row.dataset.id));if(!material)return;const field=event.target.dataset.field;if(field==='label')material.label=event.target.value.trim()||material.label;else{const value=Number(event.target.value);if(field==='margin' ? value>=0 : value>0)material[field]=value;}renderSourceMaterials(); });
 renderPanelSearch();
 if (panelSelect.options.length) { panelSelect.selectedIndex=0; updatePanelPrice(); }
 renderSourceMaterials();
@@ -602,7 +608,8 @@ function runCutting() {
     const currency = sheetCurrencyInput.value || 'RUB';
 
     const validFormats = formats.filter(f => {
-        const sw = f.width - margin * 2, sh = f.height - margin * 2;
+        const formatMargin = Number(f.margin ?? margin);
+        const sw = f.width - formatMargin * 2, sh = f.height - formatMargin * 2;
         return sw > 0 && sh > 0;
     });
     if (validFormats.length === 0) { alert('Размер листа за вычетом отступов должен быть положительным.'); return; }
@@ -623,8 +630,9 @@ function runCutting() {
     for (const p of parts) {
         let assignedFmt = null;
         for (const fmt of sortedFormats) {
-            const sw = fmt.width - margin * 2;
-            const sh = fmt.height - margin * 2;
+            const formatMargin = Number(fmt.margin ?? margin);
+            const sw = fmt.width - formatMargin * 2;
+            const sh = fmt.height - formatMargin * 2;
             if (pieceFitsOnFormat(p.length, p.width, sw, sh, method, p.rotate)) {
                 assignedFmt = fmt;
                 break;
@@ -639,8 +647,9 @@ function runCutting() {
     let allRemaining = [];
 
     for (const [fmt, fmtParts] of formatGroups) {
-        const sheetW = fmt.width - margin * 2;
-        const sheetH = fmt.height - margin * 2;
+        const formatMargin = Number(fmt.margin ?? margin);
+        const sheetW = fmt.width - formatMargin * 2;
+        const sheetH = fmt.height - formatMargin * 2;
         const testPieces = fmtParts.map(p => ({id: p.id, name: p.name, w: p.length, h: p.width, canRotate: p.rotate, qtyLeft: p.qty}));
         const {sheets: trySheets, remaining: tryRemaining} = packSheets(testPieces, sheetW, sheetH, kerf, method, fmt.qty ?? null);
         for (const s of trySheets) allSheets.push({format: fmt, ...s});
