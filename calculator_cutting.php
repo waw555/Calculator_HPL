@@ -215,6 +215,10 @@ table.parts-table tr.editing { background: #eff6ff; }
 .sheet-canvas-wrap { background: #f3f4f6; padding: 16px; overflow-x: auto; }
 .sheet-info { padding: 10px 16px; background: #fff; font-size: 13px; color: #374151; display:flex; gap:18px; flex-wrap:wrap; border-top:1px solid #e5e7eb; }
 .sheet-info b { color: #1f2937; }
+.sheet-parts { width:100%; border-collapse:collapse; background:#fff; }
+.sheet-parts th, .sheet-parts td { padding:7px 10px; border-top:1px solid #e5e7eb; text-align:left; font-size:12px; }
+.sheet-parts th { color:#475569; background:#f8fafc; }
+.part-number { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 4px; border-radius:5px; color:#1e293b; font-weight:800; }
 .part-rect text { font-size: 12px; fill: #1e3a8a; font-weight: 600; pointer-events:none; }
 .waste-rect { fill: repeating-linear-gradient(45deg, #fecaca, #fecaca 4px, #fff 4px, #fff 8px); }
 
@@ -579,9 +583,9 @@ function runCutting() {
 
     const sortedFormats = [...validFormats].sort((a, b) => (a.width * a.height) - (b.width * b.height));
 
-    function pieceFitsOnFormat(pw, ph, sw, sh, method) {
+    function pieceFitsOnFormat(pw, ph, sw, sh, method, canRotate) {
         if (method === 'optimal') {
-            return (pw <= sw && ph <= sh) || (pw <= sh && ph <= sw);
+            return (pw <= sw && ph <= sh) || (canRotate && pw <= sh && ph <= sw);
         } else if (method === 'length') {
             return Math.min(pw, ph) <= sw && Math.max(pw, ph) <= sh;
         } else {
@@ -595,7 +599,7 @@ function runCutting() {
         for (const fmt of sortedFormats) {
             const sw = fmt.width - margin * 2;
             const sh = fmt.height - margin * 2;
-            if (pieceFitsOnFormat(p.length, p.width, sw, sh, method)) {
+            if (pieceFitsOnFormat(p.length, p.width, sw, sh, method, p.rotate)) {
                 assignedFmt = fmt;
                 break;
             }
@@ -619,18 +623,12 @@ function runCutting() {
 
     if (allSheets.length === 0) { alert('Не удалось разместить ни одну деталь.'); return; }
 
-    const placedPartIds = new Set();
-    allSheets.forEach(s => s.placed.forEach(pl => {
-        for (let i = 0; i < (pl.qty || 1); i++) placedPartIds.add(pl.id);
-    }));
-    const unplacedPartIds = new Set();
-    parts.forEach(p => {
-        if (!placedPartIds.has(p.id)) unplacedPartIds.add(p.id);
-    });
-
-    allRemaining.forEach(item => unplacedPartIds.add(item.id));
+    const placedCounts = new Map();
+    allSheets.forEach(s => s.placed.forEach(pl => placedCounts.set(pl.id, (placedCounts.get(pl.id) || 0) + 1)));
+    const unplacedParts = parts.map(p => ({id:p.id, name:p.name, qty:Math.max(0, p.qty - (placedCounts.get(p.id) || 0))})).filter(p => p.qty > 0);
+    const unplacedPartIds = new Set(unplacedParts.map(p => p.id));
     if (allRemaining.length > 0) {
-        alert('Внимание: некоторые детали не уместились (слишком большие): ' + allRemaining.map(r => r.name).join(', '));
+        alert('Внимание: не все детали удалось разместить: ' + unplacedParts.map(p => `${p.name} — ${p.qty} шт.`).join(', '));
     }
 
     const fmtLabel = [...new Set(allSheets.map(s => s.format.label))].join(' + ');
@@ -656,7 +654,8 @@ function runCutting() {
     lastResult = {fmtLabel, formats: validFormats, kerf, margin, method, priceM2, cutPrice, currency,
         sheets: allSheets, sheetAreaM2: totalSheetAreaM2 / sheetCount, sheetCount,
         totalSheetsArea: totalSheetAreaM2, totalPartsArea, totalCutLength, totalPartsCount,
-        wasteArea, sheetsCost, partsCost, wasteCost, cuttingCost, totalCost, unplacedPartIds: [...unplacedPartIds]};
+        wasteArea, sheetsCost, partsCost, wasteCost, cuttingCost, totalCost,
+        unplacedPartIds: [...unplacedPartIds], unplacedParts};
 
     renderResult();
     renderParts();
@@ -682,8 +681,9 @@ function renderResult() {
         fmtCounts[lbl] = (fmtCounts[lbl] || 0) + 1;
     });
     const fmtBreakdown = Object.entries(fmtCounts).map(([lbl, cnt]) => `${lbl} — ${cnt} лист.`).join(', ');
-    const unplacedHtml = r.unplacedPartIds && r.unplacedPartIds.length > 0
-        ? `<tr><th style="color:#dc2626">Не размещены</th><td style="color:#dc2626;font-weight:700">${r.unplacedPartIds.length} дет.</td></tr>`
+    const unplaced = r.unplacedParts || (r.unplacedPartIds || []).map(id => ({id, name:`№${id}`, qty:1}));
+    const unplacedHtml = unplaced.length > 0
+        ? `<tr><th style="color:#dc2626">Не размещены</th><td style="color:#dc2626;font-weight:700">${unplaced.map(p => `${escapeHtml(p.name)} — ${p.qty} шт.`).join('<br>')}</td></tr>`
         : '';
     summaryTable.innerHTML = `
         <tr><th>Формат(ы) листов</th><td>${escapeHtml(fmtBreakdown)}</td></tr>
@@ -710,6 +710,7 @@ function renderResult() {
         const svgW = sf.height * scale;
         const svgH = sf.width * scale;
         let rectsHtml = '';
+        let partsRowsHtml = '';
         let placedArea = 0;
         sheet.placed.forEach(pl => {
             placedArea += (pl.w * pl.h) / 1e6;
@@ -727,6 +728,7 @@ function renderResult() {
                 <text x="${x + w/2}" y="${y + h/2 + 14}" text-anchor="middle" font-size="11">${fmtNum(pl.w,0)}</text>
                 <text x="${x + w - 6}" y="${y + h - 6}" text-anchor="end" font-size="10" fill="#6b7280">#${pl.id}</text>
             </g>`;
+            partsRowsHtml += `<tr><td><span class="part-number" style="background:${colorForId(pl.id)}">${pl.id}</span></td><td>${escapeHtml(pl.name || `Деталь ${pl.id}`)}</td><td>${fmtNum(pl.w,0)}×${fmtNum(pl.h,0)} мм</td><td>${pl.rotated ? 'Да' : 'Нет'}</td><td>${fmtNum(pl.x + r.margin,0)}; ${fmtNum(pl.y + r.margin,0)}</td></tr>`;
         });
 
         const usagePercent = sheetAreaM2 > 0 ? (placedArea / sheetAreaM2 * 100) : 0;
@@ -750,6 +752,10 @@ function renderResult() {
                     <span>Использование: <b>${fmtNum(usagePercent,1)}%</b></span>
                     <span>Отход: <b>${fmtNum(100-usagePercent,1)}%</b></span>
                 </div>
+                <table class="sheet-parts">
+                    <thead><tr><th>№</th><th>Деталь</th><th>Размер на карте</th><th>Поворот</th><th>Координаты X; Y</th></tr></thead>
+                    <tbody>${partsRowsHtml}</tbody>
+                </table>
             </div>
         `;
         sheetsContainer.appendChild(block);
