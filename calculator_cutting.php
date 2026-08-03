@@ -326,6 +326,7 @@ table.parts-table tr.editing { background: #eff6ff; }
         <div class="actions-row">
             <button type="button" id="cut-btn">📐 Раскрой</button>
             <button type="button" class="secondary" id="save-btn">💾 Сохранить</button>
+            <button type="button" class="danger" id="new-calculation-btn">＋ Новый расчёт</button>
         </div>
     </section>
 
@@ -458,7 +459,7 @@ function addManualMaterial() {
         priceM2:0,
         currency:window.AppCurrency?.code || 'RUB',
         label:`Произвольный лист ${nextManualMaterialNumber++}`,
-        margin:0
+        margin:Number(document.getElementById('margin').value)||0
     });
 }
 function renderSourceMaterials() {
@@ -472,6 +473,7 @@ function addSourceMaterial(format) {
     if (!(format.height > 0 && format.width > 0)) { alert('Укажите корректные размеры материала.'); return; }
     sourceMaterials.push({...format, qty:format.qty ?? null, priceM2:Number(format.priceM2)||0, materialId:nextMaterialId++});
     renderSourceMaterials();
+    if (typeof scheduleDraftSave === 'function') scheduleDraftSave();
 }
 function showMaterialPicker(picker) {
     dbMaterialFields.classList.toggle('hidden', picker !== dbMaterialFields);
@@ -530,11 +532,11 @@ function renderParts() {
 partsTbody.addEventListener('change',e=>{const p=parts.find(x=>x.id===Number(e.target.dataset.id));if(!p)return;if(e.target.classList.contains('toggle-rotate')){p.rotate=e.target.checked;renderParts();return;}if(!e.target.classList.contains('inline-edit'))return;const field=e.target.dataset.field;if(field==='name')p.name=e.target.value.trim()||p.name;else if(field==='grainDirection')p.grainDirection=e.target.value;else{const value=Number(e.target.value);if(value>0)p[field]=value;}renderParts();});
 document.getElementById('add-part-btn').addEventListener('click',()=>{
     const partNumber=nextPartId++;
-    const part={id:partNumber,name:`Деталь №${partNumber}`,length:1000,width:500,grainDirection:'none',qty:1,rotate:true};
-    parts.push(part);renderParts();requestAnimationFrame(()=>{const input=partsTbody.querySelector(`[data-id="${part.id}"][data-field="name"]`);input?.focus();input?.select();});
+    const part={id:partNumber,name:`Деталь №${partNumber}`,length:1000,width:500,grainDirection:'none',qty:1,rotate:false};
+    parts.push(part);renderParts();scheduleDraftSave();requestAnimationFrame(()=>{const input=partsTbody.querySelector(`[data-id="${part.id}"][data-field="name"]`);input?.focus();input?.select();});
 });
 renderParts();
-window.deletePart=id=>{parts=parts.filter(p=>p.id!==id);renderParts();};
+window.deletePart=id=>{parts=parts.filter(p=>p.id!==id);renderParts();scheduleDraftSave();};
 
 /* ═══════════════════════════════════════════════════
    АЛГОРИТМ РАСКРОЯ (гильотинный bin-packing)
@@ -555,24 +557,8 @@ function packSheets(pieces, sheetW, sheetH, kerf, method, maxSheets = null) {
                 for (let pi = 0; pi < queue.length; pi++) {
                     const piece = queue[pi];
                     let orientations;
-                    if (method === 'optimal') {
-                        orientations = [{w: piece.w, h: piece.h, rotated: false}];
-                        if (piece.canRotate && piece.w !== piece.h) {
-                            orientations.push({w: piece.h, h: piece.w, rotated: true});
-                        }
-                    } else if (method === 'length') {
-                        if (piece.w > piece.h) {
-                            orientations = [{w: piece.h, h: piece.w, rotated: true}];
-                        } else {
-                            orientations = [{w: piece.w, h: piece.h, rotated: false}];
-                        }
-                    } else {
-                        if (piece.h > piece.w) {
-                            orientations = [{w: piece.h, h: piece.w, rotated: true}];
-                        } else {
-                            orientations = [{w: piece.w, h: piece.h, rotated: false}];
-                        }
-                    }
+                    orientations = [{w: piece.w, h: piece.h, rotated: false}];
+                    if (piece.canRotate && piece.w !== piece.h) orientations.push({w: piece.h, h: piece.w, rotated: true});
                 for (const orient of orientations) {
                     for (let ri = 0; ri < freeRects.length; ri++) {
                         const rect = freeRects[ri];
@@ -591,7 +577,7 @@ function packSheets(pieces, sheetW, sheetH, kerf, method, maxSheets = null) {
                 const rect = freeRects[best.rectIdx];
                 const pw = best.w, ph = best.h;
 
-                placed.push({id: piece.id, name: piece.name, grainDirection: piece.grainDirection, x: rect.x, y: rect.y, w: pw, h: ph, rotated: best.rotated});
+                placed.push({id: piece.id, name: piece.name, grainDirection: piece.grainDirection, x: rect.x, y: rect.y, w: pw, h: ph, rotated: Boolean(piece.baseRotated) !== best.rotated});
 
                 freeRects.splice(best.rectIdx, 1);
                 const rightW = rect.w - pw - (rect.w - pw > 0 ? kerf : 0);
@@ -632,14 +618,15 @@ function runCutting() {
 
     const sortedFormats = [...validFormats].sort((a, b) => (a.width * a.height) - (b.width * b.height));
 
-    function pieceFitsOnFormat(pw, ph, sw, sh, method, canRotate) {
-        if (method === 'optimal') {
-            return (pw <= sw && ph <= sh) || (canRotate && pw <= sh && ph <= sw);
-        } else if (method === 'length') {
-            return Math.min(pw, ph) <= sw && Math.max(pw, ph) <= sh;
-        } else {
-            return Math.max(pw, ph) <= sw && Math.min(pw, ph) <= sh;
-        }
+    // Ось H совпадает с направлением рисунка панели. При запрете поворота
+    // указанная ось рисунка детали всегда укладывается вдоль рисунка панели.
+    function packingDimensions(part) {
+        if (part.grainDirection === 'length') return {w:part.width, h:part.length, baseRotated:true};
+        return {w:part.length, h:part.width, baseRotated:false};
+    }
+    function pieceFitsOnFormat(part, sw, sh) {
+        const {w, h} = packingDimensions(part);
+        return (w <= sw && h <= sh) || (part.rotate && h <= sw && w <= sh);
     }
 
     const formatGroups = new Map();
@@ -649,7 +636,7 @@ function runCutting() {
             const formatMargin = Number(fmt.margin ?? margin);
             const sw = fmt.width - formatMargin * 2;
             const sh = fmt.height - formatMargin * 2;
-            if (pieceFitsOnFormat(p.length, p.width, sw, sh, method, p.rotate)) {
+            if (pieceFitsOnFormat(p, sw, sh)) {
                 assignedFmt = fmt;
                 break;
             }
@@ -666,7 +653,7 @@ function runCutting() {
         const formatMargin = Number(fmt.margin ?? margin);
         const sheetW = fmt.width - formatMargin * 2;
         const sheetH = fmt.height - formatMargin * 2;
-        const testPieces = fmtParts.map(p => ({id: p.id, name: p.name, grainDirection: p.grainDirection, w: p.length, h: p.width, canRotate: p.rotate, qtyLeft: p.qty}));
+        const testPieces = fmtParts.map(p => ({id:p.id, name:p.name, grainDirection:p.grainDirection, ...packingDimensions(p), canRotate:p.rotate, qtyLeft:p.qty}));
         const {sheets: trySheets, remaining: tryRemaining} = packSheets(testPieces, sheetW, sheetH, kerf, method, fmt.qty ?? null);
         for (const s of trySheets) allSheets.push({format: fmt, ...s});
         allRemaining.push(...tryRemaining.filter(p => p.qtyLeft > 0));
@@ -770,6 +757,7 @@ function renderResult() {
 
     r.sheets.forEach((sheet, idx) => {
         const sf = sheet.format || r.formats[0];
+        const sheetMargin = Number(sf.margin ?? r.margin ?? 0);
         const sheetAreaM2 = (sf.width * sf.height) / 1e6;
         const scale = Math.min(1100 / sf.height, 500 / sf.width);
         const sheetW = sf.height * scale;
@@ -786,7 +774,7 @@ function renderResult() {
         let placedArea = 0;
         sheet.placed.forEach(pl => {
             placedArea += (pl.w * pl.h) / 1e6;
-            const x = sheetX + pl.y * scale, y = sheetY + pl.x * scale, w = pl.h * scale, h = pl.w * scale;
+            const x = sheetX + (pl.y + sheetMargin) * scale, y = sheetY + (pl.x + sheetMargin) * scale, w = pl.h * scale, h = pl.w * scale;
             const arrLen = Math.min(w, h) * 0.5;
             const grainDirection = pl.grainDirection || parts.find(part => part.id === pl.id)?.grainDirection || 'none';
             const horizontalGrain = grainDirection === 'length' ? pl.rotated : !pl.rotated;
@@ -819,7 +807,7 @@ function renderResult() {
                 ${arrowHtml}
                 <text x="${x + w - 6}" y="${y + h - 6}" text-anchor="end" font-size="10" fill="#6b7280">#${pl.id}</text>
             </g>`;
-            partsRowsHtml += `<tr><td><span class="part-number" style="background:${colorForId(pl.id)}">${pl.id}</span></td><td>${escapeHtml(pl.name || `Деталь ${pl.id}`)}</td><td>${fmtNum(pl.w,0)}×${fmtNum(pl.h,0)} мм</td><td>${pl.rotated ? 'Да' : 'Нет'}</td><td>${fmtNum(pl.x + r.margin,0)}; ${fmtNum(pl.y + r.margin,0)}</td></tr>`;
+            partsRowsHtml += `<tr><td><span class="part-number" style="background:${colorForId(pl.id)}">${pl.id}</span></td><td>${escapeHtml(pl.name || `Деталь ${pl.id}`)}</td><td>${fmtNum(pl.w,0)}×${fmtNum(pl.h,0)} мм</td><td>${pl.rotated ? 'Да' : 'Нет'}</td><td>${fmtNum(pl.x + sheetMargin,0)}; ${fmtNum(pl.y + sheetMargin,0)}</td></tr>`;
         });
 
         const usagePercent = sheetAreaM2 > 0 ? (placedArea / sheetAreaM2 * 100) : 0;
@@ -838,6 +826,7 @@ function renderResult() {
                         <line x1="${sheetX + sheetW + 20}" y1="${sheetY + 4}" x2="${sheetX + sheetW + 20}" y2="${sheetY + sheetH - 4}" stroke="#475569" marker-start="url(#da${idx})" marker-end="url(#da${idx})"/>
                         <text x="${sheetX + sheetW + 34}" y="${sheetY + sheetH / 2}" text-anchor="middle" font-size="11" fill="#334155" font-weight="700" transform="rotate(-90 ${sheetX + sheetW + 34} ${sheetY + sheetH / 2})">${fmtNum(sf.width,0)} мм</text>
                         <rect x="${sheetX + 0.5}" y="${sheetY + 0.5}" width="${sheetW - 1}" height="${sheetH - 1}" fill="#e5e7eb" stroke="#9ca3af"/>
+                        <rect x="${sheetX + sheetMargin * scale}" y="${sheetY + sheetMargin * scale}" width="${sheetW - sheetMargin * scale * 2}" height="${sheetH - sheetMargin * scale * 2}" fill="none" stroke="#ef4444" stroke-dasharray="5 4"/>
                         ${rectsHtml}
                         <text x="${sheetX + sheetW / 2}" y="${sheetY + sheetH + 15}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600">направление рисунка</text>
                         <line x1="${sheetX + 8}" y1="${sheetY + sheetH + 25}" x2="${sheetX + sheetW - 20}" y2="${sheetY + sheetH + 25}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>
@@ -939,6 +928,74 @@ window.loadLayout = async function(id) {
         if (data.result) { lastResult = data.result; renderResult(); renderParts(); }
     } catch (e) { alert('Ошибка загрузки: ' + e.message); }
 };
+
+/* ═══════════ АВТОСОХРАНЕНИЕ ЧЕРНОВИКА ═══════════ */
+const DRAFT_STORAGE_KEY = 'calculator_cutting_draft_v1';
+let draftSaveTimer = null;
+let discardDraft = false;
+
+function draftSettings() {
+    return {
+        loadedId,
+        cuttingName:document.getElementById('cutting_name').value,
+        objectName:document.getElementById('object_name').value,
+        kerf:document.getElementById('kerf').value,
+        margin:document.getElementById('margin').value,
+        method:document.getElementById('method').value,
+        priceM2:priceM2Input.value,
+        cutPrice:cutPriceInput.value,
+        currency:sheetCurrencyInput.value
+    };
+}
+function saveDraft() {
+    if (discardDraft) return;
+    try { localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({settings:draftSettings(), sourceMaterials, parts, nextPartId, nextMaterialId, nextManualMaterialNumber, lastResult})); } catch (_) {}
+}
+function scheduleDraftSave() {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(saveDraft, 150);
+}
+function restoreDraft() {
+    let draft;
+    try { draft = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || 'null'); } catch (_) { return; }
+    if (!draft?.settings) return;
+    const s=draft.settings;
+    loadedId=s.loadedId || null;
+    document.getElementById('cutting_name').value=s.cuttingName || '';
+    document.getElementById('object_name').value=s.objectName || '';
+    document.getElementById('kerf').value=s.kerf ?? 4;
+    document.getElementById('margin').value=s.margin ?? 5;
+    document.getElementById('method').value=s.method || 'optimal';
+    document.querySelector(`[name="strategy"][value="${s.method || 'optimal'}"]`)?.click();
+    priceM2Input.value=s.priceM2 ?? 0;
+    cutPriceInput.value=s.cutPrice ?? 250;
+    sheetCurrencyInput.value=s.currency || 'RUB';
+    sourceMaterials=Array.isArray(draft.sourceMaterials) ? draft.sourceMaterials : [];
+    parts=Array.isArray(draft.parts) ? draft.parts.map(p=>({...p, rotate:Boolean(p.rotate), grainDirection:p.grainDirection || 'none'})) : [];
+    nextPartId=Math.max(Number(draft.nextPartId)||1, ...parts.map(p=>Number(p.id)+1), 1);
+    nextMaterialId=Math.max(Number(draft.nextMaterialId)||1, ...sourceMaterials.map(m=>Number(m.materialId)+1), 1);
+    nextManualMaterialNumber=Number(draft.nextManualMaterialNumber)||1;
+    lastResult=draft.lastResult || null;
+    renderSourceMaterials(); renderParts();
+    if(lastResult) renderResult();
+}
+function newCalculation() {
+    if (!confirm('Начать новый расчёт? Текущий несохранённый черновик будет удалён.')) return;
+    discardDraft=true;
+    clearTimeout(draftSaveTimer);
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    location.reload();
+}
+document.getElementById('new-calculation-btn').addEventListener('click', newCalculation);
+document.addEventListener('input', scheduleDraftSave);
+document.addEventListener('change', scheduleDraftSave);
+document.getElementById('margin').addEventListener('change', event => {
+    const margin=Math.max(0, Number(event.target.value)||0);
+    sourceMaterials.forEach(material => { material.margin=margin; });
+    renderSourceMaterials(); scheduleDraftSave();
+});
+window.addEventListener('beforeunload', saveDraft);
+restoreDraft();
 
 /* ═══════════ ЭКСПОРТ ═══════════ */
 document.getElementById('export-excel-btn').addEventListener('click', () => {
