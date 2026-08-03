@@ -262,9 +262,9 @@ table.parts-table tr.editing { background: #eff6ff; }
         </div>
         <div class="strategy-heading">Тип (стратегия) раскроя <span>*</span></div>
         <div class="strategy-options" role="radiogroup" aria-label="Тип (стратегия) раскроя">
-            <label class="strategy-card"><input type="radio" name="strategy" value="length"><strong><i>↔</i>По длине</strong><span>Размещение продольными полосами вдоль длинной стороны листа.</span></label>
-            <label class="strategy-card"><input type="radio" name="strategy" value="width"><strong><i>⇅</i>По ширине</strong><span>Размещение поперечными полосами вдоль короткой стороны листа.</span></label>
-            <label class="strategy-card"><input type="radio" name="strategy" value="optimal" checked><strong><i>✣</i>Оптимально</strong><span>Минимальные отходы (2D Bin Packing). Максимально эффективный раскрой.</span><b class="strategy-check">⊙</b></label>
+            <label class="strategy-card"><input type="radio" name="strategy" value="length"><strong><i>↔</i>По длине</strong><span>Расположение рисунка по длинной стороне листа.</span></label>
+            <label class="strategy-card"><input type="radio" name="strategy" value="width"><strong><i>⇅</i>По ширине</strong><span>Расположение рисунка по широкой стороне листа.</span></label>
+            <label class="strategy-card"><input type="radio" name="strategy" value="optimal" checked><strong><i>✣</i>Оптимально</strong><span>Оптимальное расположение деталей с поворотом.</span><b class="strategy-check">⊙</b></label>
         </div>
         <div class="hidden"><label for="method">Метод расчёта</label><select id="method"><option value="optimal">Оптимально (с разворотом)</option><option value="length">По длине (вдоль декора)</option><option value="width">По ширине (вдоль декора)</option></select><div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°.</div></div>
         <div class="cut-settings">
