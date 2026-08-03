@@ -48,6 +48,22 @@ function app_header_currency_rates(): array
     }
 }
 
+function app_header_organization(): array
+{
+    if (!isset($GLOBALS['pdo']) || !$GLOBALS['pdo'] instanceof PDO || !function_exists('ensure_organization_table')) {
+        return [];
+    }
+
+    try {
+        $pdo = $GLOBALS['pdo'];
+        ensure_organization_table($pdo);
+        return $pdo->query('SELECT short_name, full_name, logo_path FROM organization_settings WHERE id = 1')->fetch() ?: [];
+    } catch (Throwable $e) {
+        error_log('Unable to load header organization: ' . $e->getMessage());
+        return [];
+    }
+}
+
 function app_header_styles(): string
 {
     return <<<'CSS'
@@ -56,13 +72,13 @@ function app_header_styles(): string
 *{box-sizing:border-box}html{background:var(--app-bg)}body{padding-top:var(--app-header-height);color:var(--app-text);-webkit-font-smoothing:antialiased}
 .app-header{position:fixed;inset:0 0 auto;z-index:10000;min-height:var(--app-header-height);background:rgba(15,23,42,.97);color:#e5eefb;box-shadow:0 8px 28px rgba(15,23,42,.2);backdrop-filter:blur(14px)}
 .app-header__inner{max-width:1440px;min-height:var(--app-header-height);margin:auto;padding:10px 24px;display:flex;align-items:center;gap:10px;white-space:nowrap}
-.app-header__brand{display:flex;align-items:center;gap:11px;min-width:230px;text-decoration:none}.app-header__logo{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#06b6d4);box-shadow:0 9px 20px rgba(37,99,235,.38);font-size:22px}.app-header__title{display:flex;flex-direction:column;gap:3px}.app-header__title-row{display:flex;align-items:center;gap:7px}.app-header__name{color:#fff;font-size:19px;font-weight:850;letter-spacing:-.04em}.app-header__subtitle{color:#94a3b8;font-size:11px;font-weight:650}
+.app-header__brand{display:flex;align-items:center;gap:11px;min-width:230px;text-decoration:none}.app-header__logo{width:52px;height:44px;border-radius:10px;display:grid;place-items:center;overflow:hidden;background:#fff;box-shadow:0 9px 20px rgba(15,23,42,.3);font-size:22px}.app-header__logo img{display:block;width:100%;height:100%;object-fit:contain;padding:3px}.app-header__title{display:flex;flex-direction:column;gap:3px}.app-header__title-row{display:flex;align-items:center;gap:7px}.app-header__name{color:#fff;font-size:19px;font-weight:850;letter-spacing:-.04em}.app-header__subtitle{color:#94a3b8;font-size:11px;font-weight:650}
 .app-header__pill,.app-header__rates,.app-header__currency,.app-header__button,.app-header__user{min-height:34px;border:1px solid rgba(148,163,184,.2);background:rgba(30,41,59,.85);border-radius:10px;display:inline-flex;align-items:center;gap:7px;padding:0 10px;color:#cbd5e1;font:700 12px/1 inherit;text-decoration:none}
-.app-header__pill{min-height:22px;padding:0 8px;color:#bfdbfe;background:#173256}.app-header__db{color:#6ee7b7;border-color:rgba(16,185,129,.3)}.app-header__spacer{flex:1}.app-header__rates strong{color:#fff}.app-header__rates time{color:#94a3b8}.app-header__currency{padding:3px}.app-header__currency-label{padding-left:7px;color:#94a3b8}.app-header__currency-option{border:0;background:transparent;color:#cbd5e1;padding:7px 8px;border-radius:7px;font:800 11px inherit;cursor:pointer}.app-header__currency-option:hover{background:#334155}.app-header__currency-option--active{color:#fff;background:#2563eb!important}.app-header__button{cursor:pointer}.app-header__button:hover{background:#334155}.app-header__user{color:#fff}.app-header__logout{color:#94a3b8;text-decoration:none;font-size:17px}
+.app-header__pill{min-height:22px;padding:0 8px;color:#bfdbfe;background:#173256}.app-header__spacer{flex:1}.app-header__rates strong{color:#fff}.app-header__refresh{width:28px;height:28px;padding:0;justify-content:center;border:0;background:transparent;color:#94a3b8;border-radius:7px;cursor:pointer;font-size:16px}.app-header__refresh:hover{color:#fff;background:#334155}.app-header__refresh:disabled{cursor:wait;opacity:.6}.app-header__refresh--loading{animation:app-header-spin .8s linear infinite}@keyframes app-header-spin{to{transform:rotate(360deg)}}.app-header__currency{padding:3px}.app-header__currency-label{padding-left:7px;color:#94a3b8}.app-header__currency-option{border:0;background:transparent;color:#cbd5e1;padding:7px 8px;border-radius:7px;font:800 11px inherit;cursor:pointer}.app-header__currency-option:hover{background:#334155}.app-header__currency-option--active{color:#fff;background:#2563eb!important}.app-header__button{cursor:pointer}.app-header__button:hover{background:#334155}.app-header__user{color:#fff}.app-header__logout{color:#94a3b8;text-decoration:none;font-size:17px}
 /* A common finish for legacy pages; local layouts stay intact. */
 body:not(.login-page){background-color:var(--app-bg)}main.container,.container{width:min(100% - 32px,1280px)}.panel,.card{border-color:var(--app-line)!important;border-radius:var(--app-radius)!important;box-shadow:var(--app-shadow)!important}.card{transition:transform .18s ease,box-shadow .18s ease}.card:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(15,23,42,.12)!important}button,.btn,.card a{transition:background .16s ease,transform .16s ease}button:active,.btn:active{transform:translateY(1px)}input,select,textarea{border-radius:9px!important;border-color:#cbd5e1!important;font:inherit}input:focus,select:focus,textarea:focus{outline:3px solid rgba(37,99,235,.14);border-color:#60a5fa!important}table{border-radius:12px;overflow:hidden}th{color:#475569;font-size:12px;letter-spacing:.02em}a:focus-visible,button:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
 @media(max-width:1100px){:root{--app-header-height:126px}.app-header__inner{flex-wrap:wrap;align-content:center}.app-header__brand{flex:1}.app-header__spacer{display:none}.app-header__rates{order:3}.app-header__currency{order:4}}
-@media(max-width:680px){:root{--app-header-height:174px}.app-header__inner{padding:8px 12px;gap:7px}.app-header__brand{flex-basis:100%}.app-header__db,.app-header__rates time,.app-header__button span{display:none}.app-header__rates{font-size:11px}.app-header__user{margin-left:auto}main.container,.container{width:min(100% - 20px,1280px);padding-left:0!important;padding-right:0!important}}
+@media(max-width:680px){:root{--app-header-height:174px}.app-header__inner{padding:8px 12px;gap:7px}.app-header__brand{flex-basis:100%}.app-header__button span{display:none}.app-header__rates{font-size:11px}.app-header__user{margin-left:auto}main.container,.container{width:min(100% - 20px,1280px);padding-left:0!important;padding-right:0!important}}
 @media print{body{padding-top:0!important}.app-header{display:none!important}.panel,.card{box-shadow:none!important}}
 </style>
 CSS;
@@ -73,15 +89,18 @@ function render_app_header(string $section = 'HPL / Компакт-плиты'):
     $role = $_SESSION['role'] ?? 'user';
     $username = $_SESSION['username'] ?? ($role === 'admin' ? 'admin' : 'user');
     $rates = app_header_currency_rates();
+    $organization = app_header_organization();
+    $logoPath = trim((string)($organization['logo_path'] ?? ''));
+    $organizationName = trim((string)(($organization['short_name'] ?? '') ?: ($organization['full_name'] ?? '') ?: 'ООО «ТД Декотек»'));
     $eur = isset($rates['EUR']) ? '€ ' . number_format($rates['EUR']['rate_to_rub'], 2, ',', ' ') : '€ —';
     $usd = isset($rates['USD']) ? '$ ' . number_format($rates['USD']['rate_to_rub'], 2, ',', ' ') : '$ —';
     $ratesJson = json_encode($rates, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     ?>
 <header class="app-header">
   <div class="app-header__inner">
-    <a class="app-header__brand" href="calculator.php" aria-label="На главную STCalc"><span class="app-header__logo" aria-hidden="true">🧮</span><span class="app-header__title"><span class="app-header__title-row"><span class="app-header__name">STCalc</span><span class="app-header__pill"><?php echo e($section); ?></span></span><span class="app-header__subtitle">ООО «ТД Декотек»</span></span></a>
-    <span class="app-header__pill app-header__db">● База подключена</span><span class="app-header__spacer"></span>
-    <span class="app-header__rates" title="Курсы автоматически обновляются из ЦБ РФ"><span>ЦБ РФ</span><strong><?php echo e($eur); ?> ₽</strong><strong><?php echo e($usd); ?> ₽</strong><time>авто</time></span>
+    <a class="app-header__brand" href="calculator.php" aria-label="На главную STCalc"><span class="app-header__logo"><?php if ($logoPath !== ''): ?><img src="<?php echo e($logoPath); ?>" alt="Логотип <?php echo e($organizationName); ?>"><?php else: ?><span aria-hidden="true">🧮</span><?php endif; ?></span><span class="app-header__title"><span class="app-header__title-row"><span class="app-header__name">STCalc</span><span class="app-header__pill"><?php echo e($section); ?></span></span><span class="app-header__subtitle"><?php echo e($organizationName); ?></span></span></a>
+    <span class="app-header__spacer"></span>
+    <span class="app-header__rates" title="Курсы автоматически обновляются из ЦБ РФ"><span>ЦБ РФ</span><strong><?php echo e($eur); ?> ₽</strong><strong><?php echo e($usd); ?> ₽</strong><button class="app-header__refresh" type="button" data-refresh-currency title="Обновить курсы валют" aria-label="Обновить курсы валют">↻</button></span>
     <span class="app-header__currency" role="group" aria-label="Валюта отображения"><span class="app-header__currency-label">Валюта</span><?php foreach ($rates as $code => $rate): ?><button class="app-header__currency-option" type="button" data-app-currency="<?php echo e($code); ?>" title="<?php echo e($rate['name']); ?>"><?php echo e($code); ?></button><?php endforeach; ?></span>
     <button class="app-header__button" type="button" onclick="window.print()" title="Печать страницы">▣ <span>Печать</span></button>
     <span class="app-header__user">♙ <?php echo e($username . ($role === 'admin' ? ' · Админ' : '')); ?><a class="app-header__logout" href="logout.php" title="Выйти" aria-label="Выйти">↪</a></span>
@@ -90,6 +109,21 @@ function render_app_header(string $section = 'HPL / Компакт-плиты'):
 <script>
 (() => {
   const rates = <?php echo $ratesJson ?: '{}'; ?>;
+  const refreshButton = document.querySelector('[data-refresh-currency]');
+  refreshButton?.addEventListener('click', async () => {
+    refreshButton.disabled = true;
+    refreshButton.classList.add('app-header__refresh--loading');
+    try {
+      const response = await fetch('includes/currency_refresh.php', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}});
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.message || 'Не удалось обновить курсы валют.');
+      window.location.reload();
+    } catch (error) {
+      alert(error.message || 'Не удалось обновить курсы валют.');
+      refreshButton.disabled = false;
+      refreshButton.classList.remove('app-header__refresh--loading');
+    }
+  });
   const supported = Object.keys(rates);
   const saved = localStorage.getItem('stcalc.currency');
   let selected = supported.includes(saved) ? saved : 'RUB';
