@@ -223,6 +223,7 @@ table.parts-table tr.editing { background: #eff6ff; }
 .modal-box h3 { margin-top:0; }
 .hidden { display:none !important; }
 .material-mode{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:#f8fafc;border-radius:10px}.material-mode label{margin:0}.material-mode input{width:auto;margin-right:6px}#panel_select{margin-top:8px;min-height:150px}.part-entry-row td{background:#eff6ff;border-top:2px solid #93c5fd!important}
+.materials-list{display:grid;gap:8px;margin-top:14px}.material-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#f8fafc;border:1px solid #dbeafe;border-radius:8px}.material-item span{font-size:13px}.material-item button{padding:5px 10px}.material-empty{color:#64748b;font-size:13px;padding:10px 0}
 .btn-icon { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border:none; border-radius:8px; cursor:pointer; font-size:16px; transition:all .2s; }
 .btn-icon.btn-edit { color:#2563eb; background:#eff6ff; }
 .btn-icon.btn-edit:hover { background:#dbeafe; }
@@ -256,6 +257,8 @@ table.parts-table tr.editing { background: #eff6ff; }
                 <label for="margin">Отступ от края листа, мм</label>
                 <input id="margin" type="number" min="0" step="0.1" value="5">
             </div>
+            <div><label for="method">Метод расчёта</label><select id="method"><option value="optimal">Оптимально (с разворотом)</option><option value="length">По длине (вдоль декора)</option><option value="width">По ширине (вдоль декора)</option></select><div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°.</div></div>
+            <div><label for="cut_price">Стоимость распила за м.п.</label><input id="cut_price" type="number" min="0" step="0.01" value="250"><div class="hint">По умолчанию 250 руб.</div></div>
         </div>
 
         <div class="section-title">Исходный материал</div>
@@ -268,6 +271,7 @@ table.parts-table tr.editing { background: #eff6ff; }
             <input id="panel_search" type="search" placeholder="Введите производителя, артикул, декор или размер" autocomplete="off">
             <select id="panel_select" size="6" aria-label="Найденные панели"></select>
             <div class="hint" id="panel-search-result"></div>
+            <button type="button" class="add-row-btn" id="add-db-material" style="margin-top:10px">+ Добавить материал</button>
         </div>
         <div id="custom-material-fields" class="hidden">
             <div class="grid-3">
@@ -275,16 +279,13 @@ table.parts-table tr.editing { background: #eff6ff; }
                 <div><label for="custom_width">Ширина, мм</label><input id="custom_width" type="number" min="1" value="1300"></div>
                 <div><label for="custom_qty">Количество панелей</label><input id="custom_qty" type="number" min="1" step="1" value="1"></div>
             </div>
+            <button type="button" class="add-row-btn" id="add-custom-material" style="margin-top:10px">+ Добавить материал</button>
         </div>
         <div class="grid" style="margin-top:14px">
             <div><label for="material_price_m2">Цена за м²</label><input id="material_price_m2" type="number" min="0" step="0.01" value="0"></div>
             <div><label for="sheet_currency">Валюта</label><select id="sheet_currency"><option value="RUB">RUB</option><option value="EUR">EUR</option><option value="USD">USD</option></select></div>
-            <div><label for="cut_price">Стоимость распила за м.п.</label><input id="cut_price" type="number" min="0" step="0.01" value="250"><div class="hint">По умолчанию 250 руб.</div></div>
         </div>
-        <div class="section-title">Метод расчёта</div>
-        <div class="grid">
-            <div><label for="method">Метод расчёта</label><select id="method"><option value="optimal">Оптимально (с разворотом)</option><option value="length">По длине (вдоль декора)</option><option value="width">По ширине (вдоль декора)</option></select><div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°, если включён поворот.</div></div>
-        </div>
+        <div id="materials-list" class="materials-list" aria-live="polite"></div>
     </section>
 
     <section class="panel">
@@ -387,6 +388,9 @@ const customMaterialFields = document.getElementById('custom-material-fields');
 const priceM2Input = document.getElementById('material_price_m2');
 const sheetCurrencyInput = document.getElementById('sheet_currency');
 const cutPriceInput = document.getElementById('cut_price');
+const materialsList = document.getElementById('materials-list');
+let sourceMaterials = [];
+let nextMaterialId = 1;
 
 function panelLabel(panel) {
     const size = panel.height_mm && panel.width_mm ? `${panel.height_mm}×${panel.width_mm} мм` : '';
@@ -414,26 +418,23 @@ function updatePanelPrice() {
     sheetCurrencyInput.value = panel.currency || 'RUB';
 }
 function materialMode() { return document.querySelector('[name="material_mode"]:checked').value; }
-function getSelectedFormats() {
-    if (materialMode() === 'custom') {
-        const height = Number(document.getElementById('custom_length').value);
-        const width = Number(document.getElementById('custom_width').value);
-        const qty = Math.max(1, parseInt(document.getElementById('custom_qty').value) || 1);
-        return height > 0 && width > 0 ? [{height, width, qty, label:`${height}×${width} мм (свой)`}] : [];
-    }
-    const panel = selectedPanel();
-    if (!panel) return [];
-    const height = Number(panel.height_mm), width = Number(panel.width_mm);
-    return height > 0 && width > 0 ? [{height, width, qty:null, panelId:panel.id, label:panelLabel(panel)}] : [];
-}
-function selectedManufacturerIds() { const panel=selectedPanel(); return panel?.manufacturer_id ? [String(panel.manufacturer_id)] : []; }
+function getSelectedFormats() { return sourceMaterials.map(({materialId, ...format}) => ({...format})); }
+function selectedManufacturerIds() { return [...new Set(sourceMaterials.map(m => m.manufacturerId).filter(Boolean).map(String))]; }
 function addManufacturerRow() {}
 function addFormatRow(selectedKey, customH, customW, qty=1) {
-    document.querySelector('[name="material_mode"][value="custom"]').checked=true;
-    toggleMaterialMode();
-    document.getElementById('custom_length').value=customH||'';
-    document.getElementById('custom_width').value=customW||'';
-    document.getElementById('custom_qty').value=qty||1;
+    addSourceMaterial({height:Number(customH),width:Number(customW),qty:Math.max(1,Number(qty)||1),label:`${customH}×${customW} мм (свой)`});
+}
+function renderSourceMaterials() {
+    if (!sourceMaterials.length) {
+        materialsList.innerHTML = '<div class="material-empty">Материалы пока не добавлены.</div>';
+        return;
+    }
+    materialsList.innerHTML = sourceMaterials.map((m, index) => `<div class="material-item"><span><b>${index + 1}.</b> ${escapeHtml(m.label)}${m.qty ? ` · ${m.qty} шт.` : ''}</span><button type="button" class="danger remove-material" data-id="${m.materialId}" aria-label="Удалить материал">Удалить</button></div>`).join('');
+}
+function addSourceMaterial(format) {
+    if (!(format.height > 0 && format.width > 0)) { alert('Укажите корректные размеры материала.'); return; }
+    sourceMaterials.push({...format, materialId:nextMaterialId++});
+    renderSourceMaterials();
 }
 function toggleMaterialMode() {
     const custom = materialMode() === 'custom';
@@ -443,8 +444,16 @@ function toggleMaterialMode() {
 document.querySelectorAll('[name="material_mode"]').forEach(radio => radio.addEventListener('change', toggleMaterialMode));
 panelSearch.addEventListener('input', renderPanelSearch);
 panelSelect.addEventListener('change', updatePanelPrice);
+document.getElementById('add-db-material').addEventListener('click', () => {
+    const panel=selectedPanel();
+    if (!panel) { alert('Выберите панель из базы.'); return; }
+    addSourceMaterial({height:Number(panel.height_mm),width:Number(panel.width_mm),qty:null,panelId:panel.id,manufacturerId:panel.manufacturer_id,label:panelLabel(panel)});
+});
+document.getElementById('add-custom-material').addEventListener('click', () => addFormatRow('custom',document.getElementById('custom_length').value,document.getElementById('custom_width').value,document.getElementById('custom_qty').value));
+materialsList.addEventListener('click', event => { const button=event.target.closest('.remove-material');if(!button)return;sourceMaterials=sourceMaterials.filter(m=>m.materialId!==Number(button.dataset.id));renderSourceMaterials(); });
 renderPanelSearch();
 if (panelSelect.options.length) { panelSelect.selectedIndex=0; updatePanelPrice(); }
+renderSourceMaterials();
 window.addEventListener('appcurrencychange', event => { const code=event.detail?.code; if(!code)return; if(!Array.from(sheetCurrencyInput.options).some(o=>o.value===code)) sheetCurrencyInput.add(new Option(code,code)); sheetCurrencyInput.value=code; });
 
 /* ═══════════ Утилиты ═══════════ */
@@ -755,13 +764,13 @@ document.getElementById('save-btn').addEventListener('click', async () => {
         object_name: document.getElementById('object_name').value,
         manufacturer_ids: selectedManufacturerIds(),
         formats: getSelectedFormats(),
-        decor_id: selectedPanel()?.id || null,
+        decor_id: sourceMaterials.find(m => m.panelId)?.panelId || null,
         kerf: document.getElementById('kerf').value,
         margin: document.getElementById('margin').value,
         method: document.getElementById('method').value,
         price_m2: priceM2Input.value,
         cut_price: cutPriceInput.value,
-        material_mode: materialMode(),
+        material_mode: sourceMaterials.some(m => m.panelId) ? (sourceMaterials.every(m => m.panelId) ? 'db' : 'mixed') : 'custom',
         sheet_currency: sheetCurrencyInput.value,
     };
     try {
@@ -803,11 +812,17 @@ window.loadLayout = async function(id) {
         cutPriceInput.value = s.cut_price || 250;
         sheetCurrencyInput.value = s.sheet_currency || 'RUB';
 
-        if (s.material_mode === 'custom' || (s.formats && s.formats[0] && !s.formats[0].panelId)) {
-            const f=s.formats?.[0]||{}; addFormatRow('custom',f.height,f.width,f.qty);
-        } else if (s.formats?.[0]?.panelId) {
-            panelSelect.value=String(s.formats[0].panelId); updatePanelPrice();
-        }
+        sourceMaterials = [];
+        (s.formats || []).forEach(f => {
+            const panel = f.panelId ? PANELS.find(p => String(p.id) === String(f.panelId)) : null;
+            addSourceMaterial({
+                height:Number(f.height), width:Number(f.width), qty:f.qty ?? null,
+                panelId:panel?.id || f.panelId || null,
+                manufacturerId:panel?.manufacturer_id || null,
+                label:f.label || (panel ? panelLabel(panel) : `${f.height}×${f.width} мм (свой)`)
+            });
+        });
+        renderSourceMaterials();
 
 
         parts = (data.parts || []).map(p => ({...p, id: nextPartId++}));
