@@ -226,6 +226,7 @@ table.parts-table tr.editing { background: #eff6ff; }
 .sheet-parts th { color:#475569; background:#f8fafc; }
 .part-number { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 4px; border-radius:5px; color:#1e293b; font-weight:800; }
 .part-rect text { font-size: 12px; fill: #1e3a8a; font-weight: 600; pointer-events:none; }
+.part-rect .part-dimension { font-size: 10px; fill:#334155; }
 .waste-rect { fill: repeating-linear-gradient(45deg, #fecaca, #fecaca 4px, #fff 4px, #fff 8px); }
 
 .modal-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index: 1000; }
@@ -771,8 +772,11 @@ function renderResult() {
         const sf = sheet.format || r.formats[0];
         const sheetAreaM2 = (sf.width * sf.height) / 1e6;
         const scale = Math.min(1100 / sf.height, 500 / sf.width);
-        const svgW = sf.height * scale;
-        const svgH = sf.width * scale;
+        const sheetW = sf.height * scale;
+        const sheetH = sf.width * scale;
+        const decorGuideHeight = 38;
+        const svgW = sheetW;
+        const svgH = sheetH + decorGuideHeight;
         let rectsHtml = '';
         let partsRowsHtml = '';
         let placedArea = 0;
@@ -785,11 +789,17 @@ function renderResult() {
             const arrX2 = arrX1 + arrLen;
             const arrowHtml = arrLen > 14 ? `<line x1="${arrX1}" y1="${arrY}" x2="${arrX2 - 6}" y2="${arrY}" stroke="#1e40af" stroke-width="2" stroke-linecap="round"/>
                 <polygon points="${arrX2},${arrY} ${arrX2 - 7},${arrY - 4} ${arrX2 - 7},${arrY + 4}" fill="#1e40af"/>` : '';
+            const horizontalDimension = w > 24
+                ? `<text class="part-dimension" x="${x + w / 2}" y="${y + 12}" text-anchor="middle">${fmtNum(pl.h,0)}</text>`
+                : '';
+            const verticalDimension = h > 24
+                ? `<text class="part-dimension" x="${x + 11}" y="${y + h / 2}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 ${x + 11} ${y + h / 2})">${fmtNum(pl.w,0)}</text>`
+                : '';
             rectsHtml += `<g class="part-rect">
                 <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${colorForId(pl.id)}" stroke="#374151" stroke-width="1"/>
+                ${horizontalDimension}
+                ${verticalDimension}
                 ${arrowHtml}
-                <text x="${x + w/2}" y="${y + h/2 - 8}" text-anchor="middle">${fmtNum(pl.h,0)}</text>
-                <text x="${x + w/2}" y="${y + h/2 + 14}" text-anchor="middle" font-size="11">${fmtNum(pl.w,0)}</text>
                 <text x="${x + w - 6}" y="${y + h - 6}" text-anchor="end" font-size="10" fill="#6b7280">#${pl.id}</text>
             </g>`;
             partsRowsHtml += `<tr><td><span class="part-number" style="background:${colorForId(pl.id)}">${pl.id}</span></td><td>${escapeHtml(pl.name || `Деталь ${pl.id}`)}</td><td>${fmtNum(pl.w,0)}×${fmtNum(pl.h,0)} мм</td><td>${pl.rotated ? 'Да' : 'Нет'}</td><td>${fmtNum(pl.x + r.margin,0)}; ${fmtNum(pl.y + r.margin,0)}</td></tr>`;
@@ -801,11 +811,12 @@ function renderResult() {
             <div class="sheets-header">Лист ${idx + 1}${sf.label ? ' — ' + escapeHtml(sf.label) : ''}</div>
             <div class="sheet-block">
                 <div class="sheet-canvas-wrap">
-                    <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" style="background:#e5e7eb;border:1px solid #9ca3af;">
+                    <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" aria-label="Карта раскроя листа ${idx + 1}">
                         <defs><marker id="ga${idx}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0,0 8,3 0,6" fill="#1e40af"/></marker></defs>
-                        <line x1="8" y1="${svgH - 10}" x2="${svgW - 20}" y2="${svgH - 10}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>
-                        <text x="${svgW / 2}" y="${svgH - 16}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600">направление рисунка</text>
+                        <rect x="0.5" y="0.5" width="${sheetW - 1}" height="${sheetH - 1}" fill="#e5e7eb" stroke="#9ca3af"/>
                         ${rectsHtml}
+                        <text x="${svgW / 2}" y="${sheetH + 15}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600">направление рисунка</text>
+                        <line x1="8" y1="${sheetH + 25}" x2="${svgW - 20}" y2="${sheetH + 25}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>
                     </svg>
                 </div>
                 <div class="sheet-info">
