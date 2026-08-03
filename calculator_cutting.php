@@ -192,8 +192,7 @@ button, .button { border: 0; border-radius: 9px; padding: 10px 16px; background:
 table.parts-table { width:100%; border-collapse:collapse; background:#fff; table-layout:fixed; }
 table.parts-table th, table.parts-table td { height:54px; box-sizing:border-box; padding:9px 12px; text-align:left; vertical-align:middle; border-bottom:1px solid #e7edf4; font-size:12px; }
 table.parts-table th { height:43px; background:#f0f4f8; color:#07152d; font-size:11px; font-weight:800; text-transform:uppercase; }
-table.parts-table th.rotate-column, table.parts-table td.rotate-column { background:#fff7f8; text-align:center; }
-table.parts-table th.rotate-column { color:#b10e37; }
+table.parts-table th.rotate-column, table.parts-table td.rotate-column { text-align:center; }
 table.parts-table input[type="text"], table.parts-table input[type="number"] { height:30px; padding:6px 10px; border-color:#c8d5e5; border-radius:9px; font-size:12px; text-align:center; background:#fff; }
 table.parts-table input[data-field="name"] { text-align:left; }
 .part-index{color:#8b9ab4;font-weight:700}.part-name-cell{display:flex;align-items:center;gap:9px}.part-color{flex:0 0 12px;width:12px;height:12px;border-radius:50%}.part-area{white-space:nowrap;color:#183052}.rotate-label{display:inline-flex;align-items:center;gap:7px;margin:0;font-size:11px}.rotate-label input{width:16px;height:16px;margin:0;accent-color:#1681f8}.delete-part{padding:5px;background:transparent;color:#9bacbf;font-size:17px}.delete-part:hover{color:#e9164d}
@@ -319,7 +318,7 @@ table.parts-table tr.editing { background: #eff6ff; }
         <div class="parts-header"><div class="parts-heading"><div class="section-title main">Детали для раскроя (<span id="parts-count">0</span>)</div><p class="parts-subtitle">Укажите габариты деталей, количество и возможность разворота на 90°.</p></div><button type="button" class="add-part-open" id="add-part-btn">＋ Добавить деталь</button></div>
         <table class="parts-table" id="parts-table">
             <thead><tr>
-                <th style="width:48px">№</th><th>Наименование / назначение</th><th style="width:140px">Ширина (мм)</th><th style="width:140px">Длина (мм)</th><th style="width:125px">Количество (шт.)</th><th class="rotate-column" style="width:145px">⟳ Поворот (90°)</th><th style="width:105px">Площадь</th><th style="width:85px;text-align:center">Действие</th>
+                <th style="width:48px">№</th><th>Наименование / назначение</th><th style="width:140px">Длина (мм)</th><th style="width:140px">Ширина (мм)</th><th style="width:155px">Направление рисунка</th><th style="width:125px">Количество (шт.)</th><th class="rotate-column" style="width:145px">⟳ Поворот (90°)</th><th style="width:105px">Площадь</th><th style="width:85px;text-align:center">Действие</th>
             </tr></thead>
             <tbody id="parts-tbody"></tbody>
         </table>
@@ -393,7 +392,7 @@ const PANEL_SIZES   = <?php echo $panelSizesJson; ?>;
 const THICKNESSES   = <?php echo $thicknessesJson; ?>;
 const PANELS        = <?php echo $panelsJson; ?>;
 
-let parts = []; // {id, name, length, width, qty, rotate}
+let parts = []; // {id, name, length, width, grainDirection, qty, rotate}
 let nextPartId = 1;
 let lastResult = null;
 let loadedId = null;
@@ -437,12 +436,15 @@ function renderPanelSearch() {
 }
 function addLibraryMaterial(item) {
     const isDecor = item.type === 'decor';
-    const priceM2 = Number(isDecor ? (item.price_per_m2 || item.cost || 0) : 0);
+    const sourceCurrency = item.currency || 'RUB';
+    const targetCurrency = window.AppCurrency?.code || sourceCurrency;
+    const sourcePrice = Number(isDecor ? (item.price_per_m2 || item.cost || 0) : 0);
+    const priceM2 = window.AppCurrency ? Math.round(AppCurrency.convert(sourcePrice, sourceCurrency, targetCurrency) * 100) / 100 : sourcePrice;
     if (isDecor) {
         priceM2Input.value = priceM2;
-        sheetCurrencyInput.value = item.currency || 'RUB';
+        sheetCurrencyInput.value = targetCurrency;
     }
-    addSourceMaterial({height:Number(item.height_mm),width:Number(item.width_mm),qty:null,priceM2,currency:item.currency || 'RUB',panelId:isDecor ? item.id : null,manufacturerId:item.manufacturer_id || null,label:item.label,margin:Number(document.getElementById('margin').value)||0});
+    addSourceMaterial({height:Number(item.height_mm),width:Number(item.width_mm),qty:null,priceM2,currency:targetCurrency,panelId:isDecor ? item.id : null,manufacturerId:item.manufacturer_id || null,label:item.label,margin:Number(document.getElementById('margin').value)||0});
 }
 function getSelectedFormats() { return sourceMaterials.map(({materialId, ...format}) => ({...format})); }
 function selectedManufacturerIds() { return [...new Set(sourceMaterials.map(m => m.manufacturerId).filter(Boolean).map(String))]; }
@@ -453,7 +455,7 @@ function addManualMaterial() {
         width:1300,
         qty:1,
         priceM2:0,
-        currency:'RUB',
+        currency:window.AppCurrency?.code || 'RUB',
         label:`Произвольный лист ${nextManualMaterialNumber++}`,
         margin:0
     });
@@ -488,7 +490,20 @@ materialsList.addEventListener('change', event => { const row=event.target.close
 materialsList.addEventListener('focusout', event => { if (event.target.dataset.field === 'qty' && event.target.value === '') { const material=sourceMaterials.find(m=>m.materialId===Number(event.target.closest('tr').dataset.id)); if(material) material.qty=null; renderSourceMaterials(); } });
 renderPanelSearch();
 renderSourceMaterials();
-window.addEventListener('appcurrencychange', event => { const code=event.detail?.code; if(!code)return; if(!Array.from(sheetCurrencyInput.options).some(o=>o.value===code)) sheetCurrencyInput.add(new Option(code,code)); sheetCurrencyInput.value=code; });
+window.addEventListener('appcurrencychange', event => {
+    const code=event.detail?.code, convert=event.detail?.convert;
+    if(!code)return;
+    if(!Array.from(sheetCurrencyInput.options).some(o=>o.value===code)) sheetCurrencyInput.add(new Option(code,code));
+    sourceMaterials.forEach(material => {
+        if (material.currency !== code && typeof convert === 'function') material.priceM2 = Math.round(convert(material.priceM2, material.currency || 'RUB', code) * 100) / 100;
+        material.currency = code;
+    });
+    const currentPrice=Number(priceM2Input.value);
+    const previousCurrency=sheetCurrencyInput.value || 'RUB';
+    if (previousCurrency !== code && Number.isFinite(currentPrice) && typeof convert === 'function') priceM2Input.value=Math.round(convert(currentPrice,previousCurrency,code)*100)/100;
+    sheetCurrencyInput.value=code;
+    renderSourceMaterials();
+});
 
 /* ═══════════ Утилиты ═══════════ */
 function escapeHtml(str) {
@@ -501,19 +516,19 @@ const partsTbody = document.getElementById('parts-tbody');
 function renderParts() {
     partsTbody.innerHTML = '';
     document.getElementById('parts-count').textContent = parts.length;
-    if (!parts.length) partsTbody.innerHTML = '<tr class="parts-empty"><td colspan="8">Детали пока не добавлены. Нажмите «Добавить деталь».</td></tr>';
+    if (!parts.length) partsTbody.innerHTML = '<tr class="parts-empty"><td colspan="9">Детали пока не добавлены. Нажмите «Добавить деталь».</td></tr>';
     const unplaced = new Set(lastResult?.unplacedPartIds || []);
     const colors=['#2f6fe4','#13a079','#df8410','#db3374','#7c3aed','#1393ad','#ea5b0c','#65a21e'];
     parts.forEach((p, idx) => {
         const tr=document.createElement('tr');
         if(unplaced.has(p.id)) tr.style.background='#fef2f2';
-        tr.innerHTML=`<td class="part-index">${idx+1}</td><td><div class="part-name-cell"><span class="part-color" style="background:${colors[idx%colors.length]}"></span><input class="inline-edit" data-id="${p.id}" data-field="name" value="${escapeHtml(p.name)}"></div></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="width" value="${p.width}" min="1"></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="length" value="${p.length}" min="1"></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="qty" value="${p.qty}" min="1"></td><td class="rotate-column"><label class="rotate-label"><input type="checkbox" class="toggle-rotate" data-id="${p.id}" ${p.rotate?'checked':''}><span>${p.rotate?'Да':'Нет'}</span></label></td><td class="part-area">${fmtNum(p.length*p.width*p.qty/1000000,2)} м²</td><td style="text-align:center"><button type="button" class="delete-part" onclick="deletePart(${p.id})" aria-label="Удалить деталь">&#128465;</button></td>`;
+        tr.innerHTML=`<td class="part-index">${idx+1}</td><td><div class="part-name-cell"><span class="part-color" style="background:${colors[idx%colors.length]}"></span><input class="inline-edit" data-id="${p.id}" data-field="name" value="${escapeHtml(p.name)}"></div></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="length" value="${p.length}" min="1"></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="width" value="${p.width}" min="1"></td><td><select class="inline-edit" data-id="${p.id}" data-field="grainDirection"><option value="none" ${p.grainDirection==='none'?'selected':''}>Без разницы</option><option value="length" ${p.grainDirection==='length'?'selected':''}>По длине</option><option value="width" ${p.grainDirection==='width'?'selected':''}>По ширине</option></select></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="qty" value="${p.qty}" min="1"></td><td class="rotate-column"><label class="rotate-label"><input type="checkbox" class="toggle-rotate" data-id="${p.id}" ${p.rotate?'checked':''}><span>${p.rotate?'Да':'Нет'}</span></label></td><td class="part-area">${fmtNum(p.length*p.width*p.qty/1000000,2)} м²</td><td style="text-align:center"><button type="button" class="delete-part" onclick="deletePart(${p.id})" aria-label="Удалить деталь">&#128465;</button></td>`;
         partsTbody.appendChild(tr);
     });
 }
-partsTbody.addEventListener('change',e=>{const p=parts.find(x=>x.id===Number(e.target.dataset.id));if(!p)return;if(e.target.classList.contains('toggle-rotate')){p.rotate=e.target.checked;renderParts();return;}if(!e.target.classList.contains('inline-edit'))return;const field=e.target.dataset.field;if(field==='name')p.name=e.target.value.trim()||p.name;else{const value=Number(e.target.value);if(value>0)p[field]=value;}renderParts();});
+partsTbody.addEventListener('change',e=>{const p=parts.find(x=>x.id===Number(e.target.dataset.id));if(!p)return;if(e.target.classList.contains('toggle-rotate')){p.rotate=e.target.checked;renderParts();return;}if(!e.target.classList.contains('inline-edit'))return;const field=e.target.dataset.field;if(field==='name')p.name=e.target.value.trim()||p.name;else if(field==='grainDirection')p.grainDirection=e.target.value;else{const value=Number(e.target.value);if(value>0)p[field]=value;}renderParts();});
 document.getElementById('add-part-btn').addEventListener('click',()=>{
-    const part={id:nextPartId++,name:'Новая деталь',length:1000,width:500,qty:1,rotate:true};
+    const part={id:nextPartId++,name:'Новая деталь',length:1000,width:500,grainDirection:'none',qty:1,rotate:true};
     parts.push(part);renderParts();requestAnimationFrame(()=>{const input=partsTbody.querySelector(`[data-id="${part.id}"][data-field="name"]`);input?.focus();input?.select();});
 });
 renderParts();
@@ -882,7 +897,7 @@ window.loadLayout = async function(id) {
         renderSourceMaterials();
 
 
-        parts = (data.parts || []).map(p => ({...p, id: nextPartId++}));
+        parts = (data.parts || []).map(p => ({...p, grainDirection:p.grainDirection || 'none', id: nextPartId++}));
         renderParts();
 
         if (data.result) { lastResult = data.result; renderResult(); renderParts(); }
