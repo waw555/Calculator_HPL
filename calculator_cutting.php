@@ -591,7 +591,7 @@ function packSheets(pieces, sheetW, sheetH, kerf, method, maxSheets = null) {
                 const rect = freeRects[best.rectIdx];
                 const pw = best.w, ph = best.h;
 
-                placed.push({id: piece.id, name: piece.name, x: rect.x, y: rect.y, w: pw, h: ph, rotated: best.rotated});
+                placed.push({id: piece.id, name: piece.name, grainDirection: piece.grainDirection, x: rect.x, y: rect.y, w: pw, h: ph, rotated: best.rotated});
 
                 freeRects.splice(best.rectIdx, 1);
                 const rightW = rect.w - pw - (rect.w - pw > 0 ? kerf : 0);
@@ -666,7 +666,7 @@ function runCutting() {
         const formatMargin = Number(fmt.margin ?? margin);
         const sheetW = fmt.width - formatMargin * 2;
         const sheetH = fmt.height - formatMargin * 2;
-        const testPieces = fmtParts.map(p => ({id: p.id, name: p.name, w: p.length, h: p.width, canRotate: p.rotate, qtyLeft: p.qty}));
+        const testPieces = fmtParts.map(p => ({id: p.id, name: p.name, grainDirection: p.grainDirection, w: p.length, h: p.width, canRotate: p.rotate, qtyLeft: p.qty}));
         const {sheets: trySheets, remaining: tryRemaining} = packSheets(testPieces, sheetW, sheetH, kerf, method, fmt.qty ?? null);
         for (const s of trySheets) allSheets.push({format: fmt, ...s});
         allRemaining.push(...tryRemaining.filter(p => p.qtyLeft > 0));
@@ -774,21 +774,38 @@ function renderResult() {
         const scale = Math.min(1100 / sf.height, 500 / sf.width);
         const sheetW = sf.height * scale;
         const sheetH = sf.width * scale;
+        const dimensionTop = 28;
+        const dimensionRight = 48;
         const decorGuideHeight = 38;
-        const svgW = sheetW;
-        const svgH = sheetH + decorGuideHeight;
+        const sheetX = 0;
+        const sheetY = dimensionTop;
+        const svgW = sheetW + dimensionRight;
+        const svgH = dimensionTop + sheetH + decorGuideHeight;
         let rectsHtml = '';
         let partsRowsHtml = '';
         let placedArea = 0;
         sheet.placed.forEach(pl => {
             placedArea += (pl.w * pl.h) / 1e6;
-            const x = pl.y * scale, y = pl.x * scale, w = pl.h * scale, h = pl.w * scale;
+            const x = sheetX + pl.y * scale, y = sheetY + pl.x * scale, w = pl.h * scale, h = pl.w * scale;
             const arrLen = Math.min(w, h) * 0.5;
-            const arrY = y + h / 2;
-            const arrX1 = x + (w - arrLen) / 2;
-            const arrX2 = arrX1 + arrLen;
-            const arrowHtml = arrLen > 14 ? `<line x1="${arrX1}" y1="${arrY}" x2="${arrX2 - 6}" y2="${arrY}" stroke="#1e40af" stroke-width="2" stroke-linecap="round"/>
-                <polygon points="${arrX2},${arrY} ${arrX2 - 7},${arrY - 4} ${arrX2 - 7},${arrY + 4}" fill="#1e40af"/>` : '';
+            const grainDirection = pl.grainDirection || parts.find(part => part.id === pl.id)?.grainDirection || 'none';
+            const horizontalGrain = grainDirection === 'length' ? pl.rotated : !pl.rotated;
+            let arrowHtml = '';
+            if (grainDirection !== 'none' && arrLen > 14) {
+                if (horizontalGrain) {
+                    const arrY = y + h / 2;
+                    const arrX1 = x + (w - arrLen) / 2;
+                    const arrX2 = arrX1 + arrLen;
+                    arrowHtml = `<line x1="${arrX1}" y1="${arrY}" x2="${arrX2 - 6}" y2="${arrY}" stroke="#1e40af" stroke-width="2" stroke-linecap="round"/>
+                        <polygon points="${arrX2},${arrY} ${arrX2 - 7},${arrY - 4} ${arrX2 - 7},${arrY + 4}" fill="#1e40af"/>`;
+                } else {
+                    const arrX = x + w / 2;
+                    const arrY1 = y + (h - arrLen) / 2;
+                    const arrY2 = arrY1 + arrLen;
+                    arrowHtml = `<line x1="${arrX}" y1="${arrY1}" x2="${arrX}" y2="${arrY2 - 6}" stroke="#1e40af" stroke-width="2" stroke-linecap="round"/>
+                        <polygon points="${arrX},${arrY2} ${arrX - 4},${arrY2 - 7} ${arrX + 4},${arrY2 - 7}" fill="#1e40af"/>`;
+                }
+            }
             const horizontalDimension = w > 24
                 ? `<text class="part-dimension" x="${x + w / 2}" y="${y + 12}" text-anchor="middle">${fmtNum(pl.h,0)}</text>`
                 : '';
@@ -812,11 +829,18 @@ function renderResult() {
             <div class="sheet-block">
                 <div class="sheet-canvas-wrap">
                     <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" aria-label="Карта раскроя листа ${idx + 1}">
-                        <defs><marker id="ga${idx}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0,0 8,3 0,6" fill="#1e40af"/></marker></defs>
-                        <rect x="0.5" y="0.5" width="${sheetW - 1}" height="${sheetH - 1}" fill="#e5e7eb" stroke="#9ca3af"/>
+                        <defs>
+                            <marker id="ga${idx}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0,0 8,3 0,6" fill="#1e40af"/></marker>
+                            <marker id="da${idx}" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse"><path d="M6,0 L0,3 L6,6" fill="none" stroke="#475569"/></marker>
+                        </defs>
+                        <line x1="${sheetX + 4}" y1="14" x2="${sheetX + sheetW - 4}" y2="14" stroke="#475569" marker-start="url(#da${idx})" marker-end="url(#da${idx})"/>
+                        <text x="${sheetX + sheetW / 2}" y="10" text-anchor="middle" font-size="11" fill="#334155" font-weight="700">${fmtNum(sf.height,0)} мм</text>
+                        <line x1="${sheetX + sheetW + 20}" y1="${sheetY + 4}" x2="${sheetX + sheetW + 20}" y2="${sheetY + sheetH - 4}" stroke="#475569" marker-start="url(#da${idx})" marker-end="url(#da${idx})"/>
+                        <text x="${sheetX + sheetW + 34}" y="${sheetY + sheetH / 2}" text-anchor="middle" font-size="11" fill="#334155" font-weight="700" transform="rotate(-90 ${sheetX + sheetW + 34} ${sheetY + sheetH / 2})">${fmtNum(sf.width,0)} мм</text>
+                        <rect x="${sheetX + 0.5}" y="${sheetY + 0.5}" width="${sheetW - 1}" height="${sheetH - 1}" fill="#e5e7eb" stroke="#9ca3af"/>
                         ${rectsHtml}
-                        <text x="${svgW / 2}" y="${sheetH + 15}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600">направление рисунка</text>
-                        <line x1="8" y1="${sheetH + 25}" x2="${svgW - 20}" y2="${sheetH + 25}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>
+                        <text x="${sheetX + sheetW / 2}" y="${sheetY + sheetH + 15}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600">направление рисунка</text>
+                        <line x1="${sheetX + 8}" y1="${sheetY + sheetH + 25}" x2="${sheetX + sheetW - 20}" y2="${sheetY + sheetH + 25}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>
                     </svg>
                 </div>
                 <div class="sheet-info">
