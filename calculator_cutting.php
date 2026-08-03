@@ -528,7 +528,8 @@ function renderParts() {
 }
 partsTbody.addEventListener('change',e=>{const p=parts.find(x=>x.id===Number(e.target.dataset.id));if(!p)return;if(e.target.classList.contains('toggle-rotate')){p.rotate=e.target.checked;renderParts();return;}if(!e.target.classList.contains('inline-edit'))return;const field=e.target.dataset.field;if(field==='name')p.name=e.target.value.trim()||p.name;else if(field==='grainDirection')p.grainDirection=e.target.value;else{const value=Number(e.target.value);if(value>0)p[field]=value;}renderParts();});
 document.getElementById('add-part-btn').addEventListener('click',()=>{
-    const part={id:nextPartId++,name:'Новая деталь',length:1000,width:500,grainDirection:'none',qty:1,rotate:true};
+    const partNumber=nextPartId++;
+    const part={id:partNumber,name:`Деталь №${partNumber}`,length:1000,width:500,grainDirection:'none',qty:1,rotate:true};
     parts.push(part);renderParts();requestAnimationFrame(()=>{const input=partsTbody.querySelector(`[data-id="${part.id}"][data-field="name"]`);input?.focus();input?.select();});
 });
 renderParts();
