@@ -304,7 +304,7 @@ table.parts-table tr.editing { background: #eff6ff; }
           <div class="material-library__tools"><div class="material-library__search"><span>⌕</span><input id="panel_search" type="search" placeholder="Поиск по названию, декору, габаритам..." autocomplete="off"></div><div class="library-tabs"><button type="button" class="active" data-library-filter="all">Все</button><button type="button" data-library-filter="format">Форматы плит</button><button type="button" data-library-filter="decor">Декоры каталога</button></div></div>
           <div id="material-library-grid" class="material-library__grid"></div><div class="material-library__footer"><span id="panel-search-result"></span><button type="button" class="source-picker__close">Закрыть</button></div></div>
         </div>
-        <div class="source-table-wrap"><table class="source-table"><thead><tr><th>№</th><th>Наименование / формат</th><th>Длина (мм)</th><th>Ширина (мм)</th><th>Торцевание (мм)</th><th>В наличии (шт)</th><th>Удалить</th></tr></thead><tbody id="materials-list"></tbody></table></div>
+        <div class="source-table-wrap"><table class="source-table"><thead><tr><th>№</th><th>Наименование / формат</th><th>Длина (мм)</th><th>Ширина (мм)</th><th>Торцевание (мм)</th><th>В наличии (шт)</th><th>Цена за м²</th><th>Удалить</th></tr></thead><tbody id="materials-list"></tbody></table></div>
         <div class="grid source-price-settings">
             <div><label for="material_price_m2">Цена за м²</label><input id="material_price_m2" type="number" min="0" step="0.01" value="0"></div>
             <div><label for="sheet_currency">Валюта</label><select id="sheet_currency"><option value="RUB">RUB</option><option value="EUR">EUR</option><option value="USD">USD</option></select></div>
@@ -442,11 +442,12 @@ function renderPanelSearch() {
 }
 function addLibraryMaterial(item) {
     const isDecor = item.type === 'decor';
+    const priceM2 = Number(isDecor ? (item.price_per_m2 || item.cost || 0) : 0);
     if (isDecor) {
-        priceM2Input.value = item.price_per_m2 || item.cost || 0;
+        priceM2Input.value = priceM2;
         sheetCurrencyInput.value = item.currency || 'RUB';
     }
-    addSourceMaterial({height:Number(item.height_mm),width:Number(item.width_mm),qty:null,panelId:isDecor ? item.id : null,manufacturerId:item.manufacturer_id || null,label:item.label,margin:Number(document.getElementById('margin').value)||0});
+    addSourceMaterial({height:Number(item.height_mm),width:Number(item.width_mm),qty:null,priceM2,currency:item.currency || 'RUB',panelId:isDecor ? item.id : null,manufacturerId:item.manufacturer_id || null,label:item.label,margin:Number(document.getElementById('margin').value)||0});
 }
 function getSelectedFormats() { return sourceMaterials.map(({materialId, ...format}) => ({...format})); }
 function selectedManufacturerIds() { return [...new Set(sourceMaterials.map(m => m.manufacturerId).filter(Boolean).map(String))]; }
@@ -455,21 +456,23 @@ function addManualMaterial() {
     addSourceMaterial({
         height:3050,
         width:1300,
-        qty:null,
+        qty:1,
+        priceM2:0,
+        currency:'RUB',
         label:`Произвольный лист ${nextManualMaterialNumber++}`,
-        margin:10
+        margin:0
     });
 }
 function renderSourceMaterials() {
     if (!sourceMaterials.length) {
-        materialsList.innerHTML = '<tr><td colspan="7" class="source-empty">Добавьте лист из базы или укажите его размеры вручную.</td></tr>';
+        materialsList.innerHTML = '<tr><td colspan="8" class="source-empty">Добавьте лист из базы или укажите его размеры вручную.</td></tr>';
         return;
     }
-    materialsList.innerHTML = sourceMaterials.map((m, index) => `<tr data-id="${m.materialId}"><td class="source-number">${index + 1}</td><td><input data-field="label" value="${escapeHtml(m.label)}"></td><td><input type="number" min="1" data-field="height" value="${m.height}"></td><td><input type="number" min="1" data-field="width" value="${m.width}"></td><td><div class="source-unit"><input type="number" min="0" step="0.1" data-field="margin" value="${m.margin ?? 0}"><small>мм</small></div></td><td><input class="${m.qty == null ? 'unlimited-qty' : ''}" type="${m.qty == null ? 'text' : 'number'}" min="1" data-field="qty" value="${m.qty == null ? 'Авто (без лимита)' : m.qty}" aria-label="Количество листов; оставьте пустым для автоматического количества"></td><td><button type="button" class="remove-source remove-material" data-id="${m.materialId}" aria-label="Удалить материал">&#128465;</button></td></tr>`).join('');
+    materialsList.innerHTML = sourceMaterials.map((m, index) => `<tr data-id="${m.materialId}"><td class="source-number">${index + 1}</td><td><input data-field="label" value="${escapeHtml(m.label)}"></td><td><input type="number" min="1" data-field="height" value="${m.height}"></td><td><input type="number" min="1" data-field="width" value="${m.width}"></td><td><div class="source-unit"><input type="number" min="0" step="0.1" data-field="margin" value="${m.margin ?? 0}"><small>мм</small></div></td><td><input class="${m.qty == null ? 'unlimited-qty' : ''}" type="${m.qty == null ? 'text' : 'number'}" min="1" data-field="qty" value="${m.qty == null ? 'Авто (без лимита)' : m.qty}" aria-label="Количество листов; оставьте пустым для автоматического количества"></td><td><div class="source-unit"><input type="number" min="0" step="0.01" data-field="priceM2" value="${m.priceM2 ?? 0}"><small>${escapeHtml(m.currency || 'RUB')}</small></div></td><td><button type="button" class="remove-source remove-material" data-id="${m.materialId}" aria-label="Удалить материал">&#128465;</button></td></tr>`).join('');
 }
 function addSourceMaterial(format) {
     if (!(format.height > 0 && format.width > 0)) { alert('Укажите корректные размеры материала.'); return; }
-    sourceMaterials.push({...format, qty:format.qty ?? null, materialId:nextMaterialId++});
+    sourceMaterials.push({...format, qty:format.qty ?? null, priceM2:Number(format.priceM2)||0, materialId:nextMaterialId++});
     renderSourceMaterials();
 }
 function showMaterialPicker(picker) {
@@ -486,7 +489,7 @@ panelSearch.addEventListener('input', renderPanelSearch);
 document.querySelectorAll('[data-library-filter]').forEach(button => button.addEventListener('click', () => { libraryFilter=button.dataset.libraryFilter; document.querySelectorAll('[data-library-filter]').forEach(tab => tab.classList.toggle('active',tab===button)); renderPanelSearch(); }));
 materialsList.addEventListener('click', event => { const button=event.target.closest('.remove-material');if(!button)return;sourceMaterials=sourceMaterials.filter(m=>m.materialId!==Number(button.dataset.id));renderSourceMaterials(); });
 materialsList.addEventListener('focusin', event => { if (event.target.dataset.field === 'qty' && event.target.value === 'Авто (без лимита)') { event.target.type='number'; event.target.value=''; event.target.placeholder='Авто (без лимита)'; } });
-materialsList.addEventListener('change', event => { const row=event.target.closest('tr[data-id]');if(!row||!event.target.dataset.field)return;const material=sourceMaterials.find(m=>m.materialId===Number(row.dataset.id));if(!material)return;const field=event.target.dataset.field;if(field==='label')material.label=event.target.value.trim()||material.label;else if(field==='qty')material.qty=event.target.value === '' ? null : Math.max(1,Number(event.target.value)||1);else{const value=Number(event.target.value);if(field==='margin' ? value>=0 : value>0)material[field]=value;}renderSourceMaterials(); });
+materialsList.addEventListener('change', event => { const row=event.target.closest('tr[data-id]');if(!row||!event.target.dataset.field)return;const material=sourceMaterials.find(m=>m.materialId===Number(row.dataset.id));if(!material)return;const field=event.target.dataset.field;if(field==='label')material.label=event.target.value.trim()||material.label;else if(field==='qty')material.qty=event.target.value === '' ? null : Math.max(1,Number(event.target.value)||1);else{const value=Number(event.target.value);if((field==='margin'||field==='priceM2') ? value>=0 : value>0)material[field]=value;}renderSourceMaterials(); });
 materialsList.addEventListener('focusout', event => { if (event.target.dataset.field === 'qty' && event.target.value === '') { const material=sourceMaterials.find(m=>m.materialId===Number(event.target.closest('tr').dataset.id)); if(material) material.qty=null; renderSourceMaterials(); } });
 renderPanelSearch();
 renderSourceMaterials();
@@ -687,7 +690,10 @@ function runCutting() {
     }));
 
     const wasteArea = totalSheetAreaM2 - totalPartsArea;
-    const sheetsCost = priceM2 * totalSheetAreaM2;
+    const sheetsCost = allSheets.reduce((sum, sheet) => {
+        const sheetAreaM2 = (sheet.format.width * sheet.format.height) / 1e6;
+        return sum + sheetAreaM2 * Number(sheet.format.priceM2 ?? priceM2);
+    }, 0);
     const partsCost = totalSheetAreaM2 > 0 ? sheetsCost * (totalPartsArea / totalSheetAreaM2) : 0;
     const wasteCost = sheetsCost - partsCost;
 
@@ -878,6 +884,8 @@ window.loadLayout = async function(id) {
             const panel = f.panelId ? PANELS.find(p => String(p.id) === String(f.panelId)) : null;
             addSourceMaterial({
                 height:Number(f.height), width:Number(f.width), qty:f.qty ?? null, margin:Number(f.margin ?? (panel ? (s.margin ?? 5) : 0)),
+                priceM2:Number(f.priceM2 ?? (panel ? (panel.price_per_m2 || panel.cost || 0) : (s.price_m2 || s.sheet_cost || 0))),
+                currency:f.currency || panel?.currency || s.sheet_currency || 'RUB',
                 panelId:panel?.id || f.panelId || null,
                 manufacturerId:panel?.manufacturer_id || null,
                 label:f.label || (panel ? panelLabel(panel) : `${f.height}×${f.width} мм (свой)`)
