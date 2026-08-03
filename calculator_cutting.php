@@ -164,13 +164,14 @@ $savedLayouts = $pdo->query('SELECT id, cutting_name, object_name, version_group
 body { font-family: 'Inter', Arial, sans-serif; background: #f6f8fb; margin: 0; color: #0f172a; }
 .container { max-width: 1440px; margin: 20px auto 40px; padding: 0 10px; }
 .cutting-hero{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:28px;margin-bottom:28px;padding:25px 30px;border-radius:18px;background:linear-gradient(112deg,#111827 0%,#4a001b 54%,#101827 100%);color:#fff;box-shadow:0 12px 28px rgba(15,23,42,.2)}
-.cutting-hero:after{content:"";position:absolute;right:18%;top:-100px;width:260px;height:260px;background:#e90046;filter:blur(100px);opacity:.18}.hero-copy,.hero-actions{position:relative;z-index:1}.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;color:#ff4f78;font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.hero-eyebrow span{color:#cbd5e1;font-weight:500;text-transform:none;letter-spacing:0}.cutting-hero h1{font-size:28px;line-height:1.15;margin:8px 0 5px;letter-spacing:-.025em}.cutting-hero p{max-width:720px;margin:0;color:#e2e8f0;font-size:13px;line-height:1.55}.hero-actions{display:flex;gap:10px;flex-shrink:0}.hero-actions button{white-space:nowrap}.top-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(300px,.95fr);gap:24px;align-items:stretch;margin-bottom:24px}.top-grid>.panel{margin-bottom:0}
+.cutting-hero:after{content:"";position:absolute;right:18%;top:-100px;width:260px;height:260px;background:#e90046;filter:blur(100px);opacity:.18}.hero-copy,.hero-actions{position:relative;z-index:1}.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;color:#ff4f78;font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.hero-eyebrow span{color:#cbd5e1;font-weight:500;text-transform:none;letter-spacing:0}.cutting-hero h1{font-size:28px;line-height:1.15;margin:8px 0 5px;letter-spacing:-.025em}.cutting-hero p{max-width:720px;margin:0;color:#e2e8f0;font-size:13px;line-height:1.55}.hero-actions{display:flex;gap:10px;flex-shrink:0}.hero-actions button{white-space:nowrap}.top-grid{display:grid;grid-template-columns:minmax(0,2.05fr) minmax(320px,1fr);gap:24px;align-items:stretch;margin-bottom:24px}.top-grid>.panel{margin-bottom:0}
 .panel { background: #fff; border: 1px solid #dfe6ef; border-radius: 16px; padding: 28px; margin-bottom: 24px; box-shadow: 0 2px 5px rgba(15,23,42,.07); }
 .section-title { font-size: 14px; font-weight: 800; color: #0f172a; padding: 0 0 13px; border-bottom:1px solid #e8edf4; margin: 24px 0 16px; }
 .section-title:before{content:'✦';color:#ed174c;margin-right:9px}.section-title.main { font-size: 17px; margin-top: 0; background:none; border-left:0; }
-.section-title.main:before{content:'◉'}
+.section-title.main:before{content:'⚙';font-size:18px}
+.settings-title{display:flex;align-items:center;justify-content:space-between;gap:20px}.settings-title__note{color:#91a0bd;font-size:11px;font-weight:600}.strategy-heading{margin:22px 0 8px;font-size:11px;font-weight:850;text-transform:uppercase}.strategy-heading span{color:#ed174c}
 .cost-card{display:flex;flex-direction:column;padding:28px 26px;background:#111a2d;color:#fff;border:0!important}.cost-card__eyebrow{color:#ff4f78;font-size:12px;font-weight:900;text-transform:uppercase}.cost-card__total{font-size:30px;font-weight:900;margin:7px 0 0}.cost-card__stats{display:grid;gap:12px;margin:auto 0 28px;padding-top:25px;border-top:1px solid #263148}.cost-card__row{display:flex;justify-content:space-between;gap:15px;font-size:12px}.cost-card__row b{color:#fff}.cost-card__row:first-child b{color:#ff4f78}.cost-card button{width:100%;background:#e9164d}
-.strategy-options{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;grid-column:1/-1}.strategy-card{display:block;margin:0;padding:15px;border:1px solid #dbe4ef;border-radius:12px;background:#f8fafc;cursor:pointer}.strategy-card:has(input:checked){border-color:#ff315f;background:#fff6f8;box-shadow:0 0 0 2px rgba(233,22,77,.1)}.strategy-card input{position:absolute;opacity:0;pointer-events:none}.strategy-card strong{display:block;color:#172033;font-size:13px}.strategy-card span{display:block;color:#71809a;font-size:11px;font-weight:500;line-height:1.4;margin-top:6px}.strategy-card:has(input:checked) strong{color:#78001c}
+.strategy-options{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.strategy-card{position:relative;display:block;margin:0;padding:14px;border:1px solid #dbe4ef;border-radius:12px;background:#f8fafc;cursor:pointer;min-height:86px;box-sizing:border-box}.strategy-card:has(input:checked){border-color:#ff315f;background:#fff6f8;box-shadow:0 0 0 2px rgba(233,22,77,.1)}.strategy-card input{position:absolute;opacity:0;pointer-events:none}.strategy-card strong{display:block;color:#172033;font-size:13px}.strategy-card strong i{color:#ed174c;font-size:17px;font-style:normal;margin-right:7px}.strategy-card span{display:block;color:#71809a;font-size:11px;font-weight:500;line-height:1.4;margin-top:6px}.strategy-card:has(input:checked) strong{color:#78001c}.strategy-check{display:none;position:absolute;right:14px;top:16px;color:#ed174c;font-size:15px}.strategy-card:has(input:checked) .strategy-check{display:block}.cut-settings{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px}.cut-setting{padding:14px;background:#f8fafc;border:1px solid #dfe6ef;border-radius:12px}.cut-setting label{margin-bottom:4px}.input-unit{display:flex;align-items:center;gap:9px}.input-unit input{background:#fff}.input-unit b{width:20px;color:#586a87;font-size:11px}.cut-setting .hint{color:#91a0bd;font-size:11px;margin-top:5px}
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; }
 label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; }
@@ -238,7 +239,7 @@ table.parts-table tr.editing { background: #eff6ff; }
 .btn-icon.btn-delete:hover { background:#fee2e2; }
 .header h1 { margin: 0; font-size: clamp(24px, 3.5vw, 36px); letter-spacing: -.02em; font-weight: 900; }
 @media(max-width:900px){.top-grid{grid-template-columns:1fr}.cutting-hero{align-items:flex-start;flex-direction:column}.hero-actions{width:100%;flex-wrap:wrap}.hero-actions button{flex:1}.cost-card__stats{margin:25px 0}}
-@media(max-width:600px){.container{padding:0}.panel{padding:18px}.cutting-hero{border-radius:14px;padding:22px 18px}.cutting-hero h1{font-size:24px}.grid,.strategy-options{grid-template-columns:1fr}.parts-table,.history-table{display:block;overflow-x:auto}}
+@media(max-width:600px){.container{padding:0}.panel{padding:18px}.cutting-hero{border-radius:14px;padding:22px 18px}.cutting-hero h1{font-size:24px}.grid,.strategy-options,.cut-settings{grid-template-columns:1fr}.settings-title__note{display:none}.parts-table,.history-table{display:block;overflow-x:auto}}
 </style>
 <?php echo app_header_styles(); ?>
 </head>
@@ -260,60 +261,19 @@ table.parts-table tr.editing { background: #eff6ff; }
 
     <div class="top-grid">
 
-    <section class="panel">
-        <div class="section-title main">Общие параметры и тип раскроя</div>
-
-        <div class="grid">
-            <div>
-                <label for="object_name">Название объекта</label>
-                <input id="object_name" type="text" placeholder="Например, ЖК Северный, корпус 2">
-            </div>
-            <div>
-                <label for="cutting_name">Название раскроя</label>
-                <input id="cutting_name" type="text" placeholder="Например, Фасады кухни">
-            </div>
-            <div>
-                <label for="kerf">Ширина реза, мм</label>
-                <input id="kerf" type="number" min="0" step="0.1" value="4">
-            </div>
-            <div>
-                <label for="margin">Отступ от края листа, мм</label>
-                <input id="margin" type="number" min="0" step="0.1" value="5">
-            </div>
-            <div class="strategy-options" role="radiogroup" aria-label="Тип (стратегия) раскроя">
-                <label class="strategy-card"><input type="radio" name="strategy" value="length"><strong>↔ По длине</strong><span>Размещение продольными полосами вдоль длинной стороны листа.</span></label>
-                <label class="strategy-card"><input type="radio" name="strategy" value="width"><strong>↕ По ширине</strong><span>Размещение поперечными полосами вдоль короткой стороны листа.</span></label>
-                <label class="strategy-card"><input type="radio" name="strategy" value="optimal" checked><strong>✦ Оптимально</strong><span>Минимальные отходы (2D Bin Packing). Максимально эффективный раскрой.</span></label>
-            </div>
-            <div class="hidden"><label for="method">Метод расчёта</label><select id="method"><option value="optimal">Оптимально (с разворотом)</option><option value="length">По длине (вдоль декора)</option><option value="width">По ширине (вдоль декора)</option></select><div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°.</div></div>
-            <div><label for="cut_price">Стоимость распила за м.п.</label><input id="cut_price" type="number" min="0" step="0.01" value="250"><div class="hint">По умолчанию 250 руб.</div></div>
+    <section class="panel settings-panel">
+        <div class="section-title main settings-title"><span>Общие параметры и тип раскроя</span><small class="settings-title__note">Алгоритм размещения деталей</small></div>
+        <div class="strategy-heading">Тип (стратегия) раскроя <span>*</span></div>
+        <div class="strategy-options" role="radiogroup" aria-label="Тип (стратегия) раскроя">
+            <label class="strategy-card"><input type="radio" name="strategy" value="length"><strong><i>↔</i>По длине</strong><span>Размещение продольными полосами вдоль длинной стороны листа.</span></label>
+            <label class="strategy-card"><input type="radio" name="strategy" value="width"><strong><i>⇅</i>По ширине</strong><span>Размещение поперечными полосами вдоль короткой стороны листа.</span></label>
+            <label class="strategy-card"><input type="radio" name="strategy" value="optimal" checked><strong><i>✣</i>Оптимально</strong><span>Минимальные отходы (2D Bin Packing). Максимально эффективный раскрой.</span><b class="strategy-check">⊙</b></label>
         </div>
-
-        <div class="section-title">Исходный материал</div>
-        <div class="material-mode" role="group" aria-label="Источник материала">
-            <label><input type="radio" name="material_mode" value="db" checked> Выбрать панель из базы</label>
-            <label><input type="radio" name="material_mode" value="custom"> Указать свой материал</label>
+        <div class="hidden"><label for="method">Метод расчёта</label><select id="method"><option value="optimal">Оптимально (с разворотом)</option><option value="length">По длине (вдоль декора)</option><option value="width">По ширине (вдоль декора)</option></select><div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°.</div></div>
+        <div class="cut-settings">
+            <div class="cut-setting"><label for="kerf">Пропил пилы (толщина диска)</label><div class="input-unit"><input id="kerf" type="number" min="0" step="0.1" value="4"><b>мм</b></div><div class="hint">Ширина реза между деталями.</div></div>
+            <div class="cut-setting"><label for="cut_price">Тариф распила (₽/м.п.)</label><div class="input-unit"><input id="cut_price" type="number" min="0" step="0.01" value="250"><b>₽/<br>м.п.</b></div><div class="hint">Стоимость прямого реза за 1 м.п.</div></div>
         </div>
-        <div id="db-material-fields">
-            <label for="panel_search">Поиск панели</label>
-            <input id="panel_search" type="search" placeholder="Введите производителя, артикул, декор или размер" autocomplete="off">
-            <select id="panel_select" size="6" aria-label="Найденные панели"></select>
-            <div class="hint" id="panel-search-result"></div>
-            <button type="button" class="add-row-btn" id="add-db-material" style="margin-top:10px">+ Добавить материал</button>
-        </div>
-        <div id="custom-material-fields" class="hidden">
-            <div class="grid-3">
-                <div><label for="custom_length">Длина, мм</label><input id="custom_length" type="number" min="1" value="3050"></div>
-                <div><label for="custom_width">Ширина, мм</label><input id="custom_width" type="number" min="1" value="1300"></div>
-                <div><label for="custom_qty">Количество панелей</label><input id="custom_qty" type="number" min="1" step="1" value="1"></div>
-            </div>
-            <button type="button" class="add-row-btn" id="add-custom-material" style="margin-top:10px">+ Добавить материал</button>
-        </div>
-        <div class="grid" style="margin-top:14px">
-            <div><label for="material_price_m2">Цена за м²</label><input id="material_price_m2" type="number" min="0" step="0.01" value="0"></div>
-            <div><label for="sheet_currency">Валюта</label><select id="sheet_currency"><option value="RUB">RUB</option><option value="EUR">EUR</option><option value="USD">USD</option></select></div>
-        </div>
-        <div id="materials-list" class="materials-list" aria-live="polite"></div>
     </section>
 
     <aside class="panel cost-card" aria-label="Стоимость услуг распила">
@@ -328,6 +288,34 @@ table.parts-table tr.editing { background: #eff6ff; }
         <button type="button" onclick="document.getElementById('save-btn').click()">▣ &nbsp;Сохранить раскрой</button>
     </aside>
     </div>
+
+    <section class="panel">
+        <div class="section-title main">Исходный материал</div>
+        <div class="grid" style="margin-bottom:18px">
+            <div><label for="object_name">Название объекта</label><input id="object_name" type="text" placeholder="Например, ЖК Северный, корпус 2"></div>
+            <div><label for="cutting_name">Название раскроя</label><input id="cutting_name" type="text" placeholder="Например, Фасады кухни"></div>
+            <div><label for="margin">Отступ от края листа, мм</label><input id="margin" type="number" min="0" step="0.1" value="5"></div>
+        </div>
+        <div class="section-title">Выбор материала</div>
+        <div class="material-mode" role="group" aria-label="Источник материала">
+            <label><input type="radio" name="material_mode" value="db" checked> Выбрать панель из базы</label>
+            <label><input type="radio" name="material_mode" value="custom"> Указать свой материал</label>
+        </div>
+        <div id="db-material-fields">
+            <label for="panel_search">Поиск панели</label><input id="panel_search" type="search" placeholder="Введите производителя, артикул, декор или размер" autocomplete="off">
+            <select id="panel_select" size="6" aria-label="Найденные панели"></select><div class="hint" id="panel-search-result"></div>
+            <button type="button" class="add-row-btn" id="add-db-material" style="margin-top:10px">+ Добавить материал</button>
+        </div>
+        <div id="custom-material-fields" class="hidden"><div class="grid-3">
+            <div><label for="custom_length">Длина, мм</label><input id="custom_length" type="number" min="1" value="3050"></div>
+            <div><label for="custom_width">Ширина, мм</label><input id="custom_width" type="number" min="1" value="1300"></div>
+            <div><label for="custom_qty">Количество панелей</label><input id="custom_qty" type="number" min="1" step="1" value="1"></div>
+        </div><button type="button" class="add-row-btn" id="add-custom-material" style="margin-top:10px">+ Добавить материал</button></div>
+        <div class="grid" style="margin-top:14px">
+            <div><label for="material_price_m2">Цена за м²</label><input id="material_price_m2" type="number" min="0" step="0.01" value="0"></div>
+            <div><label for="sheet_currency">Валюта</label><select id="sheet_currency"><option value="RUB">RUB</option><option value="EUR">EUR</option><option value="USD">USD</option></select></div>
+        </div><div id="materials-list" class="materials-list" aria-live="polite"></div>
+    </section>
 
     <section class="panel">
         <div class="section-title main">Детали для раскроя</div>
