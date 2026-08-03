@@ -300,11 +300,6 @@ table.parts-table tr.editing { background: #eff6ff; }
           <div class="material-library__tools"><div class="material-library__search"><span>⌕</span><input id="panel_search" type="search" placeholder="Поиск по названию, декору, габаритам..." autocomplete="off"></div><div class="library-tabs"><button type="button" class="active" data-library-filter="all">Все</button><button type="button" data-library-filter="format">Форматы плит</button><button type="button" data-library-filter="decor">Декоры каталога</button></div></div>
           <div id="material-library-grid" class="material-library__grid"></div><div class="material-library__footer"><span id="panel-search-result"></span><button type="button" class="source-picker__close">Закрыть</button></div></div>
         </div>
-        <div id="custom-material-fields" class="entry-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="custom-material-title"><div class="entry-dialog__box">
-            <div class="entry-dialog__header"><span class="entry-dialog__icon">▱</span><div class="entry-dialog__title"><strong id="custom-material-title">Добавить материал</strong><small>Укажите название, габариты и доступное количество листов</small></div><button type="button" class="entry-dialog__close source-picker__close" aria-label="Закрыть">×</button></div>
-            <div class="entry-dialog__grid"><div class="wide"><label for="custom_name">Наименование / формат</label><input id="custom_name" type="text" value="Остаток склада"></div><div><label for="custom_length">Длина, мм</label><input id="custom_length" type="number" min="1" value="2800"></div><div><label for="custom_width">Ширина, мм</label><input id="custom_width" type="number" min="1" value="1300"></div><div class="wide"><label for="custom_qty">В наличии, шт.</label><input id="custom_qty" type="number" min="1" step="1" placeholder="Без ограничения" value=""><div class="hint">Оставьте поле пустым, чтобы количество определялось автоматически.</div></div></div>
-            <div class="entry-dialog__actions"><button type="button" class="secondary source-picker__close">Отмена</button><button type="button" id="add-custom-material">Добавить материал</button></div>
-        </div></div>
         <div class="source-table-wrap"><table class="source-table"><thead><tr><th>№</th><th>Наименование / формат</th><th>Длина (мм)</th><th>Ширина (мм)</th><th>Торцевание (мм)</th><th>В наличии (шт)</th><th>Удалить</th></tr></thead><tbody id="materials-list"></tbody></table></div>
         <div class="grid source-price-settings">
             <div><label for="material_price_m2">Цена за м²</label><input id="material_price_m2" type="number" min="0" step="0.01" value="0"></div>
@@ -416,7 +411,6 @@ document.querySelectorAll('[name="strategy"]').forEach(option => option.addEvent
 /* ═══════════ ИСХОДНЫЙ МАТЕРИАЛ ═══════════ */
 const panelSearch = document.getElementById('panel_search');
 const dbMaterialFields = document.getElementById('db-material-fields');
-const customMaterialFields = document.getElementById('custom-material-fields');
 const libraryGrid = document.getElementById('material-library-grid');
 const priceM2Input = document.getElementById('material_price_m2');
 const sheetCurrencyInput = document.getElementById('sheet_currency');
@@ -424,6 +418,7 @@ const cutPriceInput = document.getElementById('cut_price');
 const materialsList = document.getElementById('materials-list');
 let sourceMaterials = [];
 let nextMaterialId = 1;
+let nextManualMaterialNumber = 1;
 let libraryFilter = 'all';
 
 function panelLabel(panel) {
@@ -453,10 +448,14 @@ function addLibraryMaterial(item) {
 function getSelectedFormats() { return sourceMaterials.map(({materialId, ...format}) => ({...format})); }
 function selectedManufacturerIds() { return [...new Set(sourceMaterials.map(m => m.manufacturerId).filter(Boolean).map(String))]; }
 function addManufacturerRow() {}
-function addFormatRow(selectedKey, customH, customW, qty=null) {
-    const customName = document.getElementById('custom_name').value.trim() || 'Свой формат';
-    const parsedQty = String(qty ?? '').trim() === '' ? null : Math.max(1, Number(qty) || 1);
-    addSourceMaterial({height:Number(customH),width:Number(customW),qty:parsedQty,label:`${customName} ${customH}×${customW}`,margin:0});
+function addManualMaterial() {
+    addSourceMaterial({
+        height:3050,
+        width:1300,
+        qty:null,
+        label:`Произвольный лист ${nextManualMaterialNumber++}`,
+        margin:10
+    });
 }
 function renderSourceMaterials() {
     if (!sourceMaterials.length) {
@@ -472,18 +471,16 @@ function addSourceMaterial(format) {
 }
 function showMaterialPicker(picker) {
     dbMaterialFields.classList.toggle('hidden', picker !== dbMaterialFields);
-    customMaterialFields.classList.toggle('hidden', picker !== customMaterialFields);
     document.body.style.overflow = picker ? 'hidden' : '';
     if (picker === dbMaterialFields) { renderPanelSearch(); panelSearch.focus(); }
 }
 document.getElementById('show-db-material').addEventListener('click', () => showMaterialPicker(dbMaterialFields));
-document.getElementById('show-custom-material').addEventListener('click', () => showMaterialPicker(customMaterialFields));
+document.getElementById('show-custom-material').addEventListener('click', addManualMaterial);
 document.querySelectorAll('.source-picker__close').forEach(button => button.addEventListener('click', () => showMaterialPicker(null)));
-[dbMaterialFields, customMaterialFields].forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) showMaterialPicker(null); }));
-document.addEventListener('keydown', event => { if (event.key !== 'Escape') return; if (!partDialog?.classList.contains('hidden')) showPartDialog(false); else if (!dbMaterialFields.classList.contains('hidden') || !customMaterialFields.classList.contains('hidden')) showMaterialPicker(null); });
+dbMaterialFields.addEventListener('click', event => { if (event.target === dbMaterialFields) showMaterialPicker(null); });
+document.addEventListener('keydown', event => { if (event.key !== 'Escape') return; if (!partDialog?.classList.contains('hidden')) showPartDialog(false); else if (!dbMaterialFields.classList.contains('hidden')) showMaterialPicker(null); });
 panelSearch.addEventListener('input', renderPanelSearch);
 document.querySelectorAll('[data-library-filter]').forEach(button => button.addEventListener('click', () => { libraryFilter=button.dataset.libraryFilter; document.querySelectorAll('[data-library-filter]').forEach(tab => tab.classList.toggle('active',tab===button)); renderPanelSearch(); }));
-document.getElementById('add-custom-material').addEventListener('click', () => { addFormatRow('custom',document.getElementById('custom_length').value,document.getElementById('custom_width').value,document.getElementById('custom_qty').value); showMaterialPicker(null); });
 materialsList.addEventListener('click', event => { const button=event.target.closest('.remove-material');if(!button)return;sourceMaterials=sourceMaterials.filter(m=>m.materialId!==Number(button.dataset.id));renderSourceMaterials(); });
 materialsList.addEventListener('focusin', event => { if (event.target.dataset.field === 'qty' && event.target.value === 'Авто (без лимита)') { event.target.type='number'; event.target.value=''; event.target.placeholder='Авто (без лимита)'; } });
 materialsList.addEventListener('change', event => { const row=event.target.closest('tr[data-id]');if(!row||!event.target.dataset.field)return;const material=sourceMaterials.find(m=>m.materialId===Number(row.dataset.id));if(!material)return;const field=event.target.dataset.field;if(field==='label')material.label=event.target.value.trim()||material.label;else if(field==='qty')material.qty=event.target.value === '' ? null : Math.max(1,Number(event.target.value)||1);else{const value=Number(event.target.value);if(field==='margin' ? value>=0 : value>0)material[field]=value;}renderSourceMaterials(); });
