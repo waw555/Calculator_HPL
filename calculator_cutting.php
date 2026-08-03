@@ -163,8 +163,7 @@ $savedLayouts = $pdo->query('SELECT id, cutting_name, object_name, version_group
 <style>
 body { font-family: 'Inter', Arial, sans-serif; background: #f6f8fb; margin: 0; color: #0f172a; }
 .container { max-width: 1440px; margin: 20px auto 40px; padding: 0 10px; }
-.cutting-hero{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:28px;margin-bottom:28px;padding:25px 30px;border-radius:18px;background:linear-gradient(112deg,#111827 0%,#4a001b 54%,#101827 100%);color:#fff;box-shadow:0 12px 28px rgba(15,23,42,.2)}
-.cutting-hero:after{content:"";position:absolute;right:18%;top:-100px;width:260px;height:260px;background:#e90046;filter:blur(100px);opacity:.18}.hero-copy,.hero-actions{position:relative;z-index:1}.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;color:#ff4f78;font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.hero-eyebrow span{color:#cbd5e1;font-weight:500;text-transform:none;letter-spacing:0}.cutting-hero h1{font-size:28px;line-height:1.15;margin:8px 0 5px;letter-spacing:-.025em}.cutting-hero p{max-width:720px;margin:0;color:#e2e8f0;font-size:13px;line-height:1.55}.hero-actions{display:flex;gap:10px;flex-shrink:0}.hero-actions button{white-space:nowrap}.top-grid{display:grid;grid-template-columns:minmax(0,2.05fr) minmax(320px,1fr);gap:24px;align-items:stretch;margin-bottom:24px}.top-grid>.panel{margin-bottom:0}
+.top-grid{display:grid;grid-template-columns:minmax(0,2.05fr) minmax(320px,1fr);gap:24px;align-items:stretch;margin-bottom:24px}.top-grid>.panel{margin-bottom:0}
 .panel { background: #fff; border: 1px solid #dfe6ef; border-radius: 16px; padding: 28px; margin-bottom: 24px; box-shadow: 0 2px 5px rgba(15,23,42,.07); }
 .section-title { font-size: 14px; font-weight: 800; color: #0f172a; padding: 0 0 13px; border-bottom:1px solid #e8edf4; margin: 24px 0 16px; }
 .section-title:before{content:'✦';color:#ed174c;margin-right:9px}.section-title.main { font-size: 17px; margin-top: 0; background:none; border-left:0; }
@@ -238,26 +237,14 @@ table.parts-table tr.editing { background: #eff6ff; }
 .btn-icon.btn-delete { color:#dc2626; background:#fef2f2; }
 .btn-icon.btn-delete:hover { background:#fee2e2; }
 .header h1 { margin: 0; font-size: clamp(24px, 3.5vw, 36px); letter-spacing: -.02em; font-weight: 900; }
-@media(max-width:900px){.top-grid{grid-template-columns:1fr}.cutting-hero{align-items:flex-start;flex-direction:column}.hero-actions{width:100%;flex-wrap:wrap}.hero-actions button{flex:1}.cost-card__stats{margin:25px 0}}
-@media(max-width:600px){.container{padding:0}.panel{padding:18px}.cutting-hero{border-radius:14px;padding:22px 18px}.cutting-hero h1{font-size:24px}.grid,.strategy-options,.cut-settings{grid-template-columns:1fr}.settings-title__note{display:none}.parts-table,.history-table{display:block;overflow-x:auto}}
+@media(max-width:900px){.top-grid{grid-template-columns:1fr}.cost-card__stats{margin:25px 0}}
+@media(max-width:600px){.container{padding:0}.panel{padding:18px}.grid,.strategy-options,.cut-settings{grid-template-columns:1fr}.settings-title__note{display:none}.parts-table,.history-table{display:block;overflow-x:auto}}
 </style>
 <?php echo app_header_styles(); ?>
 </head>
 <body>
 <?php render_app_header(); ?>
 <main class="container">
-
-    <section class="cutting-hero">
-        <div class="hero-copy">
-            <div class="hero-eyebrow">✂ Интерактивный 2D раскрой плит <span>База плит / декоров &amp; Ручные форматы</span></div>
-            <h1>Калькулятор и карта раскроя <span id="version-badge" style="display:none;font-size:13px;color:#ff4f78"></span></h1>
-            <p>Выбор исходных листов из базы декоров/форматов или произвольный ручной ввод с поворотом на 90° и оптимизацией реза.</p>
-        </div>
-        <div class="hero-actions">
-            <button type="button" onclick="document.getElementById('panel_search').focus()">▤ &nbsp;База плит / декоров</button>
-            <button type="button" class="success" onclick="document.getElementById('save-btn').click()">▣ &nbsp;Сохранить раскрой</button>
-        </div>
-    </section>
 
     <div class="top-grid">
 
@@ -870,14 +857,6 @@ window.loadLayout = async function(id) {
         renderParts();
 
         if (data.result) { lastResult = data.result; renderResult(); renderParts(); }
-
-        const badge = document.getElementById('version-badge');
-        if (data.version_number) {
-            badge.textContent = 'v' + data.version_number;
-            badge.style.display = 'inline';
-        } else {
-            badge.style.display = 'none';
-        }
     } catch (e) { alert('Ошибка загрузки: ' + e.message); }
 };
 
