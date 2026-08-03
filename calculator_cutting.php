@@ -161,22 +161,25 @@ $savedLayouts = $pdo->query('SELECT id, cutting_name, object_name, version_group
 <meta charset="UTF-8">
 <title>Раскрой панелей</title>
 <style>
-body { font-family: 'Inter', Arial, sans-serif; background: #f5f7fb; margin: 0; color: #1f2937; }
-.header{display:flex;align-items:center;gap:16px;flex-wrap:wrap; background: radial-gradient(circle at 10% 10%, rgba(59,130,246,.35), transparent 32%), linear-gradient(120deg, #0f172a, #1e3a8a 58%, #0f766e); color: #fff; padding: 22px 36px 30px; box-shadow: 0 18px 45px rgba(15,23,42,.18); }
-.header a { color: #dbeafe; margin-right: 16px; text-decoration: none; }
-.container { max-width: 1320px; margin: 28px auto; padding: 0 20px; }
-.panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 22px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06); }
-.section-title { font-size: 15px; font-weight: 700; color: #374151; background: #f1f5f9; border-left: 4px solid #2563eb; padding: 8px 12px; border-radius: 0 6px 6px 0; margin: 22px 0 14px 0; }
-.section-title.main { font-size: 17px; background: #eff6ff; border-left-color: #1d4ed8; margin-top: 0; }
+body { font-family: 'Inter', Arial, sans-serif; background: #f6f8fb; margin: 0; color: #0f172a; }
+.container { max-width: 1440px; margin: 20px auto 40px; padding: 0 10px; }
+.cutting-hero{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:28px;margin-bottom:28px;padding:25px 30px;border-radius:18px;background:linear-gradient(112deg,#111827 0%,#4a001b 54%,#101827 100%);color:#fff;box-shadow:0 12px 28px rgba(15,23,42,.2)}
+.cutting-hero:after{content:"";position:absolute;right:18%;top:-100px;width:260px;height:260px;background:#e90046;filter:blur(100px);opacity:.18}.hero-copy,.hero-actions{position:relative;z-index:1}.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;color:#ff4f78;font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.hero-eyebrow span{color:#cbd5e1;font-weight:500;text-transform:none;letter-spacing:0}.cutting-hero h1{font-size:28px;line-height:1.15;margin:8px 0 5px;letter-spacing:-.025em}.cutting-hero p{max-width:720px;margin:0;color:#e2e8f0;font-size:13px;line-height:1.55}.hero-actions{display:flex;gap:10px;flex-shrink:0}.hero-actions button{white-space:nowrap}.top-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(300px,.95fr);gap:24px;align-items:stretch;margin-bottom:24px}.top-grid>.panel{margin-bottom:0}
+.panel { background: #fff; border: 1px solid #dfe6ef; border-radius: 16px; padding: 28px; margin-bottom: 24px; box-shadow: 0 2px 5px rgba(15,23,42,.07); }
+.section-title { font-size: 14px; font-weight: 800; color: #0f172a; padding: 0 0 13px; border-bottom:1px solid #e8edf4; margin: 24px 0 16px; }
+.section-title:before{content:'✦';color:#ed174c;margin-right:9px}.section-title.main { font-size: 17px; margin-top: 0; background:none; border-left:0; }
+.section-title.main:before{content:'◉'}
+.cost-card{display:flex;flex-direction:column;padding:28px 26px;background:#111a2d;color:#fff;border:0!important}.cost-card__eyebrow{color:#ff4f78;font-size:12px;font-weight:900;text-transform:uppercase}.cost-card__total{font-size:30px;font-weight:900;margin:7px 0 0}.cost-card__stats{display:grid;gap:12px;margin:auto 0 28px;padding-top:25px;border-top:1px solid #263148}.cost-card__row{display:flex;justify-content:space-between;gap:15px;font-size:12px}.cost-card__row b{color:#fff}.cost-card__row:first-child b{color:#ff4f78}.cost-card button{width:100%;background:#e9164d}
+.strategy-options{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;grid-column:1/-1}.strategy-card{display:block;margin:0;padding:15px;border:1px solid #dbe4ef;border-radius:12px;background:#f8fafc;cursor:pointer}.strategy-card:has(input:checked){border-color:#ff315f;background:#fff6f8;box-shadow:0 0 0 2px rgba(233,22,77,.1)}.strategy-card input{position:absolute;opacity:0;pointer-events:none}.strategy-card strong{display:block;color:#172033;font-size:13px}.strategy-card span{display:block;color:#71809a;font-size:11px;font-weight:500;line-height:1.4;margin-top:6px}.strategy-card:has(input:checked) strong{color:#78001c}
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; }
 label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; }
 input, select { width: 100%; box-sizing: border-box; padding: 9px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
 input[readonly] { background: #f8fafc; }
-button, .button { border: 0; border-radius: 8px; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; cursor: pointer; display: inline-block; font-weight: 600; font-size: 14px; }
+button, .button { border: 0; border-radius: 9px; padding: 10px 16px; background: #4f46e5; color: #fff; text-decoration: none; cursor: pointer; display: inline-block; font-weight: 700; font-size: 13px; }
 .button.secondary, button.secondary { background: #64748b; }
-.button.success, button.success { background: #16a34a; }
-.button.danger, button.danger { background: #dc2626; }
+.button.success, button.success { background: #e9164d; }
+.button.danger, button.danger { background: #e9164d; }
 .hint { color: #64748b; font-size: 13px; margin-top: 4px; }
 
 .multi-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
@@ -210,7 +213,7 @@ table.parts-table tr.editing { background: #eff6ff; }
 .sort-arrow { font-size: 11px; color: #64748b; margin-left: 4px; }
 .history-table td { font-weight: 400; }
 
-.sheets-header { background: #374151; color: #fff; padding: 10px 16px; border-radius: 8px 8px 0 0; font-weight: 700; margin-top: 24px; }
+.sheets-header { background: #eef3f9; color: #0f172a; padding: 12px 16px; border-radius: 10px 10px 0 0; font-weight: 800; margin-top: 24px; border:1px solid #dbe4ef; }
 .sheet-block { border: 1px solid #d1d5db; border-radius: 0 0 10px 10px; margin-bottom: 24px; overflow: hidden; }
 .sheet-canvas-wrap { background: #f3f4f6; padding: 16px; overflow-x: auto; }
 .sheet-info { padding: 10px 16px; background: #fff; font-size: 13px; color: #374151; display:flex; gap:18px; flex-wrap:wrap; border-top:1px solid #e5e7eb; }
@@ -234,6 +237,8 @@ table.parts-table tr.editing { background: #eff6ff; }
 .btn-icon.btn-delete { color:#dc2626; background:#fef2f2; }
 .btn-icon.btn-delete:hover { background:#fee2e2; }
 .header h1 { margin: 0; font-size: clamp(24px, 3.5vw, 36px); letter-spacing: -.02em; font-weight: 900; }
+@media(max-width:900px){.top-grid{grid-template-columns:1fr}.cutting-hero{align-items:flex-start;flex-direction:column}.hero-actions{width:100%;flex-wrap:wrap}.hero-actions button{flex:1}.cost-card__stats{margin:25px 0}}
+@media(max-width:600px){.container{padding:0}.panel{padding:18px}.cutting-hero{border-radius:14px;padding:22px 18px}.cutting-hero h1{font-size:24px}.grid,.strategy-options{grid-template-columns:1fr}.parts-table,.history-table{display:block;overflow-x:auto}}
 </style>
 <?php echo app_header_styles(); ?>
 </head>
@@ -241,8 +246,22 @@ table.parts-table tr.editing { background: #eff6ff; }
 <?php render_app_header(); ?>
 <main class="container">
 
+    <section class="cutting-hero">
+        <div class="hero-copy">
+            <div class="hero-eyebrow">✂ Интерактивный 2D раскрой плит <span>База плит / декоров &amp; Ручные форматы</span></div>
+            <h1>Калькулятор и карта раскроя <span id="version-badge" style="display:none;font-size:13px;color:#ff4f78"></span></h1>
+            <p>Выбор исходных листов из базы декоров/форматов или произвольный ручной ввод с поворотом на 90° и оптимизацией реза.</p>
+        </div>
+        <div class="hero-actions">
+            <button type="button" onclick="document.getElementById('panel_search').focus()">▤ &nbsp;База плит / декоров</button>
+            <button type="button" class="success" onclick="document.getElementById('save-btn').click()">▣ &nbsp;Сохранить раскрой</button>
+        </div>
+    </section>
+
+    <div class="top-grid">
+
     <section class="panel">
-        <div class="section-title main">Исходные данные</div>
+        <div class="section-title main">Общие параметры и тип раскроя</div>
 
         <div class="grid">
             <div>
@@ -261,7 +280,12 @@ table.parts-table tr.editing { background: #eff6ff; }
                 <label for="margin">Отступ от края листа, мм</label>
                 <input id="margin" type="number" min="0" step="0.1" value="5">
             </div>
-            <div><label for="method">Метод расчёта</label><select id="method"><option value="optimal">Оптимально (с разворотом)</option><option value="length">По длине (вдоль декора)</option><option value="width">По ширине (вдоль декора)</option></select><div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°.</div></div>
+            <div class="strategy-options" role="radiogroup" aria-label="Тип (стратегия) раскроя">
+                <label class="strategy-card"><input type="radio" name="strategy" value="length"><strong>↔ По длине</strong><span>Размещение продольными полосами вдоль длинной стороны листа.</span></label>
+                <label class="strategy-card"><input type="radio" name="strategy" value="width"><strong>↕ По ширине</strong><span>Размещение поперечными полосами вдоль короткой стороны листа.</span></label>
+                <label class="strategy-card"><input type="radio" name="strategy" value="optimal" checked><strong>✦ Оптимально</strong><span>Минимальные отходы (2D Bin Packing). Максимально эффективный раскрой.</span></label>
+            </div>
+            <div class="hidden"><label for="method">Метод расчёта</label><select id="method"><option value="optimal">Оптимально (с разворотом)</option><option value="length">По длине (вдоль декора)</option><option value="width">По ширине (вдоль декора)</option></select><div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°.</div></div>
             <div><label for="cut_price">Стоимость распила за м.п.</label><input id="cut_price" type="number" min="0" step="0.01" value="250"><div class="hint">По умолчанию 250 руб.</div></div>
         </div>
 
@@ -292,8 +316,21 @@ table.parts-table tr.editing { background: #eff6ff; }
         <div id="materials-list" class="materials-list" aria-live="polite"></div>
     </section>
 
+    <aside class="panel cost-card" aria-label="Стоимость услуг распила">
+        <div class="cost-card__eyebrow">✦ Стоимость услуг распила</div>
+        <div class="cost-card__total" id="cost-total">0,00 ₽</div>
+        <div class="cost-card__stats">
+            <div class="cost-card__row"><span>Листов в расчёте:</span><b id="cost-sheets">—</b></div>
+            <div class="cost-card__row"><span>Деталей размещено:</span><b id="cost-parts">—</b></div>
+            <div class="cost-card__row"><span>Общая площадь деталей:</span><b id="cost-area">—</b></div>
+            <div class="cost-card__row"><span>Метраж реза:</span><b id="cost-length">—</b></div>
+        </div>
+        <button type="button" onclick="document.getElementById('save-btn').click()">▣ &nbsp;Сохранить раскрой</button>
+    </aside>
+    </div>
+
     <section class="panel">
-        <div class="section-title main">Список деталей</div>
+        <div class="section-title main">Детали для раскроя</div>
         <table class="parts-table" id="parts-table">
             <thead>
                 <tr>
@@ -317,7 +354,7 @@ table.parts-table tr.editing { background: #eff6ff; }
 
     <!-- ═══ РЕЗУЛЬТАТ РАСКРОЯ ═══ -->
     <section class="panel hidden" id="result-section">
-        <div class="section-title main">Результат раскроя</div>
+        <div class="section-title main">Карта раскроя плит</div>
 
         <table class="summary-table" id="summary-table"></table>
 
@@ -383,6 +420,10 @@ let parts = []; // {id, name, length, width, qty, rotate}
 let nextPartId = 1;
 let lastResult = null;
 let loadedId = null;
+
+document.querySelectorAll('[name="strategy"]').forEach(option => option.addEventListener('change', () => {
+    document.getElementById('method').value = option.value;
+}));
 
 /* ═══════════ ИСХОДНЫЙ МАТЕРИАЛ ═══════════ */
 const panelSearch = document.getElementById('panel_search');
@@ -673,6 +714,11 @@ function renderResult() {
     if (!lastResult) return;
     const r = lastResult;
     resultSection.classList.remove('hidden');
+    document.getElementById('cost-total').textContent = `${fmtNum(r.cuttingCost, 2)} ${r.currency === 'RUB' ? '₽' : r.currency}`;
+    document.getElementById('cost-sheets').textContent = `${r.sheetCount} шт.`;
+    document.getElementById('cost-parts').textContent = `${r.totalPartsCount} шт.`;
+    document.getElementById('cost-area').textContent = `${fmtNum(r.totalPartsArea, 2)} м²`;
+    document.getElementById('cost-length').textContent = `${fmtNum(r.totalCutLength, 1)} м.п.`;
 
     const fmtSummary = r.fmtLabel || (r.formats ? r.formats.map(f => f.label).join(' + ') : '');
     const fmtCounts = {};
@@ -814,6 +860,7 @@ window.loadLayout = async function(id) {
         document.getElementById('kerf').value = s.kerf ?? 4;
         document.getElementById('margin').value = s.margin ?? 5;
         document.getElementById('method').value = s.method || 'optimal';
+        document.querySelector(`[name="strategy"][value="${s.method || 'optimal'}"]`)?.click();
         priceM2Input.value = s.price_m2 || s.sheet_cost || 0;
         cutPriceInput.value = s.cut_price || 250;
         sheetCurrencyInput.value = s.sheet_currency || 'RUB';
