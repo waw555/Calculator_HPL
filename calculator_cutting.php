@@ -146,7 +146,7 @@ if ($action === 'delete_layout') {
 $manufacturers = $pdo->query('SELECT * FROM manufacturers ORDER BY full_name ASC')->fetchAll();
 $panelSizes = $pdo->query('SELECT ps.*, m.full_name AS manufacturer_name FROM panel_sizes ps LEFT JOIN manufacturers m ON m.id=ps.manufacturer_id WHERE ps.is_active=1 ORDER BY m.full_name, ps.height_mm, ps.width_mm')->fetchAll();
 $thicknesses = $pdo->query('SELECT * FROM panel_thicknesses WHERE is_active=1 ORDER BY thickness ASC')->fetchAll();
-$panels = $pdo->query("SELECT pf.*, m.full_name AS manufacturer_name FROM panel_formats pf LEFT JOIN manufacturers m ON m.id=pf.manufacturer_id WHERE pf.is_active=1 AND pf.is_stock_program=1 ORDER BY m.full_name, pf.decor_number, pf.decor_name")->fetchAll();
+$panels = $pdo->query("SELECT pf.*, m.full_name AS manufacturer_name FROM panel_formats pf LEFT JOIN manufacturers m ON m.id=pf.manufacturer_id WHERE pf.is_active=1 ORDER BY m.full_name, pf.decor_number, pf.decor_name")->fetchAll();
 
 $manufacturersJson = json_encode(array_values($manufacturers), JSON_UNESCAPED_UNICODE);
 $panelSizesJson = json_encode(array_values($panelSizes), JSON_UNESCAPED_UNICODE);
@@ -222,6 +222,7 @@ table.parts-table tr.editing { background: #eff6ff; }
 .modal-box { background:#fff; border-radius:12px; padding:24px; width: 420px; max-width: 92vw; box-shadow: 0 12px 40px rgba(0,0,0,.2); }
 .modal-box h3 { margin-top:0; }
 .hidden { display:none !important; }
+.material-mode{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:#f8fafc;border-radius:10px}.material-mode label{margin:0}.material-mode input{width:auto;margin-right:6px}#panel_select{margin-top:8px;min-height:150px}.part-entry-row td{background:#eff6ff;border-top:2px solid #93c5fd!important}
 .btn-icon { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border:none; border-radius:8px; cursor:pointer; font-size:16px; transition:all .2s; }
 .btn-icon.btn-edit { color:#2563eb; background:#eff6ff; }
 .btn-icon.btn-edit:hover { background:#dbeafe; }
@@ -255,52 +256,34 @@ table.parts-table tr.editing { background: #eff6ff; }
                 <label for="margin">Отступ от края листа, мм</label>
                 <input id="margin" type="number" min="0" step="0.1" value="5">
             </div>
-            <div>
-                <label for="method">Метод расчёта</label>
-                <select id="method">
-                    <option value="optimal">Оптимально (с разворотом)</option>
-                    <option value="length">По длине (вдоль декора)</option>
-                    <option value="width">По ширине (вдоль декора)</option>
-                </select>
-                <div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°, если включён поворот.</div>
-            </div>
         </div>
 
-        <!-- ═══ ПРОИЗВОДИТЕЛИ ═══ -->
-        <div class="section-title">Производитель панелей</div>
-        <div id="manufacturers-list"></div>
-        <button type="button" class="add-row-btn" id="add-manufacturer">+ Добавить производителя</button>
-
-        <!-- ═══ ФОРМАТЫ ═══ -->
-        <div class="section-title">Формат панелей</div>
-        <div id="formats-list"></div>
-        <button type="button" class="add-row-btn" id="add-format">+ Добавить формат</button>
-
-        <!-- ═══ ДЕКОР И ТОЛЩИНА ═══ -->
-        <div class="section-title">Декор и толщина</div>
+        <div class="section-title">Исходный материал</div>
+        <div class="material-mode" role="group" aria-label="Источник материала">
+            <label><input type="radio" name="material_mode" value="db" checked> Выбрать панель из базы</label>
+            <label><input type="radio" name="material_mode" value="custom"> Указать свой материал</label>
+        </div>
+        <div id="db-material-fields">
+            <label for="panel_search">Поиск панели</label>
+            <input id="panel_search" type="search" placeholder="Введите производителя, артикул, декор или размер" autocomplete="off">
+            <select id="panel_select" size="6" aria-label="Найденные панели"></select>
+            <div class="hint" id="panel-search-result"></div>
+        </div>
+        <div id="custom-material-fields" class="hidden">
+            <div class="grid-3">
+                <div><label for="custom_length">Длина, мм</label><input id="custom_length" type="number" min="1" value="3050"></div>
+                <div><label for="custom_width">Ширина, мм</label><input id="custom_width" type="number" min="1" value="1300"></div>
+                <div><label for="custom_qty">Количество панелей</label><input id="custom_qty" type="number" min="1" step="1" value="1"></div>
+            </div>
+        </div>
+        <div class="grid" style="margin-top:14px">
+            <div><label for="material_price_m2">Цена за м²</label><input id="material_price_m2" type="number" min="0" step="0.01" value="0"></div>
+            <div><label for="sheet_currency">Валюта</label><select id="sheet_currency"><option value="RUB">RUB</option><option value="EUR">EUR</option><option value="USD">USD</option></select></div>
+            <div><label for="cut_price">Стоимость распила за м.п.</label><input id="cut_price" type="number" min="0" step="0.01" value="250"><div class="hint">По умолчанию 250 руб.</div></div>
+        </div>
+        <div class="section-title">Метод расчёта</div>
         <div class="grid">
-            <div>
-                <label for="decor_select">Декор</label>
-                <select id="decor_select">
-                    <option value="">— Выберите декор —</option>
-                </select>
-                <div class="hint">Список фильтруется по выбранным производителям.</div>
-            </div>
-            <div>
-                <label for="thickness_select">Толщина панели, мм</label>
-                <select id="thickness_select">
-                    <option value="">— Выберите толщину —</option>
-                </select>
-            </div>
-            <div>
-                <label for="sheet_cost">Стоимость листа</label>
-                <input id="sheet_cost" type="number" min="0" step="0.01" value="0">
-                <div class="hint">Подтягивается из БД, можно изменить вручную.</div>
-            </div>
-            <div>
-                <label for="sheet_currency">Валюта</label>
-                <input id="sheet_currency" type="text" value="RUB" readonly>
-            </div>
+            <div><label for="method">Метод расчёта</label><select id="method"><option value="optimal">Оптимально (с разворотом)</option><option value="length">По длине (вдоль декора)</option><option value="width">По ширине (вдоль декора)</option></select><div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°, если включён поворот.</div></div>
         </div>
     </section>
 
@@ -319,11 +302,8 @@ table.parts-table tr.editing { background: #eff6ff; }
                 </tr>
             </thead>
             <tbody id="parts-tbody"></tbody>
+            <tfoot><tr class="part-entry-row"><td>+</td><td><input id="new-part-name" type="text" placeholder="Наименование"></td><td><input id="new-part-length" type="number" min="1" placeholder="Длина"></td><td><input id="new-part-width" type="number" min="1" placeholder="Ширина"></td><td><input id="new-part-qty" type="number" min="1" value="1"></td><td><label style="margin:0"><input id="new-part-rotate" type="checkbox" checked style="width:auto"> Да</label></td><td><button type="button" class="success" id="add-part-btn" style="padding:7px 10px">Добавить</button></td></tr></tfoot>
         </table>
-        <div class="actions-row">
-            <button type="button" class="success" id="add-part-btn">+ Добавить деталь</button>
-        </div>
-
         <div class="actions-row">
             <button type="button" id="cut-btn">📐 Раскрой</button>
             <button type="button" class="secondary" id="save-btn">💾 Сохранить</button>
@@ -387,39 +367,6 @@ table.parts-table tr.editing { background: #eff6ff; }
 
 </main>
 
-<!-- ═══ МОДАЛЬНОЕ ОКНО ДЕТАЛИ ═══ -->
-<div class="modal-overlay hidden" id="part-modal">
-    <div class="modal-box">
-        <h3 id="part-modal-title">Добавить деталь</h3>
-        <div class="grid">
-            <div style="grid-column:1/-1">
-                <label for="pm-name">Наименование</label>
-                <input id="pm-name" type="text" placeholder="Например, Боковина двери">
-            </div>
-            <div>
-                <label for="pm-length">Длина, мм</label>
-                <input id="pm-length" type="number" min="1" step="1">
-            </div>
-            <div>
-                <label for="pm-width">Ширина, мм</label>
-                <input id="pm-width" type="number" min="1" step="1">
-            </div>
-            <div>
-                <label for="pm-qty">Количество</label>
-                <input id="pm-qty" type="number" min="1" step="1" value="1">
-            </div>
-            <div>
-                <label>Поворот</label>
-                <div id="pm-rotate" class="toggle-rotate-modal" data-value="1" style="border:0;border-radius:6px;padding:8px 20px;cursor:pointer;font-weight:700;font-size:14px;background:#dcfce7;color:#166534;width:fit-content">Да</div>
-            </div>
-        </div>
-        <div class="actions-row">
-            <button type="button" id="pm-save">Сохранить</button>
-            <button type="button" class="secondary" id="pm-cancel">Отмена</button>
-        </div>
-    </div>
-</div>
-
 <script>
 /* ═══════════ ДАННЫЕ ИЗ БД ═══════════ */
 const MANUFACTURERS = <?php echo $manufacturersJson; ?>;
@@ -432,151 +379,73 @@ let nextPartId = 1;
 let lastResult = null;
 let loadedId = null;
 
-/* ═══════════ ПРОИЗВОДИТЕЛИ (множественный выбор) ═══════════ */
-const manufacturersList = document.getElementById('manufacturers-list');
-const formatsList = document.getElementById('formats-list');
-
-function manufacturerOptionsHtml(selectedId) {
-    let html = '<option value="">— Любой производитель —</option>';
-    MANUFACTURERS.forEach(m => {
-        html += `<option value="${m.id}" ${String(m.id)===String(selectedId)?'selected':''}>${escapeHtml(m.full_name)}</option>`;
-    });
-    return html;
-}
-
-function addManufacturerRow(selectedId) {
-    const row = document.createElement('div');
-    row.className = 'multi-row';
-    row.innerHTML = `
-        <div style="flex:1">
-            <select class="mfr-select">${manufacturerOptionsHtml(selectedId)}</select>
-        </div>
-        <button type="button" class="rm-btn" title="Удалить">✕</button>
-    `;
-    row.querySelector('.rm-btn').addEventListener('click', () => {
-        if (manufacturersList.children.length > 1) {
-            row.remove();
-        } else {
-            row.querySelector('.mfr-select').value = '';
-        }
-        onManufacturersChanged();
-    });
-    row.querySelector('.mfr-select').addEventListener('change', onManufacturersChanged);
-    manufacturersList.appendChild(row);
-}
-document.getElementById('add-manufacturer').addEventListener('click', () => addManufacturerRow(''));
-
-function selectedManufacturerIds() {
-    return Array.from(manufacturersList.querySelectorAll('.mfr-select'))
-        .map(s => s.value).filter(v => v !== '');
-}
-
-/* ═══════════ ФОРМАТЫ ПАНЕЛЕЙ (множественный выбор + пользовательский) ═══════════ */
-function formatOptionsHtml(selectedKey) {
-    let html = '<option value="">— Выберите формат —</option>';
-    const mfrIds = selectedManufacturerIds();
-    PANEL_SIZES.forEach(sz => {
-        if (mfrIds.length && sz.manufacturer_id && !mfrIds.includes(String(sz.manufacturer_id))) return;
-        const key = `db:${sz.id}`;
-        const label = `${sz.height_mm}×${sz.width_mm} мм` + (sz.manufacturer_name ? ` (${sz.manufacturer_name})` : '');
-        html += `<option value="${key}" data-h="${sz.height_mm}" data-w="${sz.width_mm}" ${key===selectedKey?'selected':''}>${escapeHtml(label)}</option>`;
-    });
-    html += `<option value="custom" ${selectedKey==='custom'?'selected':''}>Свой формат…</option>`;
-    return html;
-}
-
-function addFormatRow(selectedKey, customH, customW) {
-    const row = document.createElement('div');
-    row.className = 'multi-row';
-    row.innerHTML = `
-        <div style="flex:2">
-            <select class="fmt-select">${formatOptionsHtml(selectedKey)}</select>
-        </div>
-        <div class="fmt-custom-wrap" style="flex:1;display:${selectedKey==='custom'?'flex':'none'};gap:6px;">
-            <input type="number" class="fmt-h" placeholder="Высота, мм" min="1" value="${customH||''}">
-            <input type="number" class="fmt-w" placeholder="Ширина, мм" min="1" value="${customW||''}">
-        </div>
-        <button type="button" class="rm-btn" title="Удалить">✕</button>
-    `;
-    const select = row.querySelector('.fmt-select');
-    const customWrap = row.querySelector('.fmt-custom-wrap');
-    select.addEventListener('change', () => {
-        customWrap.style.display = select.value === 'custom' ? 'flex' : 'none';
-    });
-    row.querySelector('.rm-btn').addEventListener('click', () => {
-        if (formatsList.children.length > 1) row.remove();
-        else select.value = '';
-    });
-    formatsList.appendChild(row);
-}
-document.getElementById('add-format').addEventListener('click', () => addFormatRow(''));
-
-function getSelectedFormats() {
-    const result = [];
-    formatsList.querySelectorAll('.multi-row').forEach(row => {
-        const select = row.querySelector('.fmt-select');
-        if (select.value === 'custom') {
-            const h = parseFloat(row.querySelector('.fmt-h').value) || 0;
-            const w = parseFloat(row.querySelector('.fmt-w').value) || 0;
-            if (h > 0 && w > 0) result.push({height: h, width: w, label: `${h}×${w} мм (свой)`});
-        } else if (select.value) {
-            const opt = select.selectedOptions[0];
-            const h = parseFloat(opt.dataset.h) || 0;
-            const w = parseFloat(opt.dataset.w) || 0;
-            if (h > 0 && w > 0) result.push({height: h, width: w, label: opt.textContent.trim()});
-        }
-    });
-    return result;
-}
-
-function onManufacturersChanged() {
-    formatsList.querySelectorAll('.multi-row').forEach(row => {
-        const select = row.querySelector('.fmt-select');
-        const current = select.value;
-        select.innerHTML = formatOptionsHtml(current);
-    });
-    filterDecors();
-}
-
-/* ═══════════ ДЕКОР И ТОЛЩИНА ═══════════ */
-const decorSelect = document.getElementById('decor_select');
-const thicknessSelect = document.getElementById('thickness_select');
-const sheetCostInput = document.getElementById('sheet_cost');
+/* ═══════════ ИСХОДНЫЙ МАТЕРИАЛ ═══════════ */
+const panelSearch = document.getElementById('panel_search');
+const panelSelect = document.getElementById('panel_select');
+const dbMaterialFields = document.getElementById('db-material-fields');
+const customMaterialFields = document.getElementById('custom-material-fields');
+const priceM2Input = document.getElementById('material_price_m2');
 const sheetCurrencyInput = document.getElementById('sheet_currency');
+const cutPriceInput = document.getElementById('cut_price');
 
-function filterDecors() {
-    const mfrIds = selectedManufacturerIds();
-    const current = decorSelect.value;
-    decorSelect.innerHTML = '<option value="">— Выберите декор —</option>';
-    PANELS.forEach(p => {
-        if (mfrIds.length && p.manufacturer_id && !mfrIds.includes(String(p.manufacturer_id))) return;
-        const label = [p.decor_number, p.decor_name].filter(Boolean).join(' ') || p.name;
-        const opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = label + (p.manufacturer_name ? ` — ${p.manufacturer_name}` : '');
-        opt.dataset.price = p.price_per_sheet || p.cost_per_sheet || 0;
-        opt.dataset.currency = p.currency || 'RUB';
-        if (String(p.id) === current) opt.selected = true;
-        decorSelect.appendChild(opt);
-    });
+function panelLabel(panel) {
+    const size = panel.height_mm && panel.width_mm ? `${panel.height_mm}×${panel.width_mm} мм` : '';
+    return [panel.manufacturer_name, panel.decor_number, panel.decor_name || panel.name, size].filter(Boolean).join(' · ');
 }
-
-function fillThicknesses() {
-    THICKNESSES.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.thickness;
-        opt.textContent = `${parseFloat(t.thickness)} мм`;
-        thicknessSelect.appendChild(opt);
+function renderPanelSearch() {
+    const query = panelSearch.value.trim().toLocaleLowerCase('ru');
+    const selected = panelSelect.value;
+    panelSelect.innerHTML = '';
+    const matches = PANELS.filter(panel => !query || panelLabel(panel).toLocaleLowerCase('ru').includes(query));
+    matches.forEach(panel => {
+        const option = document.createElement('option');
+        option.value = panel.id;
+        option.textContent = panelLabel(panel);
+        option.selected = String(panel.id) === selected;
+        panelSelect.appendChild(option);
     });
+    document.getElementById('panel-search-result').textContent = `Найдено панелей: ${matches.length}`;
 }
-
-decorSelect.addEventListener('change', () => {
-    const opt = decorSelect.selectedOptions[0];
-    if (opt && opt.dataset.price) {
-        sheetCostInput.value = opt.dataset.price;
-        sheetCurrencyInput.value = opt.dataset.currency || 'RUB';
+function selectedPanel() { return PANELS.find(panel => String(panel.id) === panelSelect.value) || null; }
+function updatePanelPrice() {
+    const panel = selectedPanel();
+    if (!panel) return;
+    priceM2Input.value = panel.price_per_m2 || panel.cost || 0;
+    sheetCurrencyInput.value = panel.currency || 'RUB';
+}
+function materialMode() { return document.querySelector('[name="material_mode"]:checked').value; }
+function getSelectedFormats() {
+    if (materialMode() === 'custom') {
+        const height = Number(document.getElementById('custom_length').value);
+        const width = Number(document.getElementById('custom_width').value);
+        const qty = Math.max(1, parseInt(document.getElementById('custom_qty').value) || 1);
+        return height > 0 && width > 0 ? [{height, width, qty, label:`${height}×${width} мм (свой)`}] : [];
     }
-});
+    const panel = selectedPanel();
+    if (!panel) return [];
+    const height = Number(panel.height_mm), width = Number(panel.width_mm);
+    return height > 0 && width > 0 ? [{height, width, qty:null, panelId:panel.id, label:panelLabel(panel)}] : [];
+}
+function selectedManufacturerIds() { const panel=selectedPanel(); return panel?.manufacturer_id ? [String(panel.manufacturer_id)] : []; }
+function addManufacturerRow() {}
+function addFormatRow(selectedKey, customH, customW, qty=1) {
+    document.querySelector('[name="material_mode"][value="custom"]').checked=true;
+    toggleMaterialMode();
+    document.getElementById('custom_length').value=customH||'';
+    document.getElementById('custom_width').value=customW||'';
+    document.getElementById('custom_qty').value=qty||1;
+}
+function toggleMaterialMode() {
+    const custom = materialMode() === 'custom';
+    dbMaterialFields.classList.toggle('hidden', custom);
+    customMaterialFields.classList.toggle('hidden', !custom);
+}
+document.querySelectorAll('[name="material_mode"]').forEach(radio => radio.addEventListener('change', toggleMaterialMode));
+panelSearch.addEventListener('input', renderPanelSearch);
+panelSelect.addEventListener('change', updatePanelPrice);
+renderPanelSearch();
+if (panelSelect.options.length) { panelSelect.selectedIndex=0; updatePanelPrice(); }
+window.addEventListener('appcurrencychange', event => { const code=event.detail?.code; if(!code)return; if(!Array.from(sheetCurrencyInput.options).some(o=>o.value===code)) sheetCurrencyInput.add(new Option(code,code)); sheetCurrencyInput.value=code; });
 
 /* ═══════════ Утилиты ═══════════ */
 function escapeHtml(str) {
@@ -586,129 +455,34 @@ function fmtNum(v, d=2) { return new Intl.NumberFormat('ru-RU', {minimumFraction
 
 /* ═══════════ СПИСОК ДЕТАЛЕЙ ═══════════ */
 const partsTbody = document.getElementById('parts-tbody');
-const partModal = document.getElementById('part-modal');
-const pmTitle = document.getElementById('part-modal-title');
-const pmName = document.getElementById('pm-name');
-const pmLength = document.getElementById('pm-length');
-const pmWidth = document.getElementById('pm-width');
-const pmQty = document.getElementById('pm-qty');
-let editingPartId = null;
-
 function renderParts() {
     partsTbody.innerHTML = '';
-    const unplacedIds = lastResult && lastResult.unplacedPartIds ? lastResult.unplacedPartIds : [];
-    const unplaced = new Set(Array.isArray(unplacedIds) ? unplacedIds : Object.values(unplacedIds));
+    const unplaced = new Set(lastResult?.unplacedPartIds || []);
     parts.forEach((p, idx) => {
-        const tr = document.createElement('tr');
-        if (unplaced.has(p.id)) tr.style.background = '#fef2f2';
-        tr.innerHTML = `
-            <td>${idx + 1}</td>
-            <td><input type="text" class="inline-edit" data-id="${p.id}" data-field="name" value="${escapeHtml(p.name)}" style="width:100%;box-sizing:border-box;border:1px solid transparent;border-radius:4px;padding:4px 6px;font-size:13px;background:transparent;${unplaced.has(p.id) ? 'color:#dc2626;font-weight:700' : ''}"></td>
-            <td><input type="number" class="inline-edit" data-id="${p.id}" data-field="length" value="${p.length}" min="1" style="width:100%;box-sizing:border-box;border:1px solid transparent;border-radius:4px;padding:4px 6px;font-size:13px;background:transparent;text-align:right"></td>
-            <td><input type="number" class="inline-edit" data-id="${p.id}" data-field="width" value="${p.width}" min="1" style="width:100%;box-sizing:border-box;border:1px solid transparent;border-radius:4px;padding:4px 6px;font-size:13px;background:transparent;text-align:right"></td>
-            <td><input type="number" class="inline-edit" data-id="${p.id}" data-field="qty" value="${p.qty}" min="1" style="width:100%;box-sizing:border-box;border:1px solid transparent;border-radius:4px;padding:4px 6px;font-size:13px;background:transparent;text-align:right"></td>
-            <td><button type="button" class="toggle-rotate" data-id="${p.id}" style="border:0;border-radius:6px;padding:4px 12px;cursor:pointer;font-weight:700;font-size:12px;background:${p.rotate ? '#dcfce7' : '#fee2e2'};color:${p.rotate ? '#166534' : '#991b1b'}">${p.rotate ? 'Да' : 'Нет'}</button></td>
-            <td>
-                <button type="button" class="danger" style="padding:5px 10px;font-size:12px" onclick="deletePart(${p.id})">🗑</button>
-            </td>
-        `;
+        const tr=document.createElement('tr');
+        if(unplaced.has(p.id)) tr.style.background='#fef2f2';
+        tr.innerHTML=`<td>${idx+1}</td><td><input class="inline-edit" data-id="${p.id}" data-field="name" value="${escapeHtml(p.name)}"></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="length" value="${p.length}" min="1"></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="width" value="${p.width}" min="1"></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="qty" value="${p.qty}" min="1"></td><td><button type="button" class="toggle-rotate" data-id="${p.id}" style="padding:5px 10px;background:${p.rotate?'#16a34a':'#64748b'}">${p.rotate?'Да':'Нет'}</button></td><td><button type="button" class="danger" style="padding:5px 10px" onclick="deletePart(${p.id})">🗑</button></td>`;
         partsTbody.appendChild(tr);
     });
 }
-
-partsTbody.addEventListener('click', e => {
-    const btn = e.target.closest('.toggle-rotate');
-    if (!btn) return;
-    const p = parts.find(x => x.id === Number(btn.dataset.id));
-    if (p) { p.rotate = !p.rotate; renderParts(); }
+partsTbody.addEventListener('click',e=>{const btn=e.target.closest('.toggle-rotate');if(!btn)return;const p=parts.find(x=>x.id===Number(btn.dataset.id));if(p){p.rotate=!p.rotate;renderParts();}});
+partsTbody.addEventListener('change',e=>{if(!e.target.classList.contains('inline-edit'))return;const p=parts.find(x=>x.id===Number(e.target.dataset.id));if(!p)return;const field=e.target.dataset.field;if(field==='name')p.name=e.target.value.trim()||p.name;else{const value=Number(e.target.value);if(value>0)p[field]=value;}});
+document.getElementById('add-part-btn').addEventListener('click',()=>{
+    const name=document.getElementById('new-part-name'), length=document.getElementById('new-part-length'), width=document.getElementById('new-part-width'), qty=document.getElementById('new-part-qty');
+    const l=Number(length.value),w=Number(width.value);if(!(l>0&&w>0)){alert('Укажите корректные размеры детали.');return;}
+    parts.push({id:nextPartId++,name:name.value.trim()||`№${parts.length+1}`,length:l,width:w,qty:Math.max(1,parseInt(qty.value)||1),rotate:document.getElementById('new-part-rotate').checked});
+    name.value='';length.value='';width.value='';qty.value=1;name.focus();renderParts();
 });
-
-partsTbody.addEventListener('focus', e => {
-    if (e.target.classList.contains('inline-edit')) e.target.style.borderColor = '#93c5fd';
-}, true);
-
-partsTbody.addEventListener('blur', e => {
-    if (!e.target.classList.contains('inline-edit')) return;
-    e.target.style.borderColor = 'transparent';
-    const p = parts.find(x => x.id === Number(e.target.dataset.id));
-    if (!p) return;
-    const field = e.target.dataset.field;
-    if (field === 'name') {
-        p[field] = e.target.value.trim() || p.name;
-    } else {
-        const val = parseFloat(e.target.value);
-        if (val > 0) p[field] = val;
-    }
-}, true);
-
-partsTbody.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && e.target.classList.contains('inline-edit')) e.target.blur();
-});
-
-const pmRotate = document.getElementById('pm-rotate');
-let pmRotateValue = true;
-
-function updatePmRotateVisual() {
-    pmRotate.dataset.value = pmRotateValue ? '1' : '0';
-    pmRotate.textContent = pmRotateValue ? 'Да' : 'Нет';
-    pmRotate.style.background = pmRotateValue ? '#dcfce7' : '#fee2e2';
-    pmRotate.style.color = pmRotateValue ? '#166534' : '#991b1b';
-}
-
-pmRotate.addEventListener('click', () => { pmRotateValue = !pmRotateValue; updatePmRotateVisual(); });
-
-function openPartModal(part) {
-    editingPartId = part ? part.id : null;
-    pmTitle.textContent = part ? 'Изменить деталь' : 'Добавить деталь';
-    pmName.value = part ? part.name : '';
-    pmLength.value = part ? part.length : '';
-    pmWidth.value = part ? part.width : '';
-    pmQty.value = part ? part.qty : 1;
-    pmRotateValue = part ? part.rotate : true;
-    updatePmRotateVisual();
-    partModal.classList.remove('hidden');
-    pmName.focus();
-}
-function closePartModal() { partModal.classList.add('hidden'); editingPartId = null; }
-
-document.getElementById('add-part-btn').addEventListener('click', () => openPartModal(null));
-document.getElementById('pm-cancel').addEventListener('click', closePartModal);
-document.getElementById('pm-save').addEventListener('click', () => {
-    const name = pmName.value.trim() || ('№' + (parts.length + (editingPartId ? 0 : 1)));
-    const length = parseFloat(pmLength.value);
-    const width = parseFloat(pmWidth.value);
-    const qty = parseInt(pmQty.value) || 1;
-    const rotate = pmRotateValue;
-    if (!(length > 0) || !(width > 0)) { alert('Укажите корректные размеры детали.'); return; }
-
-    if (editingPartId !== null) {
-        const p = parts.find(x => x.id === editingPartId);
-        if (p) { p.name=name; p.length=length; p.width=width; p.qty=qty; p.rotate=rotate; }
-    } else {
-        parts.push({id: nextPartId++, name, length, width, qty, rotate});
-    }
-    renderParts();
-    closePartModal();
-});
-
-window.editPart = function(id) {
-    const p = parts.find(x => x.id === id);
-    if (p) openPartModal(p);
-};
-window.deletePart = function(id) {
-    if (!confirm('Удалить деталь?')) return;
-    parts = parts.filter(x => x.id !== id);
-    renderParts();
-};
+window.deletePart=id=>{parts=parts.filter(p=>p.id!==id);renderParts();};
 
 /* ═══════════════════════════════════════════════════
    АЛГОРИТМ РАСКРОЯ (гильотинный bin-packing)
    ═══════════════════════════════════════════════════ */
-function packSheets(pieces, sheetW, sheetH, kerf, method) {
+function packSheets(pieces, sheetW, sheetH, kerf, method, maxSheets = null) {
     let queue = pieces.slice().sort((a, b) => (b.w * b.h) - (a.w * a.h));
     const sheets = [];
 
-    while (queue.length > 0) {
+    while (queue.length > 0 && (maxSheets === null || sheets.length < maxSheets)) {
         let freeRects = [{x: 0, y: 0, w: sheetW, h: sheetH}];
         const placed = [];
         let placedAny = true;
@@ -784,7 +558,8 @@ function runCutting() {
     const kerf = parseFloat(document.getElementById('kerf').value) || 0;
     const margin = parseFloat(document.getElementById('margin').value) || 0;
     const method = document.getElementById('method').value;
-    const sheetCost = parseFloat(sheetCostInput.value) || 0;
+    const priceM2 = parseFloat(priceM2Input.value) || 0;
+    const cutPrice = parseFloat(cutPriceInput.value) || 0;
     const currency = sheetCurrencyInput.value || 'RUB';
 
     const validFormats = formats.filter(f => {
@@ -828,7 +603,7 @@ function runCutting() {
         const sheetW = fmt.width - margin * 2;
         const sheetH = fmt.height - margin * 2;
         const testPieces = fmtParts.map(p => ({id: p.id, name: p.name, w: p.length, h: p.width, canRotate: p.rotate, qtyLeft: p.qty}));
-        const {sheets: trySheets, remaining: tryRemaining} = packSheets(testPieces, sheetW, sheetH, kerf, method);
+        const {sheets: trySheets, remaining: tryRemaining} = packSheets(testPieces, sheetW, sheetH, kerf, method, fmt.qty ?? null);
         for (const s of trySheets) allSheets.push({format: fmt, ...s});
         allRemaining.push(...tryRemaining.filter(p => p.qtyLeft > 0));
     }
@@ -844,6 +619,7 @@ function runCutting() {
         if (!placedPartIds.has(p.id)) unplacedPartIds.add(p.id);
     });
 
+    allRemaining.forEach(item => unplacedPartIds.add(item.id));
     if (allRemaining.length > 0) {
         alert('Внимание: некоторые детали не уместились (слишком большие): ' + allRemaining.map(r => r.name).join(', '));
     }
@@ -861,14 +637,17 @@ function runCutting() {
     }));
 
     const wasteArea = totalSheetAreaM2 - totalPartsArea;
-    const sheetsCost = sheetCost * sheetCount;
+    const sheetsCost = priceM2 * totalSheetAreaM2;
     const partsCost = totalSheetAreaM2 > 0 ? sheetsCost * (totalPartsArea / totalSheetAreaM2) : 0;
     const wasteCost = sheetsCost - partsCost;
 
-    lastResult = {fmtLabel, formats: validFormats, kerf, margin, method, sheetCost, currency,
+    const cuttingCostRub = cutPrice * totalCutLength;
+    const cuttingCost = window.AppCurrency ? AppCurrency.convert(cuttingCostRub, 'RUB', currency) : cuttingCostRub;
+    const totalCost = sheetsCost + cuttingCost;
+    lastResult = {fmtLabel, formats: validFormats, kerf, margin, method, priceM2, cutPrice, currency,
         sheets: allSheets, sheetAreaM2: totalSheetAreaM2 / sheetCount, sheetCount,
         totalSheetsArea: totalSheetAreaM2, totalPartsArea, totalCutLength, totalPartsCount,
-        wasteArea, sheetsCost, partsCost, wasteCost, unplacedPartIds: [...unplacedPartIds]};
+        wasteArea, sheetsCost, partsCost, wasteCost, cuttingCost, totalCost, unplacedPartIds: [...unplacedPartIds]};
 
     renderResult();
     renderParts();
@@ -908,6 +687,8 @@ function renderResult() {
         <tr><th>Стоимость листов</th><td>${fmtNum(r.sheetsCost,2)} ${escapeHtml(r.currency)}</td></tr>
         <tr><th>Стоимость деталей</th><td>${fmtNum(r.partsCost,2)} ${escapeHtml(r.currency)}</td></tr>
         <tr><th>Стоимость отходов</th><td>${fmtNum(r.wasteCost,2)} ${escapeHtml(r.currency)}</td></tr>
+        <tr><th>Стоимость распила</th><td>${fmtNum(r.cuttingCost,2)} ${escapeHtml(r.currency)}</td></tr>
+        <tr><th>Итого</th><td>${fmtNum(r.totalCost,2)} ${escapeHtml(r.currency)}</td></tr>
         ${unplacedHtml}
     `;
 
@@ -974,12 +755,13 @@ document.getElementById('save-btn').addEventListener('click', async () => {
         object_name: document.getElementById('object_name').value,
         manufacturer_ids: selectedManufacturerIds(),
         formats: getSelectedFormats(),
-        decor_id: decorSelect.value,
-        thickness: thicknessSelect.value,
+        decor_id: selectedPanel()?.id || null,
         kerf: document.getElementById('kerf').value,
         margin: document.getElementById('margin').value,
         method: document.getElementById('method').value,
-        sheet_cost: sheetCostInput.value,
+        price_m2: priceM2Input.value,
+        cut_price: cutPriceInput.value,
+        material_mode: materialMode(),
         sheet_currency: sheetCurrencyInput.value,
     };
     try {
@@ -1017,26 +799,16 @@ window.loadLayout = async function(id) {
         document.getElementById('kerf').value = s.kerf ?? 4;
         document.getElementById('margin').value = s.margin ?? 5;
         document.getElementById('method').value = s.method || 'optimal';
-        sheetCostInput.value = s.sheet_cost || 0;
+        priceM2Input.value = s.price_m2 || s.sheet_cost || 0;
+        cutPriceInput.value = s.cut_price || 250;
         sheetCurrencyInput.value = s.sheet_currency || 'RUB';
 
-        manufacturersList.innerHTML = '';
-        const mfrIds = s.manufacturer_ids && s.manufacturer_ids.length ? s.manufacturer_ids : [''];
-        mfrIds.forEach(mid => addManufacturerRow(mid));
-
-        formatsList.innerHTML = '';
-        if (s.formats && s.formats.length) {
-            s.formats.forEach(f => {
-                const matched = PANEL_SIZES.find(sz => Number(sz.height_mm)===Number(f.height) && Number(sz.width_mm)===Number(f.width));
-                if (matched) addFormatRow(`db:${matched.id}`);
-                else addFormatRow('custom', f.height, f.width);
-            });
-        } else {
-            addFormatRow('');
+        if (s.material_mode === 'custom' || (s.formats && s.formats[0] && !s.formats[0].panelId)) {
+            const f=s.formats?.[0]||{}; addFormatRow('custom',f.height,f.width,f.qty);
+        } else if (s.formats?.[0]?.panelId) {
+            panelSelect.value=String(s.formats[0].panelId); updatePanelPrice();
         }
 
-        filterDecors();
-        if (s.decor_id) decorSelect.value = s.decor_id;
 
         parts = (data.parts || []).map(p => ({...p, id: nextPartId++}));
         renderParts();
@@ -1090,10 +862,6 @@ function exportExcel(r) {
 }
 
 
-addManufacturerRow('');
-addFormatRow('');
-fillThicknesses();
-filterDecors();
 
 /* ═══════════ ПОИСК И СОРТИРОВКА ИСТОРИИ ═══════════ */
 let historySortCol = null;
