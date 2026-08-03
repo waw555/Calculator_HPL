@@ -169,8 +169,8 @@ body { font-family: 'Inter', Arial, sans-serif; background: #f6f8fb; margin: 0; 
 .section-title:before{content:'✦';color:#ed174c;margin-right:9px}.section-title.main { font-size: 17px; margin-top: 0; background:none; border-left:0; }
 .section-title.main:before{content:'⚙';font-size:18px}
 .settings-title{display:flex;align-items:center;justify-content:space-between;gap:20px}.settings-title__note{color:#91a0bd;font-size:11px;font-weight:600}.strategy-heading{margin:22px 0 8px;font-size:11px;font-weight:850;text-transform:uppercase}.strategy-heading span{color:#ed174c}
-.cost-card{display:flex;flex-direction:column;padding:28px 26px;background:#111a2d;color:#fff;border:0!important}.cost-card__eyebrow{color:#ff4f78;font-size:12px;font-weight:900;text-transform:uppercase}.cost-card__total{font-size:30px;font-weight:900;margin:7px 0 0}.cost-card__stats{display:grid;gap:12px;margin:auto 0 28px;padding-top:25px;border-top:1px solid #263148}.cost-card__row{display:flex;justify-content:space-between;gap:15px;font-size:12px}.cost-card__row b{color:#fff}.cost-card__row:first-child b{color:#ff4f78}.cost-card button{width:100%;background:#e9164d}
-.strategy-options{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.strategy-card{position:relative;display:block;margin:0;padding:14px;border:1px solid #dbe4ef;border-radius:12px;background:#f8fafc;cursor:pointer;min-height:86px;box-sizing:border-box}.strategy-card:has(input:checked){border-color:#ff315f;background:#fff6f8;box-shadow:0 0 0 2px rgba(233,22,77,.1)}.strategy-card input{position:absolute;opacity:0;pointer-events:none}.strategy-card strong{display:block;color:#172033;font-size:13px}.strategy-card strong i{color:#ed174c;font-size:17px;font-style:normal;margin-right:7px}.strategy-card span{display:block;color:#71809a;font-size:11px;font-weight:500;line-height:1.4;margin-top:6px}.strategy-card:has(input:checked) strong{color:#78001c}.strategy-check{display:none;position:absolute;right:14px;top:16px;color:#ed174c;font-size:15px}.strategy-card:has(input:checked) .strategy-check{display:block}.cut-settings{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px}.cut-setting{padding:14px;background:#f8fafc;border:1px solid #dfe6ef;border-radius:12px}.cut-setting label{margin-bottom:4px}.input-unit{display:flex;align-items:center;gap:9px}.input-unit input{background:#fff}.input-unit b{width:20px;color:#586a87;font-size:11px}.cut-setting .hint{color:#91a0bd;font-size:11px;margin-top:5px}
+.cost-card{display:flex;flex-direction:column;padding:28px 26px;background:#111a2d;color:#fff;border:0!important}.cost-card__eyebrow{color:#ff4f78;font-size:12px;font-weight:900;text-transform:uppercase}.cost-card__total{font-size:30px;font-weight:900;margin:7px 0 0}.cost-card__section+.cost-card__section{margin-top:22px;padding-top:20px;border-top:1px solid #263148}.cost-card__stats{display:grid;gap:10px;margin-top:14px}.cost-card__row{display:flex;justify-content:space-between;gap:15px;font-size:12px}.cost-card__row b{color:#fff;text-align:right}.cost-card__section:first-child .cost-card__row b,.cost-card__section:nth-child(2) .cost-card__total{color:#ff4f78}.cost-card button{width:100%;margin-top:auto;background:#e9164d}
+.strategy-options{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.strategy-card{position:relative;display:block;margin:0;padding:14px;border:1px solid #dbe4ef;border-radius:12px;background:#f8fafc;cursor:pointer;min-height:86px;box-sizing:border-box}.strategy-card:has(input:checked){border-color:#ff315f;background:#fff6f8;box-shadow:0 0 0 2px rgba(233,22,77,.1)}.strategy-card input{position:absolute;opacity:0;pointer-events:none}.strategy-card strong{display:block;color:#172033;font-size:13px}.strategy-card strong i{color:#ed174c;font-size:17px;font-style:normal;margin-right:7px}.strategy-card span{display:block;color:#71809a;font-size:11px;font-weight:500;line-height:1.4;margin-top:6px}.strategy-card:has(input:checked) strong{color:#78001c}.strategy-check{display:none;position:absolute;right:14px;top:16px;color:#ed174c;font-size:15px}.strategy-card:has(input:checked) .strategy-check{display:block}.cut-settings{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}.cut-setting{padding:14px;background:#f8fafc;border:1px solid #dfe6ef;border-radius:12px}.cut-setting label{margin-bottom:4px}.input-unit{display:flex;align-items:center;gap:9px}.input-unit input{background:#fff}.input-unit b{width:20px;color:#586a87;font-size:11px}.cut-setting .hint{color:#91a0bd;font-size:11px;margin-top:5px}
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; }
 label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; }
@@ -259,18 +259,29 @@ table.parts-table tr.editing { background: #eff6ff; }
         <div class="hidden"><label for="method">Метод расчёта</label><select id="method"><option value="optimal">Оптимально (с разворотом)</option><option value="length">По длине (вдоль декора)</option><option value="width">По ширине (вдоль декора)</option></select><div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°.</div></div>
         <div class="cut-settings">
             <div class="cut-setting"><label for="kerf">Пропил пилы (толщина диска)</label><div class="input-unit"><input id="kerf" type="number" min="0" step="0.1" value="4"><b>мм</b></div><div class="hint">Ширина реза между деталями.</div></div>
+            <div class="cut-setting"><label for="margin">Торцевание плиты</label><div class="input-unit"><input id="margin" type="number" min="0" step="0.1" value="5"><b>мм</b></div><div class="hint">Отступ для торцевания по краям плиты.</div></div>
             <div class="cut-setting"><label for="cut_price">Тариф распила (₽/м.п.)</label><div class="input-unit"><input id="cut_price" type="number" min="0" step="0.01" value="250"><b>₽/<br>м.п.</b></div><div class="hint">Стоимость прямого реза за 1 м.п.</div></div>
         </div>
     </section>
 
     <aside class="panel cost-card" aria-label="Стоимость услуг распила">
-        <div class="cost-card__eyebrow">✦ Стоимость услуг распила</div>
-        <div class="cost-card__total" id="cost-total">0,00 ₽</div>
-        <div class="cost-card__stats">
-            <div class="cost-card__row"><span>Листов в расчёте:</span><b id="cost-sheets">—</b></div>
-            <div class="cost-card__row"><span>Деталей размещено:</span><b id="cost-parts">—</b></div>
-            <div class="cost-card__row"><span>Общая площадь деталей:</span><b id="cost-area">—</b></div>
-            <div class="cost-card__row"><span>Метраж реза:</span><b id="cost-length">—</b></div>
+        <div class="cost-card__section">
+            <div class="cost-card__eyebrow">✦ Стоимость услуг распила</div>
+            <div class="cost-card__total" id="cost-total">0,00 ₽</div>
+            <div class="cost-card__stats"><div class="cost-card__row"><span>Метраж реза:</span><b id="cost-length">—</b></div></div>
+        </div>
+        <div class="cost-card__section">
+            <div class="cost-card__eyebrow">✦ Стоимость материала</div>
+            <div class="cost-card__total" id="material-cost-total">0,00 ₽</div>
+            <div class="cost-card__stats">
+                <div class="cost-card__row"><span>Листов в расчёте:</span><b id="cost-sheets">—</b></div>
+                <div class="cost-card__row"><span>Деталей в расчёте:</span><b id="cost-parts">—</b></div>
+                <div class="cost-card__row"><span>Общая площадь деталей:</span><b id="cost-area">—</b></div>
+                <div class="cost-card__row"><span>Общая площадь отходов:</span><b id="cost-waste-area">—</b></div>
+                <div class="cost-card__row"><span>Стоимость материала:</span><b id="cost-material">—</b></div>
+                <div class="cost-card__row"><span>Стоимость деталей:</span><b id="cost-material-parts">—</b></div>
+                <div class="cost-card__row"><span>Стоимость отходов:</span><b id="cost-material-waste">—</b></div>
+            </div>
         </div>
         <button type="button" onclick="document.getElementById('save-btn').click()">▣ &nbsp;Сохранить раскрой</button>
     </aside>
@@ -281,7 +292,6 @@ table.parts-table tr.editing { background: #eff6ff; }
         <div class="grid" style="margin-bottom:18px">
             <div><label for="object_name">Название объекта</label><input id="object_name" type="text" placeholder="Например, ЖК Северный, корпус 2"></div>
             <div><label for="cutting_name">Название раскроя</label><input id="cutting_name" type="text" placeholder="Например, Фасады кухни"></div>
-            <div><label for="margin">Отступ от края листа, мм</label><input id="margin" type="number" min="0" step="0.1" value="5"></div>
         </div>
         <div class="section-title">Выбор материала</div>
         <div class="material-mode" role="group" aria-label="Источник материала">
@@ -694,6 +704,12 @@ function renderResult() {
     document.getElementById('cost-parts').textContent = `${r.totalPartsCount} шт.`;
     document.getElementById('cost-area').textContent = `${fmtNum(r.totalPartsArea, 2)} м²`;
     document.getElementById('cost-length').textContent = `${fmtNum(r.totalCutLength, 1)} м.п.`;
+    document.getElementById('cost-waste-area').textContent = `${fmtNum(r.wasteArea, 2)} м²`;
+    const costCurrency = r.currency === 'RUB' ? '₽' : r.currency;
+    document.getElementById('material-cost-total').textContent = `${fmtNum(r.sheetsCost, 2)} ${costCurrency}`;
+    document.getElementById('cost-material').textContent = `${fmtNum(r.sheetsCost, 2)} ${costCurrency}`;
+    document.getElementById('cost-material-parts').textContent = `${fmtNum(r.partsCost, 2)} ${costCurrency}`;
+    document.getElementById('cost-material-waste').textContent = `${fmtNum(r.wasteCost, 2)} ${costCurrency}`;
 
     const fmtSummary = r.fmtLabel || (r.formats ? r.formats.map(f => f.label).join(' + ') : '');
     const fmtCounts = {};
