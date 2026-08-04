@@ -329,7 +329,7 @@ table.parts-table tr.editing { background: #eff6ff; }
         <div class="parts-header"><div class="parts-heading"><div class="section-title main">Детали для раскроя (<span id="parts-count">0</span>)</div><p class="parts-subtitle">Укажите габариты деталей, количество и возможность разворота на 90°.</p></div><button type="button" class="add-part-open" id="add-part-btn">＋ Добавить деталь</button></div>
         <table class="parts-table" id="parts-table">
             <thead><tr>
-                <th style="width:48px">№</th><th>Наименование / назначение</th><th style="width:140px">Длина (мм)</th><th style="width:140px">Ширина (мм)</th><th style="width:155px">Направление рисунка</th><th style="width:125px">Количество (шт.)</th><th class="rotate-column" style="width:145px">⟳ Поворот (90°)</th><th style="width:105px">Площадь</th><th style="width:85px;text-align:center">Действие</th>
+                <th style="width:48px">№</th><th>Наименование / назначение</th><th style="width:140px">Длина (мм)</th><th style="width:140px">Ширина (мм)</th><th style="width:125px">Количество (шт.)</th><th class="rotate-column" style="width:145px">⟳ Поворот (90°)</th><th style="width:155px">Рисунок</th><th style="width:105px">Площадь</th><th style="width:85px;text-align:center">Действие</th>
             </tr></thead>
             <tbody id="parts-tbody"></tbody>
         </table>
@@ -535,7 +535,7 @@ function renderParts() {
     parts.forEach((p, idx) => {
         const tr=document.createElement('tr');
         if(unplaced.has(p.id)) tr.style.background='#fef2f2';
-        tr.innerHTML=`<td class="part-index">${idx+1}</td><td><div class="part-name-cell"><span class="part-color" style="background:${colors[idx%colors.length]}"></span><input class="inline-edit" data-id="${p.id}" data-field="name" value="${escapeHtml(p.name)}"></div></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="length" value="${p.length}" min="1"></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="width" value="${p.width}" min="1"></td><td><select class="inline-edit" data-id="${p.id}" data-field="grainDirection"><option value="none" ${p.grainDirection==='none'?'selected':''}>Без разницы</option><option value="length" ${p.grainDirection==='length'?'selected':''}>По длине</option><option value="width" ${p.grainDirection==='width'?'selected':''}>По ширине</option></select></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="qty" value="${p.qty}" min="1"></td><td class="rotate-column"><label class="rotate-label"><input type="checkbox" class="toggle-rotate" data-id="${p.id}" ${p.rotate?'checked':''}><span>${p.rotate?'Да':'Нет'}</span></label></td><td class="part-area">${fmtNum(p.length*p.width*p.qty/1000000,2)} м²</td><td style="text-align:center"><button type="button" class="delete-part" onclick="deletePart(${p.id})" aria-label="Удалить деталь">&#128465;</button></td>`;
+        tr.innerHTML=`<td class="part-index">${idx+1}</td><td><div class="part-name-cell"><span class="part-color" style="background:${colors[idx%colors.length]}"></span><input class="inline-edit" data-id="${p.id}" data-field="name" value="${escapeHtml(p.name)}"></div></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="length" value="${p.length}" min="1"></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="width" value="${p.width}" min="1"></td><td><input type="number" class="inline-edit" data-id="${p.id}" data-field="qty" value="${p.qty}" min="1"></td><td class="rotate-column"><label class="rotate-label"><input type="checkbox" class="toggle-rotate" data-id="${p.id}" ${p.rotate?'checked':''}><span>${p.rotate?'Да':'Нет'}</span></label></td><td><select class="inline-edit" data-id="${p.id}" data-field="grainDirection"><option value="none" ${p.grainDirection==='none'?'selected':''}>Нет</option><option value="length" ${p.grainDirection==='length'?'selected':''}>По длине</option><option value="width" ${p.grainDirection==='width'?'selected':''}>По ширине</option></select></td><td class="part-area">${fmtNum(p.length*p.width*p.qty/1000000,2)} м²</td><td style="text-align:center"><button type="button" class="delete-part" onclick="deletePart(${p.id})" aria-label="Удалить деталь">&#128465;</button></td>`;
         partsTbody.appendChild(tr);
     });
 }
@@ -689,13 +689,15 @@ function runCutting() {
 
     const trimmingCostRub = cutPrice * trimmingLength;
     const trimmingCost = window.AppCurrency ? AppCurrency.convert(trimmingCostRub, 'RUB', currency) : trimmingCostRub;
+    const sawingCostRub = cutPrice * partsCutLength;
+    const sawingCost = window.AppCurrency ? AppCurrency.convert(sawingCostRub, 'RUB', currency) : sawingCostRub;
     const cuttingCostRub = cutPrice * totalCutLength;
     const cuttingCost = window.AppCurrency ? AppCurrency.convert(cuttingCostRub, 'RUB', currency) : cuttingCostRub;
     const totalCost = sheetsCost + cuttingCost;
     lastResult = {fmtLabel, formats: validFormats, kerf, margin, method, priceM2, cutPrice, currency,
         sheets: allSheets, sheetAreaM2: totalSheetAreaM2 / sheetCount, sheetCount,
         totalSheetsArea: totalSheetAreaM2, totalPartsArea, partsCutLength, trimmingLength, totalCutLength, totalPartsCount,
-        wasteArea, sheetsCost, partsCost, wasteCost, trimmingCost, cuttingCost, totalCost,
+        wasteArea, sheetsCost, partsCost, wasteCost, sawingCost, trimmingCost, cuttingCost, totalCost,
         unplacedPartIds: [...unplacedPartIds], unplacedParts};
 
     renderResult();
@@ -716,6 +718,8 @@ function renderResult() {
     // Совместимость с раскроями, сохранёнными до появления учёта торцевания.
     const trimmingLength = Number(r.trimmingLength || 0);
     const partsCutLength = Number(r.partsCutLength ?? (Number(r.totalCutLength || 0) - trimmingLength));
+    const trimmingCost = Number(r.trimmingCost || 0);
+    const sawingCost = Number(r.sawingCost ?? (Number(r.cuttingCost || 0) - trimmingCost));
     resultSection.classList.remove('hidden');
     document.getElementById('cost-total').textContent = `${fmtNum(r.cuttingCost, 2)} ${r.currency === 'RUB' ? '₽' : r.currency}`;
     document.getElementById('cost-sheets').textContent = `${r.sheetCount} шт.`;
@@ -754,7 +758,8 @@ function renderResult() {
         <tr><th>Стоимость листов</th><td>${fmtNum(r.sheetsCost,2)} ${escapeHtml(r.currency)}</td></tr>
         <tr><th>Стоимость деталей</th><td>${fmtNum(r.partsCost,2)} ${escapeHtml(r.currency)}</td></tr>
         <tr><th>Стоимость отходов</th><td>${fmtNum(r.wasteCost,2)} ${escapeHtml(r.currency)}</td></tr>
-        <tr><th>Стоимость распила с торцеванием</th><td>${fmtNum(r.cuttingCost,2)} ${escapeHtml(r.currency)}</td></tr>
+        <tr><th>Стоимость распила</th><td>${fmtNum(sawingCost,2)} ${escapeHtml(r.currency)}</td></tr>
+        <tr><th>Стоимость торцевания</th><td>${fmtNum(trimmingCost,2)} ${escapeHtml(r.currency)}</td></tr>
         <tr><th>Итого</th><td>${fmtNum(r.totalCost,2)} ${escapeHtml(r.currency)}</td></tr>
         ${unplacedHtml}
     `;
@@ -1029,6 +1034,8 @@ document.getElementById('export-pdf-btn').addEventListener('click', () => {
 function exportExcel(r) {
     const trimmingLength = Number(r.trimmingLength || 0);
     const partsCutLength = Number(r.partsCutLength ?? (Number(r.totalCutLength || 0) - trimmingLength));
+    const trimmingCost = Number(r.trimmingCost || 0);
+    const sawingCost = Number(r.sawingCost ?? (Number(r.cuttingCost || 0) - trimmingCost));
     let csv = 'Показатель;Значение\n';
     csv += `Формат(ы);${(r.fmtLabel || '').replace(/;/g,',')}\n`;
     csv += `Количество листов;${r.sheetCount}\n`;
@@ -1041,8 +1048,8 @@ function exportExcel(r) {
     csv += `Стоимость листов;${fmtNum(r.sheetsCost,2)} ${r.currency}\n`;
     csv += `Стоимость деталей;${fmtNum(r.partsCost,2)} ${r.currency}\n`;
     csv += `Стоимость отходов;${fmtNum(r.wasteCost,2)} ${r.currency}\n\n`;
-    csv += `Стоимость торцевания;${fmtNum(r.trimmingCost || 0,2)} ${r.currency}\n`;
-    csv += `Стоимость распила с торцеванием;${fmtNum(r.cuttingCost,2)} ${r.currency}\n\n`;
+    csv += `Стоимость распила;${fmtNum(sawingCost,2)} ${r.currency}\n`;
+    csv += `Стоимость торцевания;${fmtNum(trimmingCost,2)} ${r.currency}\n\n`;
     csv += 'Лист;Формат;Деталь;X;Y;Длина;Ширина;Поворот\n';
     r.sheets.forEach((sheet, idx) => {
         const sf = sheet.format || (r.formats && r.formats[0]) || {};
