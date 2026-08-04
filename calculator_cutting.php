@@ -566,9 +566,18 @@ function packSheets(pieces, sheetW, sheetH, kerf, method, maxSheets = null) {
 
                 for (let pi = 0; pi < queue.length; pi++) {
                     const piece = queue[pi];
-                    let orientations;
-                    orientations = [{w: piece.w, h: piece.h, rotated: false}];
+                    let orientations = [{w: piece.w, h: piece.h, rotated: false}];
                     if (piece.canRotate && piece.w !== piece.h) orientations.push({w: piece.h, h: piece.w, rotated: true});
+                    if (method !== 'optimal' && piece.grainDirection !== 'none') {
+                        orientations = orientations.filter(orient => {
+                            // В базовой ориентации длина детали лежит по оси H
+                            // листа, ширина — по W; после поворота оси меняются.
+                            const grainAlongSheetLength = piece.grainDirection === 'length'
+                                ? !orient.rotated
+                                : orient.rotated;
+                            return method === 'length' ? grainAlongSheetLength : !grainAlongSheetLength;
+                        });
+                    }
                 for (const orient of orientations) {
                     for (let ri = 0; ri < freeRects.length; ri++) {
                         const rect = freeRects[ri];
@@ -587,7 +596,7 @@ function packSheets(pieces, sheetW, sheetH, kerf, method, maxSheets = null) {
                 const rect = freeRects[best.rectIdx];
                 const pw = best.w, ph = best.h;
 
-                placed.push({id: piece.id, name: piece.name, grainDirection: piece.grainDirection, x: rect.x, y: rect.y, w: pw, h: ph, rotated: Boolean(piece.baseRotated) !== best.rotated});
+                placed.push({id: piece.id, name: piece.name, grainDirection: piece.grainDirection, x: rect.x, y: rect.y, w: pw, h: ph, rotated: best.rotated});
 
                 freeRects.splice(best.rectIdx, 1);
                 const rightW = rect.w - pw - (rect.w - pw > 0 ? kerf : 0);
@@ -627,11 +636,11 @@ function runCutting() {
     if (validFormats.length === 0) { alert('Размер листа за вычетом отступов должен быть положительным.'); return; }
 
     // Ось H соответствует длине панели (первому размеру формата). Поэтому
-    // неповёрнутая деталь должна передаваться упаковщику как ширина × длина.
-    // Для рисунка по ширине базовая ориентация намеренно меняется местами.
+    // неповёрнутая деталь всегда передаётся упаковщику как ширина × длина.
+    // Направление рисунка ограничивает допустимые повороты в packSheets, но
+    // никогда не должно само менять геометрию детали.
     function packingDimensions(part) {
-        if (part.grainDirection === 'width') return {w:part.length, h:part.width, baseRotated:true};
-        return {w:part.width, h:part.length, baseRotated:false};
+        return {w:part.width, h:part.length};
     }
     let allSheets = [];
     let remainingPieces = parts.map(p => ({id:p.id, name:p.name, grainDirection:p.grainDirection, ...packingDimensions(p), canRotate:p.rotate, qtyLeft:p.qty}));
@@ -792,7 +801,9 @@ function renderResult() {
             const x = sheetX + (pl.y + sheetMargin) * scale, y = sheetY + (pl.x + sheetMargin) * scale, w = pl.h * scale, h = pl.w * scale;
             const arrLen = Math.min(w, h) * 0.5;
             const grainDirection = pl.grainDirection || parts.find(part => part.id === pl.id)?.grainDirection || 'none';
-            const horizontalGrain = grainDirection === 'length' ? pl.rotated : !pl.rotated;
+            // На карте ось H упаковщика отображается горизонтально. Поэтому у
+            // неповёрнутой детали длина горизонтальна, а ширина вертикальна.
+            const horizontalGrain = grainDirection === 'length' ? !pl.rotated : pl.rotated;
             let arrowHtml = '';
             if (grainDirection !== 'none' && arrLen > 14) {
                 if (horizontalGrain) {
@@ -829,6 +840,17 @@ function renderResult() {
         });
 
         const usagePercent = sheetAreaM2 > 0 ? (placedArea / sheetAreaM2 * 100) : 0;
+        let sheetGrainHtml = '';
+        if (r.method !== 'optimal') {
+            const grainAlongLength = r.method === 'length';
+            const labelX = grainAlongLength ? sheetX + sheetW / 2 : sheetX + sheetW + 34;
+            const labelY = grainAlongLength ? sheetY + sheetH + 15 : sheetY + sheetH / 2;
+            const labelTransform = grainAlongLength ? '' : ` transform="rotate(-90 ${labelX} ${labelY})"`;
+            const line = grainAlongLength
+                ? `<line x1="${sheetX + 8}" y1="${sheetY + sheetH + 25}" x2="${sheetX + sheetW - 20}" y2="${sheetY + sheetH + 25}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>`
+                : `<line x1="${sheetX + sheetW + 40}" y1="${sheetY + 8}" x2="${sheetX + sheetW + 40}" y2="${sheetY + sheetH - 20}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>`;
+            sheetGrainHtml = `<text x="${labelX}" y="${labelY}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600"${labelTransform}>направление рисунка</text>${line}`;
+        }
         const block = document.createElement('div');
         block.innerHTML = `
             <div class="sheets-header">Лист ${idx + 1}${sf.label ? ' — ' + escapeHtml(sf.label) : ''}</div>
@@ -846,8 +868,7 @@ function renderResult() {
                         <rect x="${sheetX + 0.5}" y="${sheetY + 0.5}" width="${sheetW - 1}" height="${sheetH - 1}" fill="#e5e7eb" stroke="#9ca3af"/>
                         <rect x="${sheetX + sheetMargin * scale}" y="${sheetY + sheetMargin * scale}" width="${sheetW - sheetMargin * scale * 2}" height="${sheetH - sheetMargin * scale * 2}" fill="none" stroke="#ef4444" stroke-dasharray="5 4"/>
                         ${rectsHtml}
-                        <text x="${sheetX + sheetW / 2}" y="${sheetY + sheetH + 15}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600">направление рисунка</text>
-                        <line x1="${sheetX + 8}" y1="${sheetY + sheetH + 25}" x2="${sheetX + sheetW - 20}" y2="${sheetY + sheetH + 25}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>
+                        ${sheetGrainHtml}
                     </svg>
                 </div>
                 <div class="sheet-info">
