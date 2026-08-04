@@ -275,12 +275,7 @@ table.parts-table tr.editing { background: #eff6ff; }
         </div>
     </section>
 
-    <aside class="panel cost-card" aria-label="Стоимость услуг распила">
-        <div class="cost-card__section">
-            <div class="cost-card__eyebrow">✦ Стоимость услуг распила</div>
-            <div class="cost-card__total" id="cost-total">0,00 ₽</div>
-            <div class="cost-card__stats"><div class="cost-card__row"><span>Метраж реза:</span><b id="cost-length">—</b></div></div>
-        </div>
+    <aside class="panel cost-card" aria-label="Стоимость материала и услуг распила">
         <div class="cost-card__section">
             <div class="cost-card__eyebrow">✦ Стоимость материала</div>
             <div class="cost-card__total" id="material-cost-total">0,00 ₽</div>
@@ -293,6 +288,15 @@ table.parts-table tr.editing { background: #eff6ff; }
                 <div class="cost-card__row"><span>Стоимость деталей:</span><b id="cost-material-parts">—</b></div>
                 <div class="cost-card__row"><span>Стоимость отходов:</span><b id="cost-material-waste">—</b></div>
             </div>
+        </div>
+        <div class="cost-card__section">
+            <div class="cost-card__eyebrow">✦ Стоимость услуг распила</div>
+            <div class="cost-card__total" id="cost-total">0,00 ₽</div>
+            <div class="cost-card__stats"><div class="cost-card__row"><span>Метраж реза:</span><b id="cost-length">—</b></div></div>
+        </div>
+        <div class="cost-card__section">
+            <div class="cost-card__eyebrow">✦ Итого</div>
+            <div class="cost-card__total" id="grand-cost-total">0,00 ₽</div>
         </div>
         <button type="button" onclick="document.getElementById('save-btn').click()">▣ &nbsp;Сохранить раскрой</button>
     </aside>
@@ -722,6 +726,7 @@ function renderResult() {
     document.getElementById('cost-waste-area').textContent = `${fmtNum(r.wasteArea, 2)} м²`;
     const costCurrency = r.currency === 'RUB' ? '₽' : r.currency;
     document.getElementById('material-cost-total').textContent = `${fmtNum(r.sheetsCost, 2)} ${costCurrency}`;
+    document.getElementById('grand-cost-total').textContent = `${fmtNum(r.totalCost, 2)} ${costCurrency}`;
     document.getElementById('cost-material').textContent = `${fmtNum(r.sheetsCost, 2)} ${costCurrency}`;
     document.getElementById('cost-material-parts').textContent = `${fmtNum(r.partsCost, 2)} ${costCurrency}`;
     document.getElementById('cost-material-waste').textContent = `${fmtNum(r.wasteCost, 2)} ${costCurrency}`;
