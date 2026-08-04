@@ -626,11 +626,12 @@ function runCutting() {
     });
     if (validFormats.length === 0) { alert('Размер листа за вычетом отступов должен быть положительным.'); return; }
 
-    // Ось H совпадает с направлением рисунка панели. При запрете поворота
-    // указанная ось рисунка детали всегда укладывается вдоль рисунка панели.
+    // Ось H соответствует длине панели (первому размеру формата). Поэтому
+    // неповёрнутая деталь должна передаваться упаковщику как ширина × длина.
+    // Для рисунка по ширине базовая ориентация намеренно меняется местами.
     function packingDimensions(part) {
-        if (part.grainDirection === 'length') return {w:part.width, h:part.length, baseRotated:true};
-        return {w:part.length, h:part.width, baseRotated:false};
+        if (part.grainDirection === 'width') return {w:part.length, h:part.width, baseRotated:true};
+        return {w:part.width, h:part.length, baseRotated:false};
     }
     let allSheets = [];
     let remainingPieces = parts.map(p => ({id:p.id, name:p.name, grainDirection:p.grainDirection, ...packingDimensions(p), canRotate:p.rotate, qtyLeft:p.qty}));
