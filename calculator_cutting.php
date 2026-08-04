@@ -427,11 +427,10 @@ let nextManualMaterialNumber = 1;
 let libraryFilter = 'all';
 
 function panelLabel(panel) {
-    const size = panel.height_mm && panel.width_mm ? `${panel.height_mm}×${panel.width_mm} мм` : '';
-    return [panel.manufacturer_name, panel.decor_number, panel.decor_name || panel.name, size].filter(Boolean).join(' · ');
+    return [panel.manufacturer_name, panel.decor_number, panel.decor_name].filter(Boolean).join(' · ');
 }
 function libraryItems() {
-    const formats = PANEL_SIZES.map(size => ({...size, type:'format', label:`Формат ${size.manufacturer_name || 'плиты'} ${size.height_mm}×${size.width_mm}`}));
+    const formats = PANEL_SIZES.map(size => ({...size, type:'format', label:size.manufacturer_name || ''}));
     const decors = PANELS.filter(panel => Number(panel.height_mm)>0 && Number(panel.width_mm)>0).map(panel => ({...panel, type:'decor', label:panelLabel(panel)}));
     return [...formats, ...decors];
 }
