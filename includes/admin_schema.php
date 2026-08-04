@@ -43,6 +43,20 @@ function ensure_currencies_table(PDO $pdo): void
     $stmt->execute(['code' => 'RUB', 'name' => 'Российский рубль']);
 }
 
+function cbr_currency_rates_are_stale(PDO $pdo, int $maxAgeSeconds = 3600): bool
+{
+    ensure_currencies_table($pdo);
+
+    $stmt = $pdo->query("SELECT COUNT(*) AS rate_count, MIN(updated_at) AS oldest_update FROM currencies WHERE code IN ('EUR', 'USD')");
+    $state = $stmt ? $stmt->fetch() : false;
+    if (!$state || (int)$state['rate_count'] < 2 || empty($state['oldest_update'])) {
+        return true;
+    }
+
+    $updatedAt = strtotime((string)$state['oldest_update']);
+    return $updatedAt === false || $updatedAt < time() - $maxAgeSeconds;
+}
+
 function ensure_suppliers_table(PDO $pdo): void
 {
     $pdo->exec("CREATE TABLE IF NOT EXISTS suppliers (

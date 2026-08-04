@@ -15,7 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $errors = [];
 ensure_currencies_table($pdo);
-$ok = refresh_cbr_currency_rates($pdo, $errors);
+$automatic = isset($_GET['automatic']) && $_GET['automatic'] === '1';
+$shouldRefresh = !$automatic || cbr_currency_rates_are_stale($pdo);
+$ok = !$shouldRefresh || refresh_cbr_currency_rates($pdo, $errors);
 
 if (!$ok) {
     http_response_code(502);
@@ -23,5 +25,6 @@ if (!$ok) {
 
 echo json_encode([
     'ok' => $ok,
-    'message' => $ok ? 'Курсы валют обновлены.' : (implode(' ', $errors) ?: 'Не удалось обновить курсы валют.'),
+    'refreshed' => $ok && $shouldRefresh,
+    'message' => $ok ? ($shouldRefresh ? 'Курсы валют обновлены.' : 'Курсы валют актуальны.') : (implode(' ', $errors) ?: 'Не удалось обновить курсы валют.'),
 ], JSON_UNESCAPED_UNICODE);
