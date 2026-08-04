@@ -28,10 +28,10 @@ function app_header_currency_rates(): array
         $pdo = $GLOBALS['pdo'];
         ensure_currencies_table($pdo);
 
-        // CBR publishes one official set per business day. Refresh stale data on the
-        // first normal page request, while keeping a network failure non-fatal.
-        $updated = $pdo->query("SELECT MAX(updated_at) FROM currencies WHERE code <> 'RUB'")->fetchColumn();
-        if (function_exists('refresh_cbr_currency_rates') && (!$updated || strtotime((string)$updated) < time() - 12 * 3600)) {
+        // Refresh on the first request after the hourly cache expires. Using both
+        // header currencies prevents an unrelated recently edited rate from
+        // incorrectly making stale EUR/USD data appear fresh.
+        if (function_exists('refresh_cbr_currency_rates') && cbr_currency_rates_are_stale($pdo)) {
             $refreshErrors = [];
             refresh_cbr_currency_rates($pdo, $refreshErrors);
         }
@@ -117,20 +117,31 @@ function render_app_header(string $section = 'Калькулятор'): void
 (() => {
   const rates = <?php echo $ratesJson ?: '{}'; ?>;
   const refreshButton = document.querySelector('[data-refresh-currency]');
-  refreshButton?.addEventListener('click', async () => {
-    refreshButton.disabled = true;
-    refreshButton.classList.add('app-header__refresh--loading');
+  const refreshRates = async (automatic = false) => {
+    if (!automatic) {
+      refreshButton.disabled = true;
+      refreshButton.classList.add('app-header__refresh--loading');
+    }
     try {
-      const response = await fetch('includes/currency_refresh.php', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}});
+      const response = await fetch(`includes/currency_refresh.php${automatic ? '?automatic=1' : ''}`, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}});
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.message || 'Не удалось обновить курсы валют.');
-      window.location.reload();
+      if (!automatic || result.refreshed) window.location.reload();
     } catch (error) {
-      alert(error.message || 'Не удалось обновить курсы валют.');
-      refreshButton.disabled = false;
-      refreshButton.classList.remove('app-header__refresh--loading');
+      if (!automatic) alert(error.message || 'Не удалось обновить курсы валют.');
+    } finally {
+      if (!automatic) {
+        refreshButton.disabled = false;
+        refreshButton.classList.remove('app-header__refresh--loading');
+      }
     }
-  });
+  };
+  refreshButton?.addEventListener('click', () => refreshRates(false));
+  // Keep an already opened calculator current without requiring the refresh icon.
+  // The endpoint applies the shared server-side cache, so each tab only performs
+  // a cheap database check while the rates are fresh.
+  setTimeout(() => refreshRates(true), 1000);
+  setInterval(() => refreshRates(true), 30 * 60 * 1000);
   const supported = Object.keys(rates);
   const saved = localStorage.getItem('stcalc.currency');
   let selected = supported.includes(saved) ? saved : 'RUB';
