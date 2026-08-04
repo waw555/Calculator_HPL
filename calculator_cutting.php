@@ -617,47 +617,27 @@ function runCutting() {
     });
     if (validFormats.length === 0) { alert('Размер листа за вычетом отступов должен быть положительным.'); return; }
 
-    const sortedFormats = [...validFormats].sort((a, b) => (a.width * a.height) - (b.width * b.height));
-
     // Ось H совпадает с направлением рисунка панели. При запрете поворота
     // указанная ось рисунка детали всегда укладывается вдоль рисунка панели.
     function packingDimensions(part) {
         if (part.grainDirection === 'length') return {w:part.width, h:part.length, baseRotated:true};
         return {w:part.length, h:part.width, baseRotated:false};
     }
-    function pieceFitsOnFormat(part, sw, sh) {
-        const {w, h} = packingDimensions(part);
-        return (w <= sw && h <= sh) || (part.rotate && h <= sw && w <= sh);
-    }
-
-    const formatGroups = new Map();
-    for (const p of parts) {
-        let assignedFmt = null;
-        for (const fmt of sortedFormats) {
-            const formatMargin = Number(fmt.margin ?? margin);
-            const sw = fmt.width - formatMargin * 2;
-            const sh = fmt.height - formatMargin * 2;
-            if (pieceFitsOnFormat(p, sw, sh)) {
-                assignedFmt = fmt;
-                break;
-            }
-        }
-        if (!assignedFmt) assignedFmt = sortedFormats[sortedFormats.length - 1];
-        if (!formatGroups.has(assignedFmt)) formatGroups.set(assignedFmt, []);
-        formatGroups.get(assignedFmt).push(p);
-    }
-
     let allSheets = [];
-    let allRemaining = [];
+    let remainingPieces = parts.map(p => ({id:p.id, name:p.name, grainDirection:p.grainDirection, ...packingDimensions(p), canRotate:p.rotate, qtyLeft:p.qty}));
 
-    for (const [fmt, fmtParts] of formatGroups) {
+    // Сначала расходуем листы с указанным остатком, затем форматы без лимита.
+    // После каждого формата передаём все неразмещённые детали следующему, чтобы
+    // количество одного листа не мешало использовать остальные исходные листы.
+    const formatsToPack = [...validFormats].sort((a, b) => (a.qty == null) - (b.qty == null));
+    for (const fmt of formatsToPack) {
+        if (remainingPieces.length === 0) break;
         const formatMargin = Number(fmt.margin ?? margin);
         const sheetW = fmt.width - formatMargin * 2;
         const sheetH = fmt.height - formatMargin * 2;
-        const testPieces = fmtParts.map(p => ({id:p.id, name:p.name, grainDirection:p.grainDirection, ...packingDimensions(p), canRotate:p.rotate, qtyLeft:p.qty}));
-        const {sheets: trySheets, remaining: tryRemaining} = packSheets(testPieces, sheetW, sheetH, kerf, method, fmt.qty ?? null);
+        const {sheets: trySheets, remaining: tryRemaining} = packSheets(remainingPieces, sheetW, sheetH, kerf, method, fmt.qty ?? null);
         for (const s of trySheets) allSheets.push({format: fmt, ...s});
-        allRemaining.push(...tryRemaining.filter(p => p.qtyLeft > 0));
+        remainingPieces = tryRemaining.filter(p => p.qtyLeft > 0);
     }
 
     if (allSheets.length === 0) { alert('Не удалось разместить ни одну деталь.'); return; }
@@ -666,7 +646,7 @@ function runCutting() {
     allSheets.forEach(s => s.placed.forEach(pl => placedCounts.set(pl.id, (placedCounts.get(pl.id) || 0) + 1)));
     const unplacedParts = parts.map(p => ({id:p.id, name:p.name, qty:Math.max(0, p.qty - (placedCounts.get(p.id) || 0))})).filter(p => p.qty > 0);
     const unplacedPartIds = new Set(unplacedParts.map(p => p.id));
-    if (allRemaining.length > 0) {
+    if (remainingPieces.length > 0) {
         alert('Внимание: не все детали удалось разместить: ' + unplacedParts.map(p => `${p.name} — ${p.qty} шт.`).join(', '));
     }
 
