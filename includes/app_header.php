@@ -1,6 +1,12 @@
 <?php
 
 /** Shared application chrome, visual system and display-currency controller. */
+function app_version(): string
+{
+    $version = trim((string)@file_get_contents(dirname(__DIR__) . '/VERSION'));
+    return preg_match('/^\d+\.\d+\.\d+$/', $version) ? $version : '0.0.0';
+}
+
 function app_header_currency_rates(): array
 {
     if (!isset($GLOBALS['pdo']) || !$GLOBALS['pdo'] instanceof PDO) {
@@ -99,7 +105,7 @@ function render_app_header(string $section = 'Калькулятор'): void
     ?>
 <header class="app-header">
   <div class="app-header__inner">
-    <a class="app-header__brand" href="<?php echo $isAdminPage ? 'admin.php' : 'calculator.php'; ?>" aria-label="На главную"><span class="app-header__logo"><?php if ($logoPath !== ''): ?><img src="<?php echo e($logoPath); ?>" alt="Логотип <?php echo e($organizationName); ?>"><?php else: ?><span aria-hidden="true">🧮</span><?php endif; ?></span><span class="app-header__title"><span class="app-header__title-row"><span class="app-header__name"><?php echo e($section); ?></span></span><span class="app-header__subtitle"><?php echo e($organizationName); ?></span></span></a>
+    <a class="app-header__brand" href="<?php echo $isAdminPage ? 'admin.php' : 'calculator.php'; ?>" aria-label="На главную"><span class="app-header__logo"><?php if ($logoPath !== ''): ?><img src="<?php echo e($logoPath); ?>" alt="Логотип <?php echo e($organizationName); ?>"><?php else: ?><span aria-hidden="true">🧮</span><?php endif; ?></span><span class="app-header__title"><span class="app-header__title-row"><span class="app-header__name"><?php echo e($section); ?></span><span class="app-header__pill" title="Версия приложения">v<?php echo e(app_version()); ?></span></span><span class="app-header__subtitle"><?php echo e($organizationName); ?></span></span></a>
     <span class="app-header__spacer"></span>
     <span class="app-header__rates" title="Курсы автоматически обновляются из ЦБ РФ"><span>ЦБ РФ</span><strong><?php echo e($eur); ?> ₽</strong><strong><?php echo e($usd); ?> ₽</strong><button class="app-header__refresh" type="button" data-refresh-currency title="Обновить курсы валют" aria-label="Обновить курсы валют">↻</button></span>
     <span class="app-header__currency" role="group" aria-label="Валюта отображения"><span class="app-header__currency-label">Валюта</span><?php foreach ($rates as $code => $rate): ?><button class="app-header__currency-option" type="button" data-app-currency="<?php echo e($code); ?>" title="<?php echo e($rate['name']); ?>"><?php echo e($code); ?></button><?php endforeach; ?></span>
