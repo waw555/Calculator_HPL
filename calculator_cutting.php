@@ -47,6 +47,12 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $cuttingName = trim((string)($settings['cutting_name'] ?? ''));
     $loadedId = (int)($settings['loaded_id'] ?? 0);
 
+    if ($objectName === '') {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => 'Укажите название объекта.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     if ($resultData && isset($resultData['sheets'])) {
         foreach ($resultData['sheets'] as &$sheet) {
             unset($sheet['freeRects']);
@@ -258,7 +264,7 @@ table.parts-table tr.editing { background: #eff6ff; }
     <section class="panel settings-panel">
         <div class="section-title main settings-title"><span>Общие параметры и тип раскроя</span><small class="settings-title__note">Алгоритм размещения деталей</small></div>
         <div class="cutting-meta">
-            <div><label for="object_name">Название объекта</label><input id="object_name" type="text" placeholder="Например, ЖК Северный, корпус 2"></div>
+            <div><label for="object_name">Название объекта <span style="color:#dc2626">*</span></label><input id="object_name" type="text" placeholder="Например, ЖК Северный, корпус 2" required></div>
             <div><label for="cutting_name">Название раскроя</label><input id="cutting_name" type="text" placeholder="Например, Фасады кухни"></div>
         </div>
         <div class="strategy-heading">Тип (стратегия) раскроя <span>*</span></div>
@@ -834,10 +840,17 @@ function renderResult() {
 
 /* ═══════════ СОХРАНЕНИЕ / ЗАГРУЗКА ═══════════ */
 document.getElementById('save-btn').addEventListener('click', async () => {
+    const objectNameInput = document.getElementById('object_name');
+    const objectName = objectNameInput.value.trim();
+    if (!objectName) {
+        alert('Укажите название объекта перед сохранением раскроя.');
+        objectNameInput.focus();
+        return;
+    }
     const settings = {
         loaded_id: loadedId,
         cutting_name: document.getElementById('cutting_name').value,
-        object_name: document.getElementById('object_name').value,
+        object_name: objectName,
         manufacturer_ids: selectedManufacturerIds(),
         formats: getSelectedFormats(),
         decor_id: sourceMaterials.find(m => m.panelId)?.panelId || null,
