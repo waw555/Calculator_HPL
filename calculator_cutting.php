@@ -296,7 +296,10 @@ table.parts-table tr.editing { background: #eff6ff; }
         </div>
         <div class="cost-card__section">
             <div class="cost-card__heading"><div class="cost-card__eyebrow">✦ Распил</div><div class="cost-card__total" id="cost-total">0,00 ₽</div></div>
-            <div class="cost-card__stats"><div class="cost-card__row"><span>Метраж реза:</span><b id="cost-length">—</b></div></div>
+            <div class="cost-card__stats">
+                <div class="cost-card__row"><span>Метраж реза:</span><b id="cost-length">—</b></div>
+                <div class="cost-card__row"><span>Метраж торцевания:</span><b id="cost-trimming-length">—</b></div>
+            </div>
         </div>
         <div class="cost-card__section">
             <div class="cost-card__heading"><div class="cost-card__eyebrow">✦ Итого</div><div class="cost-card__total" id="grand-cost-total">0,00 ₽</div></div>
@@ -661,12 +664,20 @@ function runCutting() {
     allSheets.forEach(s => totalSheetAreaM2 += (s.format.width * s.format.height) / 1e6);
     const sheetCount = allSheets.length;
 
-    let totalPartsArea = 0, totalCutLength = 0, totalPartsCount = 0;
+    let totalPartsArea = 0, partsCutLength = 0, totalPartsCount = 0;
     allSheets.forEach(s => s.placed.forEach(pl => {
         totalPartsArea += (pl.w * pl.h) / 1e6;
         totalPartsCount += 1;
-        totalCutLength += (pl.w + pl.h) * 2 / 1000;
+        partsCutLength += (pl.w + pl.h) * 2 / 1000;
     }));
+    // Торцевание выполняется по четырём сторонам каждого исходного листа.
+    // Его метраж оплачивается по тому же тарифу, что и основной распил.
+    allSheets.forEach(s => {
+        const sheetMargin = Number(s.format.margin ?? margin);
+        s.trimmingLength = sheetMargin > 0 ? (s.format.width + s.format.height) * 2 / 1000 : 0;
+    });
+    const trimmingLength = allSheets.reduce((sum, sheet) => sum + sheet.trimmingLength, 0);
+    const totalCutLength = partsCutLength + trimmingLength;
 
     const wasteArea = totalSheetAreaM2 - totalPartsArea;
     const sheetsCost = allSheets.reduce((sum, sheet) => {
@@ -676,13 +687,15 @@ function runCutting() {
     const partsCost = totalSheetAreaM2 > 0 ? sheetsCost * (totalPartsArea / totalSheetAreaM2) : 0;
     const wasteCost = sheetsCost - partsCost;
 
+    const trimmingCostRub = cutPrice * trimmingLength;
+    const trimmingCost = window.AppCurrency ? AppCurrency.convert(trimmingCostRub, 'RUB', currency) : trimmingCostRub;
     const cuttingCostRub = cutPrice * totalCutLength;
     const cuttingCost = window.AppCurrency ? AppCurrency.convert(cuttingCostRub, 'RUB', currency) : cuttingCostRub;
     const totalCost = sheetsCost + cuttingCost;
     lastResult = {fmtLabel, formats: validFormats, kerf, margin, method, priceM2, cutPrice, currency,
         sheets: allSheets, sheetAreaM2: totalSheetAreaM2 / sheetCount, sheetCount,
-        totalSheetsArea: totalSheetAreaM2, totalPartsArea, totalCutLength, totalPartsCount,
-        wasteArea, sheetsCost, partsCost, wasteCost, cuttingCost, totalCost,
+        totalSheetsArea: totalSheetAreaM2, totalPartsArea, partsCutLength, trimmingLength, totalCutLength, totalPartsCount,
+        wasteArea, sheetsCost, partsCost, wasteCost, trimmingCost, cuttingCost, totalCost,
         unplacedPartIds: [...unplacedPartIds], unplacedParts};
 
     renderResult();
@@ -700,12 +713,16 @@ function colorForId(id) { return PALETTE[id % PALETTE.length]; }
 function renderResult() {
     if (!lastResult) return;
     const r = lastResult;
+    // Совместимость с раскроями, сохранёнными до появления учёта торцевания.
+    const trimmingLength = Number(r.trimmingLength || 0);
+    const partsCutLength = Number(r.partsCutLength ?? (Number(r.totalCutLength || 0) - trimmingLength));
     resultSection.classList.remove('hidden');
     document.getElementById('cost-total').textContent = `${fmtNum(r.cuttingCost, 2)} ${r.currency === 'RUB' ? '₽' : r.currency}`;
     document.getElementById('cost-sheets').textContent = `${r.sheetCount} шт.`;
     document.getElementById('cost-parts').textContent = `${r.totalPartsCount} шт.`;
     document.getElementById('cost-area').textContent = `${fmtNum(r.totalPartsArea, 2)} м²`;
-    document.getElementById('cost-length').textContent = `${fmtNum(r.totalCutLength, 1)} м.п.`;
+    document.getElementById('cost-length').textContent = `${fmtNum(partsCutLength, 1)} м.п.`;
+    document.getElementById('cost-trimming-length').textContent = `${fmtNum(trimmingLength, 1)} м.п.`;
     document.getElementById('cost-waste-area').textContent = `${fmtNum(r.wasteArea, 2)} м²`;
     const costCurrency = r.currency === 'RUB' ? '₽' : r.currency;
     document.getElementById('material-cost-total').textContent = `${fmtNum(r.sheetsCost, 2)} ${costCurrency}`;
@@ -729,14 +746,15 @@ function renderResult() {
         <tr><th>Формат(ы) листов</th><td>${escapeHtml(fmtBreakdown)}</td></tr>
         <tr><th>Количество листов</th><td>${r.sheetCount}</td></tr>
         <tr><th>Площадь листов</th><td>${fmtNum(r.totalSheetsArea,3)} м²</td></tr>
-        <tr><th>Длина резов</th><td>${fmtNum(r.totalCutLength,2)} м</td></tr>
+        <tr><th>Длина резов</th><td>${fmtNum(partsCutLength,2)} м</td></tr>
+        <tr><th>Длина торцевания</th><td>${fmtNum(trimmingLength,2)} м</td></tr>
         <tr><th>Количество деталей</th><td>${r.totalPartsCount}</td></tr>
         <tr><th>Площадь деталей</th><td>${fmtNum(r.totalPartsArea,3)} м²</td></tr>
         <tr><th>Площадь отходов</th><td>${fmtNum(r.wasteArea,3)} м²</td></tr>
         <tr><th>Стоимость листов</th><td>${fmtNum(r.sheetsCost,2)} ${escapeHtml(r.currency)}</td></tr>
         <tr><th>Стоимость деталей</th><td>${fmtNum(r.partsCost,2)} ${escapeHtml(r.currency)}</td></tr>
         <tr><th>Стоимость отходов</th><td>${fmtNum(r.wasteCost,2)} ${escapeHtml(r.currency)}</td></tr>
-        <tr><th>Стоимость распила</th><td>${fmtNum(r.cuttingCost,2)} ${escapeHtml(r.currency)}</td></tr>
+        <tr><th>Стоимость распила с торцеванием</th><td>${fmtNum(r.cuttingCost,2)} ${escapeHtml(r.currency)}</td></tr>
         <tr><th>Итого</th><td>${fmtNum(r.totalCost,2)} ${escapeHtml(r.currency)}</td></tr>
         ${unplacedHtml}
     `;
@@ -760,7 +778,10 @@ function renderResult() {
         let rectsHtml = '';
         let partsRowsHtml = '';
         let placedArea = 0;
-        sheet.placed.forEach(pl => {
+        const sheetTrimmingLength = Number(sheet.trimmingLength ?? (sheetMargin > 0 ? (sf.width + sf.height) * 2 / 1000 : 0));
+        const sheetTrimmingCostRub = Number(r.cutPrice || 0) * sheetTrimmingLength;
+        const sheetTrimmingCost = window.AppCurrency ? AppCurrency.convert(sheetTrimmingCostRub, 'RUB', r.currency) : sheetTrimmingCostRub;
+        sheet.placed.forEach((pl, partIndex) => {
             placedArea += (pl.w * pl.h) / 1e6;
             const x = sheetX + (pl.y + sheetMargin) * scale, y = sheetY + (pl.x + sheetMargin) * scale, w = pl.h * scale, h = pl.w * scale;
             const arrLen = Math.min(w, h) * 0.5;
@@ -795,7 +816,10 @@ function renderResult() {
                 ${arrowHtml}
                 <text x="${x + w - 6}" y="${y + h - 6}" text-anchor="end" font-size="10" fill="#6b7280">#${pl.id}</text>
             </g>`;
-            partsRowsHtml += `<tr><td><span class="part-number" style="background:${colorForId(pl.id)}">${pl.id}</span></td><td>${escapeHtml(pl.name || `Деталь ${pl.id}`)}</td><td>${fmtNum(pl.w,0)}×${fmtNum(pl.h,0)} мм</td><td>${pl.rotated ? 'Да' : 'Нет'}</td><td>${fmtNum(pl.x + sheetMargin,0)}; ${fmtNum(pl.y + sheetMargin,0)}</td></tr>`;
+            const trimmingCells = partIndex === 0
+                ? `<td rowspan="${sheet.placed.length}">${fmtNum(sheetTrimmingLength,2)} м</td><td rowspan="${sheet.placed.length}">${fmtNum(sheetTrimmingCost,2)} ${escapeHtml(r.currency)}</td>`
+                : '';
+            partsRowsHtml += `<tr><td><span class="part-number" style="background:${colorForId(pl.id)}">${pl.id}</span></td><td>${escapeHtml(pl.name || `Деталь ${pl.id}`)}</td><td>${fmtNum(pl.w,0)}×${fmtNum(pl.h,0)} мм</td><td>${pl.rotated ? 'Да' : 'Нет'}</td>${trimmingCells}</tr>`;
         });
 
         const usagePercent = sheetAreaM2 > 0 ? (placedArea / sheetAreaM2 * 100) : 0;
@@ -829,7 +853,7 @@ function renderResult() {
                     <span>Отход: <b>${fmtNum(100-usagePercent,1)}%</b></span>
                 </div>
                 <table class="sheet-parts">
-                    <thead><tr><th>№</th><th>Деталь</th><th>Размер на карте</th><th>Поворот</th><th>Координаты X; Y</th></tr></thead>
+                    <thead><tr><th>№</th><th>Деталь</th><th>Размер на карте</th><th>Поворот</th><th>Метраж торцевания</th><th>Стоимость торцевания</th></tr></thead>
                     <tbody>${partsRowsHtml}</tbody>
                 </table>
             </div>
@@ -1003,17 +1027,22 @@ document.getElementById('export-pdf-btn').addEventListener('click', () => {
 });
 
 function exportExcel(r) {
+    const trimmingLength = Number(r.trimmingLength || 0);
+    const partsCutLength = Number(r.partsCutLength ?? (Number(r.totalCutLength || 0) - trimmingLength));
     let csv = 'Показатель;Значение\n';
     csv += `Формат(ы);${(r.fmtLabel || '').replace(/;/g,',')}\n`;
     csv += `Количество листов;${r.sheetCount}\n`;
     csv += `Площадь листов;${fmtNum(r.totalSheetsArea,3)} м2\n`;
-    csv += `Длина резов;${fmtNum(r.totalCutLength,2)} м\n`;
+    csv += `Длина резов;${fmtNum(partsCutLength,2)} м\n`;
+    csv += `Длина торцевания;${fmtNum(trimmingLength,2)} м\n`;
     csv += `Количество деталей;${r.totalPartsCount}\n`;
     csv += `Площадь деталей;${fmtNum(r.totalPartsArea,3)} м2\n`;
     csv += `Площадь отходов;${fmtNum(r.wasteArea,3)} м2\n`;
     csv += `Стоимость листов;${fmtNum(r.sheetsCost,2)} ${r.currency}\n`;
     csv += `Стоимость деталей;${fmtNum(r.partsCost,2)} ${r.currency}\n`;
     csv += `Стоимость отходов;${fmtNum(r.wasteCost,2)} ${r.currency}\n\n`;
+    csv += `Стоимость торцевания;${fmtNum(r.trimmingCost || 0,2)} ${r.currency}\n`;
+    csv += `Стоимость распила с торцеванием;${fmtNum(r.cuttingCost,2)} ${r.currency}\n\n`;
     csv += 'Лист;Формат;Деталь;X;Y;Длина;Ширина;Поворот\n';
     r.sheets.forEach((sheet, idx) => {
         const sf = sheet.format || (r.formats && r.formats[0]) || {};
