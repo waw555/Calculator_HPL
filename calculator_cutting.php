@@ -200,7 +200,7 @@ button, .button { border: 0; border-radius: 9px; padding: 10px 16px; background:
 
 table.parts-table { width:100%; border-collapse:collapse; background:#fff; table-layout:fixed; }
 table.parts-table th, table.parts-table td { height:54px; box-sizing:border-box; padding:9px 12px; text-align:left; vertical-align:middle; border-bottom:1px solid #e7edf4; font-size:12px; }
-table.parts-table th { height:43px; background:#f0f4f8; color:#07152d; font-size:11px; font-weight:800; text-transform:uppercase; }
+table.parts-table th { height:43px; background:#f0f4f8; color:#07152d; font-size:11px; font-weight:800; text-align:center; text-transform:uppercase; }
 table.parts-table th.rotate-column, table.parts-table td.rotate-column { text-align:center; }
 table.parts-table input[type="text"], table.parts-table input[type="number"] { height:30px; padding:6px 10px; border-color:#c8d5e5; border-radius:9px; font-size:12px; text-align:center; background:#fff; }
 table.parts-table input[data-field="name"] { text-align:left; }
