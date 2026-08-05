@@ -28,14 +28,6 @@ function app_header_currency_rates(): array
         $pdo = $GLOBALS['pdo'];
         ensure_currencies_table($pdo);
 
-        // Refresh on the first request after the hourly cache expires. Using both
-        // header currencies prevents an unrelated recently edited rate from
-        // incorrectly making stale EUR/USD data appear fresh.
-        if (function_exists('refresh_cbr_currency_rates') && cbr_currency_rates_are_stale($pdo)) {
-            $refreshErrors = [];
-            refresh_cbr_currency_rates($pdo, $refreshErrors);
-        }
-
         $stmt = $pdo->query("SELECT code, name, rate_to_rub FROM currencies WHERE is_active = 1 ORDER BY code = 'RUB' DESC, code ASC");
         $rows = $stmt ? $stmt->fetchAll() : [];
         $rates = [];
@@ -107,7 +99,7 @@ function render_app_header(string $section = 'Калькулятор'): void
   <div class="app-header__inner">
     <a class="app-header__brand" href="<?php echo $isAdminPage ? 'admin.php' : 'calculator.php'; ?>" aria-label="На главную"><span class="app-header__logo"><?php if ($logoPath !== ''): ?><img src="<?php echo e($logoPath); ?>" alt="Логотип <?php echo e($organizationName); ?>"><?php else: ?><span aria-hidden="true">🧮</span><?php endif; ?></span><span class="app-header__title"><span class="app-header__title-row"><span class="app-header__name"><?php echo e($section); ?></span><span class="app-header__pill" title="Версия приложения">v<?php echo e(app_version()); ?></span></span><span class="app-header__subtitle"><?php echo e($organizationName); ?></span></span></a>
     <span class="app-header__spacer"></span>
-    <span class="app-header__rates" title="Курсы автоматически обновляются из ЦБ РФ"><span>ЦБ РФ</span><strong><?php echo e($eur); ?> ₽</strong><strong><?php echo e($usd); ?> ₽</strong><button class="app-header__refresh" type="button" data-refresh-currency title="Обновить курсы валют" aria-label="Обновить курсы валют">↻</button></span>
+    <span class="app-header__rates" title="Курсы ЦБ РФ. Обновляются при входе или вручную"><span>ЦБ РФ</span><strong><?php echo e($eur); ?> ₽</strong><strong><?php echo e($usd); ?> ₽</strong><button class="app-header__refresh" type="button" data-refresh-currency title="Обновить курсы валют" aria-label="Обновить курсы валют">↻</button></span>
     <span class="app-header__currency" role="group" aria-label="Валюта отображения"><span class="app-header__currency-label">Валюта</span><?php foreach ($rates as $code => $rate): ?><button class="app-header__currency-option" type="button" data-app-currency="<?php echo e($code); ?>" title="<?php echo e($rate['name']); ?>"><?php echo e($code); ?></button><?php endforeach; ?></span>
     <button class="app-header__button" type="button" onclick="window.print()" title="Печать страницы">▣ <span>Печать</span></button>
     <span class="app-header__user">♙ <?php echo e($username . ($role === 'admin' ? ' · Админ' : '')); ?><?php if ($role === 'admin'): ?><a class="app-header__mode" href="<?php echo $isAdminPage ? 'calculator.php' : 'admin.php'; ?>" title="<?php echo $isAdminPage ? 'Перейти в режим пользователя' : 'Открыть панель администратора'; ?>" aria-label="<?php echo $isAdminPage ? 'Перейти в режим пользователя' : 'Открыть панель администратора'; ?>"><?php echo $isAdminPage ? '👤' : '⚙'; ?></a><?php endif; ?><a class="app-header__logout" href="logout.php" title="Выйти" aria-label="Выйти">↪</a></span>
@@ -137,11 +129,6 @@ function render_app_header(string $section = 'Калькулятор'): void
     }
   };
   refreshButton?.addEventListener('click', () => refreshRates(false));
-  // Keep an already opened calculator current without requiring the refresh icon.
-  // The endpoint applies the shared server-side cache, so each tab only performs
-  // a cheap database check while the rates are fresh.
-  setTimeout(() => refreshRates(true), 1000);
-  setInterval(() => refreshRates(true), 30 * 60 * 1000);
   const supported = Object.keys(rates);
   const saved = localStorage.getItem('stcalc.currency');
   let selected = supported.includes(saved) ? saved : 'RUB';

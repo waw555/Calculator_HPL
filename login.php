@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/admin_auth.php';
 require_valid_post_request();
 require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/admin_schema.php';
 
 $error = '';
 
@@ -33,6 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'password' => password_hash($password, PASSWORD_DEFAULT),
                 'id' => (int)$user['id'],
             ]);
+        }
+
+        try {
+            $currencyErrors = [];
+            refresh_cbr_currency_rates($pdo, $currencyErrors);
+        } catch (Throwable $e) {
+            error_log('Unable to refresh currency rates on login: ' . $e->getMessage());
         }
 
         if ($user['role'] === 'admin') {
