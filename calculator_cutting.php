@@ -305,6 +305,7 @@ table.parts-table tr.editing { background: #eff6ff; }
             <div class="cost-card__stats">
                 <div class="cost-card__row"><span>Метраж реза:</span><b id="cost-length">—</b></div>
                 <div class="cost-card__row"><span>Метраж торцевания:</span><b id="cost-trimming-length">—</b></div>
+                <div class="cost-card__row"><span>Итого метраж:</span><b id="cost-total-length">—</b></div>
             </div>
         </div>
         <div class="cost-card__section">
@@ -743,6 +744,7 @@ function renderResult() {
     document.getElementById('cost-area').textContent = `${fmtNum(r.totalPartsArea, 2)} м²`;
     document.getElementById('cost-length').textContent = `${fmtNum(partsCutLength, 1)} м.п.`;
     document.getElementById('cost-trimming-length').textContent = `${fmtNum(trimmingLength, 1)} м.п.`;
+    document.getElementById('cost-total-length').textContent = `${fmtNum(Number(r.totalCutLength ?? (partsCutLength + trimmingLength)), 1)} м.п.`;
     document.getElementById('cost-waste-area').textContent = `${fmtNum(r.wasteArea, 2)} м²`;
     const costCurrency = r.currency === 'RUB' ? '₽' : r.currency;
     document.getElementById('material-cost-total').textContent = `${fmtNum(r.sheetsCost, 2)} ${costCurrency}`;
@@ -768,6 +770,7 @@ function renderResult() {
         <tr><th>Площадь листов</th><td>${fmtNum(r.totalSheetsArea,3)} м²</td></tr>
         <tr><th>Длина резов</th><td>${fmtNum(partsCutLength,2)} м</td></tr>
         <tr><th>Длина торцевания</th><td>${fmtNum(trimmingLength,2)} м</td></tr>
+        <tr><th>Итого метраж</th><td>${fmtNum(Number(r.totalCutLength ?? (partsCutLength + trimmingLength)),2)} м</td></tr>
         <tr><th>Количество деталей</th><td>${r.totalPartsCount}</td></tr>
         <tr><th>Площадь деталей</th><td>${fmtNum(r.totalPartsArea,3)} м²</td></tr>
         <tr><th>Площадь отходов</th><td>${fmtNum(r.wasteArea,3)} м²</td></tr>
@@ -1071,6 +1074,7 @@ function exportExcel(r) {
     csv += `Площадь листов;${fmtNum(r.totalSheetsArea,3)} м2\n`;
     csv += `Длина резов;${fmtNum(partsCutLength,2)} м\n`;
     csv += `Длина торцевания;${fmtNum(trimmingLength,2)} м\n`;
+    csv += `Итого метраж;${fmtNum(Number(r.totalCutLength ?? (partsCutLength + trimmingLength)),2)} м\n`;
     csv += `Количество деталей;${r.totalPartsCount}\n`;
     csv += `Площадь деталей;${fmtNum(r.totalPartsArea,3)} м2\n`;
     csv += `Площадь отходов;${fmtNum(r.wasteArea,3)} м2\n`;
