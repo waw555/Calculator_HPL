@@ -27,13 +27,14 @@ body { font-family: Arial, sans-serif; margin: 0; color: #1f2937; background: li
 .header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 24px 32px; }
 .header a { color: #dbeafe; text-decoration: none; }
 .header h1 { margin: 0; font-size: clamp(24px, 3.5vw, 36px); letter-spacing: -.02em; font-weight: 900; color: #fff; }
-.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.container { max-width: 1450px; margin: 0 auto; padding: 20px 34px 40px; }
 .warehouse-section { background: #fff; border-radius: 14px; padding: 28px; box-shadow: 0 8px 24px rgba(15,23,42,0.15); margin-bottom: 24px; }
-.warehouse-title-wrap { border-bottom: 3px solid #2563eb; padding-bottom: 8px; margin-bottom: 8px; }
-.warehouse-title { font-size: 22px; font-weight: 900; color: #1e3a8a; margin: 0; text-align: center; background: transparent; width: 100%; padding: 4px 8px; border-radius: 6px; border: 1px solid transparent; }
+.price-list-paper > .warehouse-section { margin: 36px 0 28px; padding: 34px; box-shadow: 0 12px 30px rgba(15,23,42,.08); border-radius: 16px; }
+.warehouse-title-wrap { border-bottom: 3px solid #2563eb; padding-bottom: 14px; margin-bottom: 24px; }
+.warehouse-title { font-size: 34px; font-weight: 900; color: #1e3a8a; margin: 0; text-align: center; background: #fff; width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #cbd5e1; letter-spacing:.02em; }
 .warehouse-title:hover { background: #f0f7ff; border-color: #d1d5db; }
 .warehouse-title:focus { background: #fff; outline: 2px solid #2563eb; }
-.program-title-input { font-size: 17px; font-weight: 700; color: #1f2937; margin: 24px 0 4px 0; border: none; background: transparent; width: 100%; padding: 4px 8px; border-radius: 6px; }
+.program-title-input { font-size: 24px; font-weight: 900; color: #1f2937; margin: 28px 0 6px 0; border: none; background: transparent; width: 100%; padding: 4px 8px; border-radius: 6px; }
 .program-title-input:hover { background: #f0f7ff; }
 .program-title-input:focus { background: #fff; outline: 2px solid #2563eb; }
 .program-subtitle-input { font-size: 13px; color: #64748b; margin: 0 0 12px 0; border: none; background: transparent; width: 100%; padding: 2px 8px; border-radius: 6px; }
@@ -52,22 +53,26 @@ td.na { color: #cbd5e1; text-align: center; }
 .back-link:hover { background: rgba(255,255,255,0.25); }
 .info-bar { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
 .info-chip { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #dbeafe; padding: 6px 14px; border-radius: 8px; font-size: 14px; }
-.toolbar { position: sticky; top: 12px; z-index: 20; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); background: rgba(15,23,42,.92); border: 1px solid rgba(255,255,255,.22); border-radius: 14px; padding: 14px; margin-bottom: 20px; color: #fff; box-shadow: 0 12px 30px rgba(15,23,42,.25); backdrop-filter: blur(8px); }
-.toolbar__group { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-.toolbar button, .block-tools button, .row-tools button { border:0; border-radius:8px; padding:8px 11px; font-weight:800; cursor:pointer; background:#fbbf24; color:#111827; }
+.toolbar { position: sticky; top: 12px; z-index: 20; display: grid; grid-template-columns: minmax(320px, 1fr) auto minmax(320px, 1fr); align-items:center; gap: 18px; background: #111a2d; border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 18px; margin-bottom: 26px; color: #fff; box-shadow: 0 12px 30px rgba(15,23,42,.25); }
+.toolbar__group { display:flex; gap:10px; flex-wrap:wrap; align-items:center; min-height: 44px; }
+.toolbar__group--export { justify-content:center; }
+.toolbar button, .block-tools button, .row-tools button { border:0; border-radius:9px; min-height:42px; padding:10px 14px; font-weight:900; cursor:pointer; background:#ffc221; color:#07152d; font-size:14px; line-height:1; white-space:nowrap; }
+.toolbar button:focus-visible, .block-tools button:focus-visible { outline: 3px solid #bfdbfe; outline-offset: 2px; }
 .toolbar button.secondary, .block-tools button.secondary { background:#dbeafe; color:#1e3a8a; }
 .toolbar button.danger, .block-tools button.danger, .row-tools button.danger { background:#fee2e2; color:#991b1b; }
 .toolbar input { width: 110px; border-radius:8px; border:1px solid #cbd5e1; padding:8px; }
-.toolbar small { color:#bfdbfe; line-height:1.35; }
-.price-list-paper { background:#fff; color:#111; padding: 42px 48px; border-radius:14px; box-shadow:0 8px 24px rgba(15,23,42,.15); }
+.toolbar small { color:#c7d7f2; line-height:1.35; font-size:14px; max-width:420px; justify-self:end; }
+@media (max-width: 980px) { .toolbar { grid-template-columns: 1fr; } .toolbar__group--export { justify-content:flex-start; } .toolbar small { justify-self:start; max-width:none; } }
+.price-list-paper { background:#fff; color:#111; padding: 52px 60px; border-radius:16px; box-shadow:0 20px 45px rgba(15,23,42,.18); overflow:hidden; }
 .price-list-head { display:flex; justify-content:space-between; gap:24px; align-items:flex-start; min-height:140px; margin-bottom:24px; }
 .logo-box { width:132px; height:132px; border:2px solid #777; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:900; color:#1e3a8a; line-height:1.05; }
 .company-info { text-align:right; font-size:12px; line-height:1.45; max-width:520px; }
 .price-meta { margin-top:28px; display:grid; grid-template-columns:auto auto; gap:3px 18px; justify-content:end; font-weight:800; }
 .price-meta input { border:0; background:transparent; color:#dc2626; font-weight:900; width:95px; }
 .export-title { text-align:center; color:#dc2626; font-weight:900; font-size:18px; margin:24px 0 8px; }
-.block-tools, .row-tools { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 12px; }
-.block-tools input { border:1px solid #cbd5e1; border-radius:8px; padding:7px; width:120px; }
+.block-tools, .row-tools { display:grid; grid-template-columns: max-content max-content max-content 140px max-content 150px max-content max-content; gap:10px; align-items:center; margin:14px 0 18px; }
+.block-tools input { border:1px solid #cbd5e1; border-radius:10px; padding:10px 12px; width:100%; min-height:42px; font-size:16px; }
+@media (max-width: 1100px) { .block-tools, .row-tools { display:flex; flex-wrap:wrap; } .block-tools input { width:150px; } }
 .price-block { position:relative; margin: 22px 0; }
 .price-block table { border:2px solid #111; margin-bottom:4px; }
 .price-block thead th { background:#f5b400; color:#111; border:2px solid #111; padding:5px 6px; text-transform:uppercase; }
@@ -118,7 +123,7 @@ td.na { color: #cbd5e1; text-align: center; }
 
     <section class="toolbar" aria-label="Редактор прайс-листа">
         <div class="toolbar__group"><button type="button" id="addWarehouseBtn">+ Склад</button><button type="button" id="addBlockBtn" class="secondary">+ Блок</button><button type="button" id="saveDraftBtn">Сохранить</button><button type="button" id="resetDraftBtn" class="danger">Сбросить</button></div>
-        <div class="toolbar__group"><button type="button" id="exportExcelBtn">Excel</button><button type="button" id="exportPdfBtn" class="secondary">PDF</button><button type="button" onclick="window.print()" class="secondary">Печать</button></div>
+        <div class="toolbar__group toolbar__group--export"><button type="button" id="exportExcelBtn">Excel</button><button type="button" id="exportPdfBtn" class="secondary">PDF</button><button type="button" onclick="window.print()" class="secondary">Печать</button></div>
         <small>Редактируйте заголовки, ячейки и цены прямо в таблице. В каждом блоке можно добавить/удалить строки и применить наценку к числовым ценам.</small>
     </section>
 
@@ -580,6 +585,8 @@ const STORAGE_KEY = 'price_list_countertops_editor_v2';
 const paper = document.getElementById('priceListPaper');
 const moneyCells = 'td.price';
 function makeEditable(root = paper) { root.querySelectorAll('input').forEach(i => i.setAttribute('value', i.value)); root.querySelectorAll('td, th, .company-info, .export-notes').forEach(el => el.contentEditable = 'true'); root.querySelectorAll('.price-block').forEach(attachBlockTools); }
+function prepareExportClone(){ const clone=paper.cloneNode(true); clone.querySelectorAll('.block-tools,.row-tools,.is-selected').forEach(el=>{ if(el.classList && el.classList.contains('is-selected')) el.classList.remove('is-selected'); else el.remove(); }); clone.querySelectorAll('input').forEach(input=>{ const span=document.createElement('span'); span.textContent=input.value; span.className=input.className; if(input.classList.contains('warehouse-title')) span.classList.add('warehouse-title-export'); input.replaceWith(span); }); clone.querySelectorAll('[contenteditable]').forEach(el=>el.removeAttribute('contenteditable')); return clone; }
+function exportDocumentHtml(){ const clone=prepareExportClone(); const styles=Array.from(document.querySelectorAll('style')).map(st=>st.textContent).join('\n') + '\n.block-tools,.row-tools,.toolbar,.info-bar,.back-link,.app-header{display:none!important}.price-list-paper{box-shadow:none;border-radius:0;padding:42px 48px}.warehouse-title-export{display:block}.price-list-paper > .warehouse-section{box-shadow:none;border-radius:0;margin:36px 0 28px;padding:0 0 24px}'; return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+styles+'</style></head><body>'+clone.outerHTML+'</body></html>'; }
 function blockTemplate(title='Новый блок прайс-листа', subtitle='(описание блока)') { const wrap=document.createElement('div'); wrap.className='price-block'; wrap.innerHTML=`<input type="text" class="program-title-input" value="${title}"><input type="text" class="program-subtitle-input" value="${subtitle}"><div style="overflow-x:auto;"><table><thead><tr><th>Тиснение, сердцевина</th><th>Номер декора</th><th>Формат</th><th>Площадь</th><th>Цена м2</th><th>Цена лист</th><th>Цена руб</th></tr></thead><tbody><tr><td class="texture">Новая позиция</td><td class="decors">0000</td><td>3050 × 1300 × 12</td><td>3,97 м2</td><td class="price">0,00</td><td class="price">0,00</td><td class="price">0,00 ₽</td></tr></tbody></table></div>`; makeEditable(wrap); return wrap; }
 function attachBlockTools(block) { if (block.querySelector(':scope > .block-tools')) return; const tools=document.createElement('div'); tools.className='block-tools'; tools.innerHTML='<button type="button" data-act="add-row">+ строка</button><button type="button" class="danger" data-act="delete-row">Удалить выбранную строку</button><button type="button" class="secondary" data-act="clone-block">Дублировать блок</button><input type="number" step="0.01" placeholder="Наценка %"><button type="button" class="secondary" data-act="markup-percent">+%</button><input type="number" step="0.01" placeholder="Наценка сумма"><button type="button" class="secondary" data-act="markup-sum">+ сумма</button><button type="button" class="danger" data-act="delete-block">Удалить блок</button>'; block.prepend(tools); }
 function normalizeBlocks(){ document.querySelectorAll('.program-title-input').forEach(input=>{ if(!input.closest('.price-block')){ const block=document.createElement('div'); block.className='price-block'; input.parentNode.insertBefore(block,input); block.appendChild(input); const sub=block.nextElementSibling?.classList?.contains('program-subtitle-input')?block.nextElementSibling:null; if(sub) block.appendChild(sub); const div=block.nextElementSibling; if(div) block.appendChild(div); }}); makeEditable(); }
@@ -592,8 +599,8 @@ document.getElementById('addBlockBtn').onclick=()=>document.querySelector('.ware
 document.getElementById('addWarehouseBtn').onclick=()=>{ const wh=document.createElement('div'); wh.className='warehouse-section'; wh.innerHTML='<div class="warehouse-title-wrap"><input type="text" class="warehouse-title" value="СКЛАД — НОВЫЙ"></div>'; wh.appendChild(blockTemplate()); paper.insertBefore(wh, paper.querySelector('.export-notes')); };
 document.getElementById('saveDraftBtn').onclick=()=>{ paper.querySelectorAll('input').forEach(i=>i.setAttribute('value',i.value)); localStorage.setItem(STORAGE_KEY, paper.innerHTML); alert('Черновик сохранён в браузере.'); };
 document.getElementById('resetDraftBtn').onclick=()=>{ if(confirm('Сбросить сохранённый черновик?')){ localStorage.removeItem(STORAGE_KEY); location.reload(); }};
-document.getElementById('exportExcelBtn').onclick=()=>{ const html='\ufeff'+paper.outerHTML; const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'application/vnd.ms-excel'})); a.download='price_list_countertops.xls'; a.click(); URL.revokeObjectURL(a.href); };
-document.getElementById('exportPdfBtn').onclick=()=>{ if(window.html2pdf){ html2pdf().set({margin:8, filename:'price_list_countertops.pdf', html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(paper).save(); } else window.print(); };
+document.getElementById('exportExcelBtn').onclick=()=>{ const html='\ufeff'+exportDocumentHtml(); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8'})); a.download='price_list_countertops.xls'; a.click(); URL.revokeObjectURL(a.href); };
+document.getElementById('exportPdfBtn').onclick=()=>{ const exportNode=prepareExportClone(); if(window.html2pdf){ html2pdf().set({margin:8, filename:'price_list_countertops.pdf', html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(exportNode).save(); } else window.print(); };
 const saved=localStorage.getItem(STORAGE_KEY); if(saved) paper.innerHTML=saved; normalizeBlocks();
 })();
 </script>
