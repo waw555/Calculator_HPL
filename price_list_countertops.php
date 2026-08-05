@@ -85,12 +85,12 @@ button, .button { border: 0; border-radius: 9px; padding: 10px 16px; background:
 .price-meta input { border: 0; background: transparent; color: #e9164d; font-weight: 900; width: 110px; padding: 0; text-align: right; }
 .warehouse-section { margin: 28px 0; padding: 0; }
 .warehouse-title-wrap { border-bottom: 2px solid #e8edf4; padding-bottom: 12px; margin-bottom: 18px; }
-.warehouse-title { font-size: 22px; font-weight: 900; color: #0f172a; margin: 0; text-align: left; background: transparent; width: 100%; padding: 6px 0; border: 0; letter-spacing: -.01em; }
-.warehouse-title:hover, .warehouse-title:focus { background: #f8fafc; outline: none; border-radius: 8px; padding-left: 8px; padding-right: 8px; }
-.program-title-input { font-size: 16px; font-weight: 850; color: #172033; margin: 22px 0 4px 0; border: none; background: transparent; width: 100%; padding: 4px 0; border-radius: 6px; }
-.program-title-input:hover, .program-title-input:focus { background: #f8fafc; outline: none; padding-left: 8px; padding-right: 8px; }
-.program-subtitle-input { font-size: 12px; color: #64748b; margin: 0 0 12px 0; border: none; background: transparent; width: 100%; padding: 2px 0; border-radius: 6px; }
-.program-subtitle-input:hover, .program-subtitle-input:focus { background: #f8fafc; outline: none; padding-left: 8px; padding-right: 8px; }
+.warehouse-title { font-size: 22px; font-weight: 900; color: #0f172a; margin: 0; text-align: center; background: transparent; width: 100%; padding: 6px 0; border: 0; letter-spacing: -.01em; }
+.warehouse-title:hover, .warehouse-title:focus { background: #f8fafc; outline: none; border-radius: 8px; }
+.program-title-input { font-size: 16px; font-weight: 850; color: #172033; margin: 22px 0 4px 0; border: none; background: transparent; width: 100%; padding: 4px 0; border-radius: 6px; text-align: center; }
+.program-title-input:hover, .program-title-input:focus { background: #f8fafc; outline: none; }
+.program-subtitle-input { font-size: 12px; color: #64748b; margin: 0 0 12px 0; border: none; background: transparent; width: 100%; padding: 2px 0; border-radius: 6px; text-align: center; }
+.program-subtitle-input:hover, .program-subtitle-input:focus { background: #f8fafc; outline: none; }
 .price-list-paper table, .price-block table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 8px; background: #fff; }
 .price-list-paper thead th, .price-block thead th { background: #f0f4f8; color: #07152d; padding: 11px 10px; text-align: center; font-weight: 800; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e7edf4; white-space: nowrap; }
 .price-list-paper thead th.text-left, .price-block thead th.text-left { text-align: left; }
@@ -153,7 +153,6 @@ td.na { color: #94a3b8; text-align: center; font-weight: 600; }
             <div>
                 <label for="price_type">Тип цен</label>
                 <select id="price_type" name="price_type">
-                    <option value="">— Все —</option>
                     <?php foreach ($priceTypes as $pt): ?>
                         <option value="<?php echo e($pt['id']); ?>" <?php echo $selectedPriceType === (string)$pt['id'] ? 'selected' : ''; ?>><?php echo e($pt['name']); ?></option>
                     <?php endforeach; ?>
@@ -668,6 +667,22 @@ document.getElementById('resetDraftBtn').onclick=()=>{ if(confirm('Сброси�
 document.getElementById('exportExcelBtn').onclick=()=>{ const html='\ufeff'+exportDocumentHtml(); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8'})); a.download='price_list_countertops.xls'; a.click(); URL.revokeObjectURL(a.href); };
 document.getElementById('exportPdfBtn').onclick=()=>{ const exportNode=prepareExportClone(); if(window.html2pdf){ html2pdf().set({margin:8, filename:'price_list_countertops.pdf', html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(exportNode).save(); } else window.print(); };
 const saved=localStorage.getItem(STORAGE_KEY); if(saved) paper.innerHTML=saved; normalizeBlocks();
+
+const priceMetaInputs = document.querySelectorAll('.price-meta input');
+const validFromInput = document.getElementById('valid_from');
+const priceTypeSelect = document.getElementById('price_type');
+
+if (validFromInput && priceMetaInputs[1]) {
+    validFromInput.addEventListener('change', () => {
+        priceMetaInputs[1].value = validFromInput.value;
+    });
+}
+
+if (priceTypeSelect && priceMetaInputs[0]) {
+    priceTypeSelect.addEventListener('change', () => {
+        priceMetaInputs[0].value = priceTypeSelect.options[priceTypeSelect.selectedIndex].text;
+    });
+}
 
 const currencySelect = document.getElementById('currency');
 if (currencySelect) {
