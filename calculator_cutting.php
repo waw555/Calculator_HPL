@@ -485,7 +485,7 @@ function renderSourceMaterials() {
         materialsList.innerHTML = '<tr><td colspan="9" class="source-empty">Добавьте лист из базы или укажите его размеры вручную.</td></tr>';
         return;
     }
-    materialsList.innerHTML = sourceMaterials.map((m, index) => `<tr data-id="${m.materialId}"><td class="source-number">${index + 1}</td><td><input data-field="label" value="${escapeHtml(m.label)}"></td><td><input type="number" min="1" data-field="height" value="${m.height}"></td><td><input type="number" min="1" data-field="width" value="${m.width}"></td><td><div class="source-unit"><input type="number" min="0" step="0.1" data-field="margin" value="${m.margin ?? 0}"></div></td><td><input class="${m.qty == null ? 'unlimited-qty' : ''}" type="${m.qty == null ? 'text' : 'number'}" min="1" data-field="qty" value="${m.qty == null ? 'Авто' : m.qty}" aria-label="Количество листов; оставьте пустым для автоматического количества"></td><td><div class="source-unit"><input type="number" min="0" step="0.01" data-field="priceM2" value="${m.priceM2 ?? 0}"><small>${escapeHtml(m.currency || 'RUB')}</small></div></td><td><select data-field="grainDirection"><option value="none" ${m.grainDirection==='none'?'selected':''}>Нет</option><option value="vertical" ${m.grainDirection==='vertical'?'selected':''}>Вертикально</option><option value="horizontal" ${m.grainDirection==='horizontal'?'selected':''}>Горизонтально</option></select></td><td><button type="button" class="remove-source remove-material" data-id="${m.materialId}" aria-label="Удалить материал">&#128465;</button></td></tr>`).join('');
+    materialsList.innerHTML = sourceMaterials.map((m, index) => `<tr data-id="${m.materialId}"><td class="source-number">${index + 1}</td><td><input data-field="label" value="${escapeHtml(m.label)}"></td><td><input type="number" min="1" data-field="height" value="${m.height}"></td><td><input type="number" min="1" data-field="width" value="${m.width}"></td><td><div class="source-unit"><input type="number" min="0" step="0.1" data-field="margin" value="${m.margin ?? 0}"></div></td><td><input class="${m.qty == null ? 'unlimited-qty' : ''}" type="${m.qty == null ? 'text' : 'number'}" min="1" data-field="qty" value="${m.qty == null ? 'Авто' : m.qty}" aria-label="Количество листов; оставьте пустым для автоматического количества"></td><td><div class="source-unit"><input type="number" min="0" step="0.01" data-field="priceM2" value="${m.priceM2 ?? 0}"><small>${escapeHtml(m.currency || 'RUB')}</small></div></td><td><select data-field="grainDirection"><option value="none" ${m.grainDirection==='none'?'selected':''}>Нет</option><option value="vertical" ${m.grainDirection==='vertical'?'selected':''}>По длине листа</option><option value="horizontal" ${m.grainDirection==='horizontal'?'selected':''}>По ширине листа</option></select></td><td><button type="button" class="remove-source remove-material" data-id="${m.materialId}" aria-label="Удалить материал">&#128465;</button></td></tr>`).join('');
 }
 function addSourceMaterial(format) {
     if (!(format.height > 0 && format.width > 0)) { alert('Укажите корректные размеры материала.'); return; }
@@ -812,16 +812,26 @@ function renderResult() {
         });
 
         const usagePercent = sheetAreaM2 > 0 ? (placedArea / sheetAreaM2 * 100) : 0;
+        const sourceGrainDirection = sf.grainDirection || 'none';
+        const guideDirection = sourceGrainDirection !== 'none'
+            ? (sourceGrainDirection === 'vertical' ? 'horizontal' : 'vertical')
+            : (r.method === 'length' ? 'horizontal' : (r.method === 'width' ? 'vertical' : 'none'));
+        const sourceGrainLabel = sourceGrainDirection === 'horizontal'
+            ? 'По ширине листа'
+            : (sourceGrainDirection === 'vertical' ? 'По длине листа' : 'Нет');
         let sheetGrainHtml = '';
-        if (r.method !== 'optimal') {
-            const grainAlongLength = r.method === 'length';
-            const labelX = grainAlongLength ? sheetX + sheetW / 2 : sheetX + sheetW + 66;
-            const labelY = grainAlongLength ? sheetY + sheetH + 15 : sheetY + sheetH / 2;
-            const labelTransform = grainAlongLength ? '' : ` transform="rotate(-90 ${labelX} ${labelY})"`;
-            const line = grainAlongLength
+        if (guideDirection !== 'none') {
+            const grainHorizontal = guideDirection === 'horizontal';
+            const labelX = grainHorizontal ? sheetX + sheetW / 2 : sheetX + sheetW + 66;
+            const labelY = grainHorizontal ? sheetY + sheetH + 15 : sheetY + sheetH / 2;
+            const labelTransform = grainHorizontal ? '' : ` transform="rotate(-90 ${labelX} ${labelY})"`;
+            const line = grainHorizontal
                 ? `<line x1="${sheetX + 8}" y1="${sheetY + sheetH + 25}" x2="${sheetX + sheetW - 20}" y2="${sheetY + sheetH + 25}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>`
                 : `<line x1="${sheetX + sheetW + 82}" y1="${sheetY + 8}" x2="${sheetX + sheetW + 82}" y2="${sheetY + sheetH - 20}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>`;
-            sheetGrainHtml = `<text x="${labelX}" y="${labelY}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600"${labelTransform}>ориентация деталей</text>${line}`;
+            const guideLabel = sourceGrainDirection !== 'none'
+                ? `направление рисунка: ${sourceGrainLabel.toLowerCase()}`
+                : 'ориентация деталей';
+            sheetGrainHtml = `<text x="${labelX}" y="${labelY}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600"${labelTransform}>${guideLabel}</text>${line}`;
         }
         const block = document.createElement('div');
         block.innerHTML = `
@@ -846,6 +856,7 @@ function renderResult() {
                 <div class="sheet-info">
                     <span><b>№ ${idx + 1}</b></span>
                     <span>Размер: <b>${fmtNum(sf.height,0)}×${fmtNum(sf.width,0)} мм</b></span>
+                    <span>Направление рисунка: <b>${sourceGrainLabel}</b></span>
                     <span>Площадь листа: <b>${fmtNum(sheetAreaM2,3)} м²</b></span>
                     <span>Площадь деталей: <b>${fmtNum(placedArea,3)} м²</b></span>
                     <span>Использование: <b>${fmtNum(usagePercent,1)}%</b></span>

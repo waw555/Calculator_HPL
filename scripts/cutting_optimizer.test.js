@@ -6,11 +6,18 @@ const path = require('node:path');
 const {packSheets, orientationsFor, usableSheetDimensions} = require('./cutting_optimizer');
 
 const calculatorPage = fs.readFileSync(path.join(__dirname, '..', 'calculator_cutting.php'), 'utf8');
+const adminPanelsPage = fs.readFileSync(path.join(__dirname, '..', 'admin_panels.php'), 'utf8');
 assert.doesNotMatch(calculatorPage, /(^|[^\\w.])CuttingOptimizer\\./m, 'глобальный оптимизатор должен вызываться через window.CuttingOptimizer');
 
 assert.ok(calculatorPage.includes('const dimensionRight = 96;'), 'справа должно быть достаточно места для двух вертикальных подписей');
 assert.ok(calculatorPage.includes('sheetX + sheetW + 66'), 'подпись ориентации не должна совпадать с координатой размера листа');
 assert.ok(calculatorPage.includes('sheetX + sheetW + 82'), 'стрелка ориентации должна находиться в отдельной правой колонке');
+assert.ok(calculatorPage.includes("const sourceGrainDirection = sf.grainDirection || 'none';"), 'карта должна читать направление рисунка исходного листа');
+assert.ok(calculatorPage.includes("sourceGrainDirection === 'vertical' ? 'horizontal' : 'vertical'"), 'направление по длине должно идти вдоль длинной оси карты');
+assert.ok(calculatorPage.includes('направление рисунка:'), 'на карте должна быть корректная подпись направления рисунка исходного листа');
+assert.ok(calculatorPage.includes('<span>Направление рисунка: <b>${sourceGrainLabel}</b></span>'), 'направление рисунка должно отображаться в информации о листе');
+assert.ok(calculatorPage.includes('>По длине листа</option>') && calculatorPage.includes('>По ширине листа</option>'), 'выбор направления должен использовать оси листа');
+assert.ok(adminPanelsPage.includes("'vertical' => 'По длине листа'") && adminPanelsPage.includes("'horizontal' => 'По ширине листа'"), 'справочник декоров должен использовать оси листа');
 function piece(overrides = {}) {
     return {id: 1, name: 'Деталь', w: 700, h: 1200, qtyLeft: 1, canRotate: false, grainDirection: 'none', ...overrides};
 }

@@ -16,7 +16,7 @@ if (!in_array($activeTab, $validTabs, true)) $activeTab = 'panels';
 
 $errors = [];
 $editing = null;
-$decorDirections = ['vertical' => 'Вертикально', 'horizontal' => 'Горизонтально', 'none' => 'Нет направления'];
+$decorDirections = ['vertical' => 'По длине листа', 'horizontal' => 'По ширине листа', 'none' => 'Нет направления'];
 
 function calculate_panel_prices(float $width, float $height, string $priceM2Raw, string $priceSheetRaw, string $priceSource): array
 {
