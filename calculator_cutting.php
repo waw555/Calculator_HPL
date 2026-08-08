@@ -754,7 +754,8 @@ function renderResult() {
         const sheetW = sf.height * scale;
         const sheetH = sf.width * scale;
         const dimensionTop = 28;
-        const dimensionRight = 48;
+        // Справа размещаются две независимые вертикальные колонки: размер листа и ориентация деталей.
+        const dimensionRight = 96;
         const decorGuideHeight = 38;
         const sheetX = 0;
         const sheetY = dimensionTop;
@@ -814,12 +815,12 @@ function renderResult() {
         let sheetGrainHtml = '';
         if (r.method !== 'optimal') {
             const grainAlongLength = r.method === 'length';
-            const labelX = grainAlongLength ? sheetX + sheetW / 2 : sheetX + sheetW + 34;
+            const labelX = grainAlongLength ? sheetX + sheetW / 2 : sheetX + sheetW + 66;
             const labelY = grainAlongLength ? sheetY + sheetH + 15 : sheetY + sheetH / 2;
             const labelTransform = grainAlongLength ? '' : ` transform="rotate(-90 ${labelX} ${labelY})"`;
             const line = grainAlongLength
                 ? `<line x1="${sheetX + 8}" y1="${sheetY + sheetH + 25}" x2="${sheetX + sheetW - 20}" y2="${sheetY + sheetH + 25}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>`
-                : `<line x1="${sheetX + sheetW + 40}" y1="${sheetY + 8}" x2="${sheetX + sheetW + 40}" y2="${sheetY + sheetH - 20}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>`;
+                : `<line x1="${sheetX + sheetW + 82}" y1="${sheetY + 8}" x2="${sheetX + sheetW + 82}" y2="${sheetY + sheetH - 20}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>`;
             sheetGrainHtml = `<text x="${labelX}" y="${labelY}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600"${labelTransform}>ориентация деталей</text>${line}`;
         }
         const block = document.createElement('div');

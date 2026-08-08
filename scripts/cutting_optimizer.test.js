@@ -8,6 +8,9 @@ const {packSheets, orientationsFor, usableSheetDimensions} = require('./cutting_
 const calculatorPage = fs.readFileSync(path.join(__dirname, '..', 'calculator_cutting.php'), 'utf8');
 assert.doesNotMatch(calculatorPage, /(^|[^\\w.])CuttingOptimizer\\./m, 'глобальный оптимизатор должен вызываться через window.CuttingOptimizer');
 
+assert.ok(calculatorPage.includes('const dimensionRight = 96;'), 'справа должно быть достаточно места для двух вертикальных подписей');
+assert.ok(calculatorPage.includes('sheetX + sheetW + 66'), 'подпись ориентации не должна совпадать с координатой размера листа');
+assert.ok(calculatorPage.includes('sheetX + sheetW + 82'), 'стрелка ориентации должна находиться в отдельной правой колонке');
 function piece(overrides = {}) {
     return {id: 1, name: 'Деталь', w: 700, h: 1200, qtyLeft: 1, canRotate: false, grainDirection: 'none', ...overrides};
 }
