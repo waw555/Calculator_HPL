@@ -275,11 +275,11 @@ table.parts-table tr.editing { background: #eff6ff; }
         </div>
         <div class="strategy-heading">Тип (стратегия) раскроя <span>*</span></div>
         <div class="strategy-options" role="radiogroup" aria-label="Тип (стратегия) раскроя">
-            <label class="strategy-card"><input type="radio" name="strategy" value="length"><strong><i>↔</i>По длине</strong><span>Расположение рисунка по длинной стороне листа.</span></label>
-            <label class="strategy-card"><input type="radio" name="strategy" value="width"><strong><i>⇅</i>По ширине</strong><span>Расположение рисунка по широкой стороне листа.</span></label>
-            <label class="strategy-card"><input type="radio" name="strategy" value="optimal" checked><strong><i>✣</i>Оптимально</strong><span>Оптимальное расположение деталей с поворотом.</span><b class="strategy-check">⊙</b></label>
+            <label class="strategy-card"><input type="radio" name="strategy" value="length"><strong><i>↔</i>По длине</strong><span>Длина каждой детали вдоль длины листа.</span></label>
+            <label class="strategy-card"><input type="radio" name="strategy" value="width"><strong><i>⇅</i>По ширине</strong><span>Длина каждой детали вдоль ширины листа.</span></label>
+            <label class="strategy-card"><input type="radio" name="strategy" value="optimal" checked><strong><i>✣</i>Оптимально</strong><span>Поворот только у деталей, где он разрешён.</span><b class="strategy-check">⊙</b></label>
         </div>
-        <div class="hidden"><label for="method">Метод расчёта</label><select id="method"><option value="optimal">Оптимально (с разворотом)</option><option value="length">По длине (вдоль декора)</option><option value="width">По ширине (вдоль декора)</option></select><div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°.</div></div>
+        <div class="hidden"><label for="method">Метод расчёта</label><select id="method"><option value="optimal">Оптимально (разрешённый поворот)</option><option value="length">Длина детали вдоль длины листа</option><option value="width">Длина детали вдоль ширины листа</option></select><div class="hint" id="method-hint">При методе «Оптимально» детали можно разворачивать на 90°, только если разрешён поворот.</div></div>
         <div class="cut-settings">
             <div class="cut-setting"><label for="kerf">Пропил пилы (толщина диска)</label><div class="input-unit"><input id="kerf" type="number" min="0" step="0.1" value="4"><b>мм</b></div><div class="hint">Ширина реза между деталями.</div></div>
             <div class="cut-setting"><label for="margin">Торцевание плиты</label><div class="input-unit"><input id="margin" type="number" min="0" step="0.1" value="5"><b>мм</b></div><div class="hint">Отступ для торцевания по краям плиты.</div></div>
@@ -404,6 +404,7 @@ table.parts-table tr.editing { background: #eff6ff; }
 
 </main>
 
+<script><?php readfile(__DIR__ . '/scripts/cutting_optimizer.js'); ?></script>
 <script>
 /* ═══════════ ДАННЫЕ ИЗ БД ═══════════ */
 const MANUFACTURERS = <?php echo $manufacturersJson; ?>;
@@ -488,7 +489,7 @@ function renderSourceMaterials() {
 }
 function addSourceMaterial(format) {
     if (!(format.height > 0 && format.width > 0)) { alert('Укажите корректные размеры материала.'); return; }
-    sourceMaterials.push({...format, grainDirection:format.grainDirection || 'none', qty:format.qty ?? null, priceM2:Number(format.priceM2)||0, materialId:nextMaterialId++});
+    sourceMaterials.push({...format, margin:Math.max(0,Number(format.margin)||0), grainDirection:format.grainDirection || 'none', qty:format.qty ?? null, priceM2:Number(format.priceM2)||0, materialId:nextMaterialId++});
     renderSourceMaterials();
     if (typeof scheduleDraftSave === 'function') scheduleDraftSave();
 }
@@ -547,10 +548,19 @@ function renderParts() {
     });
 }
 partsTbody.addEventListener('change',e=>{const p=parts.find(x=>x.id===Number(e.target.dataset.id));if(!p)return;if(e.target.classList.contains('toggle-rotate')){p.rotate=e.target.checked;e.target.nextElementSibling.textContent=p.rotate?'Да':'Нет';return;}if(!e.target.classList.contains('inline-edit'))return;const field=e.target.dataset.field;if(field==='name'){p.name=e.target.value.trim()||p.name;e.target.value=p.name;}else if(field==='grainDirection')p.grainDirection=e.target.value;else{const value=Number(e.target.value);if(value>0)p[field]=value;}const area=e.target.closest('tr').querySelector('.part-area');area.textContent=`${fmtNum(p.length*p.width*p.qty/1000000,2)} м²`;});
+function focusPartName(partId) {
+    const input = partsTbody.querySelector(`[data-id="${partId}"][data-field="name"]`);
+    if (!input) return;
+    input.focus();
+    input.select();
+}
 document.getElementById('add-part-btn').addEventListener('click',()=>{
     const partNumber=nextPartId++;
     const part={id:partNumber,name:`Деталь №${partNumber}`,length:1000,width:500,grainDirection:'none',qty:1,rotate:false};
-    parts.push(part);renderParts();scheduleDraftSave();requestAnimationFrame(()=>{const input=partsTbody.querySelector(`[data-id="${part.id}"][data-field="name"]`);input?.focus();input?.select();});
+    parts.push(part);
+    renderParts();
+    scheduleDraftSave();
+    focusPartName(part.id);
 });
 renderParts();
 window.deletePart=id=>{parts=parts.filter(p=>p.id!==id);renderParts();scheduleDraftSave();};
@@ -558,99 +568,39 @@ window.deletePart=id=>{parts=parts.filter(p=>p.id!==id);renderParts();scheduleDr
 /* ═══════════════════════════════════════════════════
    АЛГОРИТМ РАСКРОЯ (гильотинный bin-packing)
    ═══════════════════════════════════════════════════ */
-function packSheets(pieces, sheetW, sheetH, kerf, method, maxSheets = null) {
-    let queue = pieces.slice().sort((a, b) => (b.w * b.h) - (a.w * a.h));
-    const sheets = [];
-
-    while (queue.length > 0 && (maxSheets === null || sheets.length < maxSheets)) {
-        let freeRects = [{x: 0, y: 0, w: sheetW, h: sheetH}];
-        const placed = [];
-        let placedAny = true;
-
-        while (placedAny) {
-            placedAny = false;
-            let best = null;
-
-                for (let pi = 0; pi < queue.length; pi++) {
-                    const piece = queue[pi];
-                    let orientations = [{w: piece.w, h: piece.h, rotated: false}];
-                    if (piece.canRotate && piece.w !== piece.h) orientations.push({w: piece.h, h: piece.w, rotated: true});
-                    if (method !== 'optimal' && piece.grainDirection !== 'none') {
-                        orientations = orientations.filter(orient => {
-                            // В базовой ориентации длина детали лежит по оси H
-                            // листа, ширина — по W; после поворота оси меняются.
-                            const grainAlongSheetLength = piece.grainDirection === 'length'
-                                ? !orient.rotated
-                                : orient.rotated;
-                            return method === 'length' ? grainAlongSheetLength : !grainAlongSheetLength;
-                        });
-                    }
-                for (const orient of orientations) {
-                    for (let ri = 0; ri < freeRects.length; ri++) {
-                        const rect = freeRects[ri];
-                        if (orient.w <= rect.w && orient.h <= rect.h) {
-                            const leftoverArea = (rect.w * rect.h) - (orient.w * orient.h);
-                            if (!best || leftoverArea < best.score) {
-                                best = {pieceIdx: pi, rectIdx: ri, rotated: orient.rotated, w: orient.w, h: orient.h, score: leftoverArea};
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (best) {
-                const piece = queue[best.pieceIdx];
-                const rect = freeRects[best.rectIdx];
-                const pw = best.w, ph = best.h;
-
-                placed.push({id: piece.id, name: piece.name, grainDirection: piece.grainDirection, x: rect.x, y: rect.y, w: pw, h: ph, rotated: best.rotated});
-
-                freeRects.splice(best.rectIdx, 1);
-                const rightW = rect.w - pw - (rect.w - pw > 0 ? kerf : 0);
-                const bottomH = rect.h - ph - (rect.h - ph > 0 ? kerf : 0);
-                if (rightW > 0) freeRects.push({x: rect.x + pw + kerf, y: rect.y, w: rightW, h: ph});
-                if (bottomH > 0) freeRects.push({x: rect.x, y: rect.y + ph + kerf, w: rect.w, h: bottomH});
-
-                piece.qtyLeft -= 1;
-                if (piece.qtyLeft <= 0) queue.splice(best.pieceIdx, 1);
-                placedAny = true;
-            }
-        }
-
-        if (placed.length === 0) break;
-        sheets.push({placed, freeRects});
-    }
-    return {sheets, remaining: queue};
-}
+const packSheets = (...args) => {
+    if (!window.CuttingOptimizer?.packSheets) throw new Error('Модуль расчёта раскроя не загружен.');
+    return window.CuttingOptimizer.packSheets(...args);
+};
 
 function runCutting() {
     if (parts.length === 0) { alert('Добавьте хотя бы одну деталь.'); return; }
     const formats = getSelectedFormats();
     if (formats.length === 0) { alert('Выберите хотя бы один формат панели.'); return; }
 
-    const kerf = parseFloat(document.getElementById('kerf').value) || 0;
-    const margin = parseFloat(document.getElementById('margin').value) || 0;
+    const kerf = Math.max(0, parseFloat(document.getElementById('kerf').value) || 0);
+    const margin = Math.max(0, parseFloat(document.getElementById('margin').value) || 0);
     const method = document.getElementById('method').value;
     const priceM2 = parseFloat(priceM2Input.value) || 0;
     const cutPrice = parseFloat(cutPriceInput.value) || 0;
     const currency = sheetCurrencyInput.value || 'RUB';
 
     const validFormats = formats.filter(f => {
-        const formatMargin = Number(f.margin ?? margin);
-        const sw = f.width - formatMargin * 2, sh = f.height - formatMargin * 2;
+        const formatMargin = Math.max(0, Number(f.margin ?? margin) || 0);
+        const {w:sw, h:sh} = CuttingOptimizer.usableSheetDimensions(f.width, f.height, formatMargin);
         return sw > 0 && sh > 0;
     });
     if (validFormats.length === 0) { alert('Размер листа за вычетом отступов должен быть положительным.'); return; }
 
     // Ось H соответствует длине панели (первому размеру формата). Поэтому
     // неповёрнутая деталь всегда передаётся упаковщику как ширина × длина.
-    // Направление рисунка ограничивает допустимые повороты в packSheets, но
-    // никогда не должно само менять геометрию детали.
+    // Фиксированные режимы задают ориентацию всем деталям; в оптимальном
+    // режиме возможность второй ориентации задаётся флагом поворота детали.
     function packingDimensions(part) {
         return {w:part.width, h:part.length};
     }
     let allSheets = [];
-    let remainingPieces = parts.map(p => ({id:p.id, name:p.name, grainDirection:p.grainDirection, ...packingDimensions(p), canRotate:p.rotate, qtyLeft:p.qty}));
+    let remainingPieces = parts.map(p => ({id:p.id, name:p.name, grainDirection:p.grainDirection, ...packingDimensions(p), canRotate:Boolean(p.rotate), qtyLeft:Math.max(1,Math.floor(Number(p.qty)||1))}));
 
     // Сначала расходуем листы с указанным остатком, затем форматы без лимита.
     // После каждого формата передаём все неразмещённые детали следующему, чтобы
@@ -658,9 +608,8 @@ function runCutting() {
     const formatsToPack = [...validFormats].sort((a, b) => (a.qty == null) - (b.qty == null));
     for (const fmt of formatsToPack) {
         if (remainingPieces.length === 0) break;
-        const formatMargin = Number(fmt.margin ?? margin);
-        const sheetW = fmt.width - formatMargin * 2;
-        const sheetH = fmt.height - formatMargin * 2;
+        const formatMargin = Math.max(0, Number(fmt.margin ?? margin) || 0);
+        const {w:sheetW, h:sheetH} = CuttingOptimizer.usableSheetDimensions(fmt.width, fmt.height, formatMargin);
         const {sheets: trySheets, remaining: tryRemaining} = packSheets(remainingPieces, sheetW, sheetH, kerf, method, fmt.qty ?? null);
         for (const s of trySheets) allSheets.push({format: fmt, ...s});
         remainingPieces = tryRemaining.filter(p => p.qtyLeft > 0);
@@ -670,7 +619,7 @@ function runCutting() {
 
     const placedCounts = new Map();
     allSheets.forEach(s => s.placed.forEach(pl => placedCounts.set(pl.id, (placedCounts.get(pl.id) || 0) + 1)));
-    const unplacedParts = parts.map(p => ({id:p.id, name:p.name, qty:Math.max(0, p.qty - (placedCounts.get(p.id) || 0))})).filter(p => p.qty > 0);
+    const unplacedParts = parts.map(p => ({id:p.id, name:p.name, qty:Math.max(0, Math.max(1,Math.floor(Number(p.qty)||1)) - (placedCounts.get(p.id) || 0))})).filter(p => p.qty > 0);
     const unplacedPartIds = new Set(unplacedParts.map(p => p.id));
     if (remainingPieces.length > 0) {
         alert('Внимание: не все детали удалось разместить: ' + unplacedParts.map(p => `${p.name} — ${p.qty} шт.`).join(', '));
@@ -681,16 +630,18 @@ function runCutting() {
     allSheets.forEach(s => totalSheetAreaM2 += (s.format.width * s.format.height) / 1e6);
     const sheetCount = allSheets.length;
 
-    let totalPartsArea = 0, partsCutLength = 0, totalPartsCount = 0;
+    let totalPartsArea = 0, totalPartsCount = 0;
     allSheets.forEach(s => s.placed.forEach(pl => {
         totalPartsArea += (pl.w * pl.h) / 1e6;
         totalPartsCount += 1;
-        partsCutLength += (pl.w + pl.h) * 2 / 1000;
     }));
+    // Учитываем реальные гильотинные проходы пилы. Периметры деталей здесь
+    // суммировать нельзя: общие линии реза тогда считаются дважды.
+    const partsCutLength = allSheets.reduce((sum, sheet) => sum + Number(sheet.cutLength || 0) / 1000, 0);
     // Торцевание выполняется по четырём сторонам каждого исходного листа.
     // Его метраж оплачивается по тому же тарифу, что и основной распил.
     allSheets.forEach(s => {
-        const sheetMargin = Number(s.format.margin ?? margin);
+        const sheetMargin = Math.max(0, Number(s.format.margin ?? margin) || 0);
         s.trimmingLength = sheetMargin > 0 ? (s.format.width + s.format.height) * 2 / 1000 : 0;
     });
     const trimmingLength = allSheets.reduce((sum, sheet) => sum + sheet.trimmingLength, 0);
@@ -701,8 +652,11 @@ function runCutting() {
         const sheetAreaM2 = (sheet.format.width * sheet.format.height) / 1e6;
         return sum + sheetAreaM2 * Number(sheet.format.priceM2 ?? priceM2);
     }, 0);
-    const partsCost = totalSheetAreaM2 > 0 ? sheetsCost * (totalPartsArea / totalSheetAreaM2) : 0;
-    const wasteCost = sheetsCost - partsCost;
+    const partsCost = allSheets.reduce((sum, sheet) => {
+        const placedAreaM2 = sheet.placed.reduce((area, part) => area + part.w * part.h / 1e6, 0);
+        return sum + placedAreaM2 * Number(sheet.format.priceM2 ?? priceM2);
+    }, 0);
+    const wasteCost = Math.max(0, sheetsCost - partsCost);
 
     const trimmingCostRub = cutPrice * trimmingLength;
     const trimmingCost = window.AppCurrency ? AppCurrency.convert(trimmingCostRub, 'RUB', currency) : trimmingCostRub;
@@ -720,7 +674,14 @@ function runCutting() {
     renderResult();
     renderParts();
 }
-document.getElementById('cut-btn').addEventListener('click', runCutting);
+document.getElementById('cut-btn').addEventListener('click', () => {
+    try {
+        runCutting();
+    } catch (error) {
+        console.error('Ошибка расчёта раскроя:', error);
+        alert('Не удалось выполнить раскрой: ' + (error?.message || 'неизвестная ошибка'));
+    }
+});
 
 /* ═══════════ ОТОБРАЖЕНИЕ РЕЗУЛЬТАТА ═══════════ */
 const resultSection = document.getElementById('result-section');
@@ -845,7 +806,8 @@ function renderResult() {
             const trimmingCells = partIndex === 0
                 ? `<td rowspan="${sheet.placed.length}">${fmtNum(sheetTrimmingLength,2)} м</td><td rowspan="${sheet.placed.length}">${fmtNum(sheetTrimmingCost,2)} ${escapeHtml(r.currency)}</td>`
                 : '';
-            partsRowsHtml += `<tr><td><span class="part-number" style="background:${colorForId(pl.id)}">${pl.id}</span></td><td>${escapeHtml(pl.name || `Деталь ${pl.id}`)}</td><td>${fmtNum(pl.w,0)}×${fmtNum(pl.h,0)} мм</td><td>${pl.rotated ? 'Да' : 'Нет'}</td>${trimmingCells}</tr>`;
+            const orientationLabel = pl.forcedOrientation ? (r.method === 'width' ? 'По ширине' : 'По длине') : (pl.rotated ? 'Поворот 90°' : 'Без поворота');
+            partsRowsHtml += `<tr><td><span class="part-number" style="background:${colorForId(pl.id)}">${pl.id}</span></td><td>${escapeHtml(pl.name || `Деталь ${pl.id}`)}</td><td>${fmtNum(pl.w,0)}×${fmtNum(pl.h,0)} мм</td><td>${orientationLabel}</td>${trimmingCells}</tr>`;
         });
 
         const usagePercent = sheetAreaM2 > 0 ? (placedArea / sheetAreaM2 * 100) : 0;
@@ -858,7 +820,7 @@ function renderResult() {
             const line = grainAlongLength
                 ? `<line x1="${sheetX + 8}" y1="${sheetY + sheetH + 25}" x2="${sheetX + sheetW - 20}" y2="${sheetY + sheetH + 25}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>`
                 : `<line x1="${sheetX + sheetW + 40}" y1="${sheetY + 8}" x2="${sheetX + sheetW + 40}" y2="${sheetY + sheetH - 20}" stroke="#1e40af" stroke-width="2" marker-end="url(#ga${idx})"/>`;
-            sheetGrainHtml = `<text x="${labelX}" y="${labelY}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600"${labelTransform}>направление рисунка</text>${line}`;
+            sheetGrainHtml = `<text x="${labelX}" y="${labelY}" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600"${labelTransform}>ориентация деталей</text>${line}`;
         }
         const block = document.createElement('div');
         block.innerHTML = `
@@ -889,7 +851,7 @@ function renderResult() {
                     <span>Отход: <b>${fmtNum(100-usagePercent,1)}%</b></span>
                 </div>
                 <table class="sheet-parts">
-                    <thead><tr><th>№</th><th>Деталь</th><th>Размер на карте</th><th>Поворот</th><th>Метраж торцевания</th><th>Стоимость торцевания</th></tr></thead>
+                    <thead><tr><th>№</th><th>Деталь</th><th>Размер на карте</th><th>Ориентация</th><th>Метраж торцевания</th><th>Стоимость торцевания</th></tr></thead>
                     <tbody>${partsRowsHtml}</tbody>
                 </table>
             </div>
