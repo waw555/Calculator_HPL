@@ -587,7 +587,7 @@ function runCutting() {
 
     const validFormats = formats.filter(f => {
         const formatMargin = Math.max(0, Number(f.margin ?? margin) || 0);
-        const {w:sw, h:sh} = CuttingOptimizer.usableSheetDimensions(f.width, f.height, formatMargin);
+        const {w:sw, h:sh} = window.CuttingOptimizer.usableSheetDimensions(f.width, f.height, formatMargin);
         return sw > 0 && sh > 0;
     });
     if (validFormats.length === 0) { alert('Размер листа за вычетом отступов должен быть положительным.'); return; }
@@ -609,7 +609,7 @@ function runCutting() {
     for (const fmt of formatsToPack) {
         if (remainingPieces.length === 0) break;
         const formatMargin = Math.max(0, Number(fmt.margin ?? margin) || 0);
-        const {w:sheetW, h:sheetH} = CuttingOptimizer.usableSheetDimensions(fmt.width, fmt.height, formatMargin);
+        const {w:sheetW, h:sheetH} = window.CuttingOptimizer.usableSheetDimensions(fmt.width, fmt.height, formatMargin);
         const {sheets: trySheets, remaining: tryRemaining} = packSheets(remainingPieces, sheetW, sheetH, kerf, method, fmt.qty ?? null);
         for (const s of trySheets) allSheets.push({format: fmt, ...s});
         remainingPieces = tryRemaining.filter(p => p.qtyLeft > 0);

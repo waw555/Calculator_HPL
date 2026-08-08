@@ -1,7 +1,12 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const {packSheets, orientationsFor, usableSheetDimensions} = require('./cutting_optimizer');
+
+const calculatorPage = fs.readFileSync(path.join(__dirname, '..', 'calculator_cutting.php'), 'utf8');
+assert.doesNotMatch(calculatorPage, /(^|[^\\w.])CuttingOptimizer\\./m, 'глобальный оптимизатор должен вызываться через window.CuttingOptimizer');
 
 function piece(overrides = {}) {
     return {id: 1, name: 'Деталь', w: 700, h: 1200, qtyLeft: 1, canRotate: false, grainDirection: 'none', ...overrides};
