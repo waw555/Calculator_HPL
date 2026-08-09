@@ -10,6 +10,7 @@ require_once __DIR__ . '/includes/admin_schema.php';
 
 ensure_calculator_tables($pdo);
 ensure_organization_table($pdo);
+ensure_currencies_table($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_calculation') {
     header('Content-Type: application/json; charset=utf-8');
@@ -55,6 +56,8 @@ $panels = $pdo->query('SELECT pf.*, m.full_name AS manufacturer_name FROM panel_
 $panelsJson = json_encode(array_values($panels), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $suppliersList = $pdo->query('SELECT * FROM suppliers ORDER BY company_name ASC')->fetchAll();
 $collections = $pdo->query('SELECT fcol.*, s.company_name AS supplier_name FROM furniture_collections fcol LEFT JOIN suppliers s ON s.id = fcol.supplier_id ORDER BY s.company_name ASC, fcol.name ASC')->fetchAll();
+$furnitureCatalog = $pdo->query('SELECT pl.*, fc.name AS category_name, s.company_name AS supplier_name, fcol.name AS collection_name FROM price_list pl LEFT JOIN furniture_categories fc ON fc.id = pl.category_id LEFT JOIN suppliers s ON s.id = pl.supplier_id LEFT JOIN furniture_collections fcol ON fcol.id = pl.collection_id WHERE pl.is_active = 1 ORDER BY s.company_name ASC, fcol.name ASC, fc.name ASC, pl.material_name ASC')->fetchAll();
+$currencyRates = $pdo->query('SELECT code, nominal, rate_to_rub FROM currencies')->fetchAll();
 $services = $pdo->query('SELECT * FROM services WHERE is_active = 1 ORDER BY name ASC')->fetchAll();
 $savedCalculations = $pdo->prepare('SELECT id, title, total_amount, currency, created_at FROM saved_calculations WHERE user_id = :user_id ORDER BY id DESC LIMIT 10');
 $savedCalculations->execute(['user_id' => (int)$_SESSION['user_id']]);
@@ -206,6 +209,9 @@ tbody tr:hover td { background:#fbfcfe; }
 @media (max-width:600px) { .container { padding:0; } .panel { padding:18px; } .grid { grid-template-columns:1fr; } .calc-title { flex-direction:column; } .tabs-bar { border-radius:10px; } .tab-btn { padding-inline:13px; } .tab-btn .tab-icon { display:none; } .recent-panel { overflow-x:auto; } }
 @media (prefers-reduced-motion:reduce) { *,*:before,*:after { scroll-behavior:auto!important; transition:none!important; } }
 @media print { .tabs-bar { display:none!important; } .printable-offer { display:block!important; } }
+
+/* Shower partition configurator */
+.shower-config{margin-top:20px;padding-top:20px;border-top:1px solid #e8edf4}.shower-config__intro{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:16px}.shower-config__intro h3{margin:0;font-size:16px}.shower-config__intro p{max-width:760px;margin:5px 0 0;color:#64748b;font-size:12px;line-height:1.5}.shower-badge{flex:none;padding:6px 10px;border-radius:999px;background:#fff1f4;color:#be123c;font-size:10px;font-weight:850;text-transform:uppercase}.shower-workspace{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(280px,.75fr);gap:18px;align-items:start}.shower-steps{display:grid;gap:12px}.shower-step{padding:16px;border:1px solid #dfe6ef;border-radius:12px;background:#f8fafc}.shower-step__title{display:flex;align-items:center;gap:9px;margin-bottom:13px;color:#172033;font-size:13px;font-weight:850}.shower-step__number{display:grid;place-items:center;width:24px;height:24px;border-radius:7px;background:#111a2d;color:#ff4f78;font-size:10px}.shower-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.shower-check{display:flex;align-items:center;gap:8px;min-height:38px;margin:0;padding:8px 10px;border:1px solid #d7e0eb;border-radius:8px;background:#fff}.shower-check input{width:16px;min-height:16px;margin:0;accent-color:#e9164d}.shower-check span{font-size:12px;font-weight:700}.shower-schematic{position:sticky;top:84px;overflow:hidden;padding:16px;border-radius:13px;background:#111a2d;color:#fff}.shower-schematic__title{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;color:#ff4f78;font-size:11px;font-weight:850;text-transform:uppercase}.shower-schematic svg{display:block;width:100%;height:auto;border-radius:9px;background:#f8fafc}.shower-schematic__stats{display:grid;gap:7px;margin-top:12px;font-size:11px}.shower-schematic__stats span{display:flex;justify-content:space-between;gap:12px;color:#9eabc0}.shower-schematic__stats b{color:#fff;text-align:right}.hardware-picker{margin-top:14px;overflow:auto;border:1px solid #dfe6ef;border-radius:10px;background:#fff}.hardware-picker__head,.hardware-role{display:grid;grid-template-columns:minmax(170px,.85fr) minmax(260px,1.8fr) 90px;gap:10px;align-items:center;padding:10px 12px}.hardware-picker__head{background:#f0f4f8;color:#64748b;font-size:10px;font-weight:800;text-transform:uppercase}.hardware-role{border-top:1px solid #e8edf4}.hardware-role__name{color:#172033;font-size:12px;font-weight:750}.hardware-role__name small{display:block;margin-top:3px;color:#8a99b1;font-size:10px;font-weight:500}.hardware-role select{min-height:34px;font-size:11px}.hardware-role__qty{text-align:right;color:#172033;font-size:12px;font-weight:850}.shower-note{margin-top:10px;padding:10px 12px;border-left:3px solid #e9164d;background:#fff6f8;color:#7f1d3a;font-size:11px;line-height:1.45}.field-hidden{display:none!important}@media(max-width:1000px){.shower-workspace{grid-template-columns:1fr}.shower-schematic{position:static}}@media(max-width:620px){.shower-config__intro{flex-direction:column}.hardware-picker__head{display:none}.hardware-role{grid-template-columns:1fr}.hardware-role__qty{text-align:left}}
 </style>
 <?php echo app_header_styles(); ?>
 </head>
@@ -240,11 +246,65 @@ tbody tr:hover td { background:#fbfcfe; }
         <div class="grid">
             <div><label for="manufacturer_id">Производитель</label><select id="manufacturer_id"><option value="0">Любой производитель</option><?php foreach ($manufacturers as $manufacturer): ?><option value="<?php echo e((string)$manufacturer['id']); ?>"><?php echo e($manufacturer['full_name']); ?></option><?php endforeach; ?></select></div>
             <div><label for="decor_input">Декор</label><select id="decor_input"><option value="">— Выберите декор —</option><?php foreach ($panels as $panel): ?><option value="<?php echo e((string)$panel['id']); ?>" data-mfr="<?php echo e((string)($panel['manufacturer_id'] ?? 0)); ?>" data-stock="1"><?php echo e(trim(($panel['decor_number'] ?? '') . ' ' . ($panel['decor_name'] ?? ''))); ?></option><?php endforeach; ?></select></div>
+            <div><label for="panel_format_id">Формат листа</label><select id="panel_format_id"><option value="">— Сначала выберите декор —</option></select><div class="hint">Формат используется для раскроя и расчёта отходов.</div></div>
             <div><label for="partition_type_id">Тип перегородки</label><select id="partition_type_id"><option value="0">Выберите тип</option><?php foreach ($partitionTypes as $type): ?><option value="<?php echo e((string)$type['id']); ?>"><?php echo e($type['name']); ?></option><?php endforeach; ?></select></div>
             <div><label for="supplier_id">Производитель фурнитуры</label><select id="supplier_id"><option value="0">Все поставщики</option><?php foreach ($suppliersList as $sup): ?><option value="<?php echo e((string)$sup['id']); ?>"><?php echo e($sup['company_name']); ?></option><?php endforeach; ?></select><div class="hint">Выберите поставщика для фильтрации.</div></div>
             <div><label for="collection_id">Коллекция</label><select id="collection_id"><option value="0">Все коллекции</option><?php foreach ($collections as $col): ?><option value="<?php echo e((string)$col['id']); ?>" data-supplier="<?php echo e((string)($col['supplier_id'] ?? 0)); ?>"><?php echo e($col['name']); ?><?php if (!empty($col['supplier_name'])): ?> (<?php echo e($col['supplier_name']); ?>)<?php endif; ?></option><?php endforeach; ?></select><div class="hint">Фильтр по коллекции.</div></div>
         </div>
         <div id="dynamic-parameters" class="grid" style="margin-top:14px"></div>
+        <div id="shower-config" class="shower-config hidden">
+            <div class="shower-config__intro">
+                <div><h3>Конфигурация душевой перегородки</h3><p>Задайте геометрию, точки крепления и маршрут верхней трубы. Калькулятор рассчитает HPL, раскрой и требуемые роли фурнитуры.</p></div>
+                <span class="shower-badge">Душевая перегородка</span>
+            </div>
+            <div class="shower-workspace">
+                <div class="shower-steps">
+                    <div class="shower-step">
+                        <div class="shower-step__title"><span class="shower-step__number">01</span>Геометрия и состав</div>
+                        <div class="shower-fields">
+                            <div><label for="shower_partition_count">Количество перегородок</label><input id="shower_partition_count" type="number" min="1" step="1" value="1"></div>
+                            <div><label for="shower_room_width">От стены до стены, мм</label><input id="shower_room_width" type="number" min="1" step="1" value="3000"></div>
+                            <div><label for="shower_depth">Глубина перегородки, мм</label><input id="shower_depth" type="number" min="1" step="1" value="1000"></div>
+                            <div><label for="shower_height">Высота перегородки, мм</label><input id="shower_height" type="number" min="1" step="1" value="2000"></div>
+                            <div><label for="shower_variant">Фасадная часть</label><select id="shower_variant"><option value="open">Без фасадной части</option><option value="fascia">С фасадной перемычкой</option><option value="doors">С дверями</option></select></div>
+                            <label class="shower-check"><input id="shower_full_height" type="checkbox"><span>Панель от пола до потолка</span></label>
+                            <div id="shower-fascia-fields" class="field-hidden"><label for="shower_fascia_height">Высота перемычки, мм</label><input id="shower_fascia_height" type="number" min="1" step="1" value="200"></div>
+                            <div id="shower-door-count-fields" class="field-hidden"><label for="shower_door_count">Количество дверей</label><input id="shower_door_count" type="number" min="1" step="1" value="1"></div>
+                            <div id="shower-door-width-fields" class="field-hidden"><label for="shower_door_width">Ширина двери, мм</label><input id="shower_door_width" type="number" min="1" step="1" value="700"></div>
+                            <div id="shower-door-height-fields" class="field-hidden"><label for="shower_door_height">Высота двери, мм</label><input id="shower_door_height" type="number" min="1" step="1" value="1900"></div>
+                        </div>
+                    </div>
+                    <div class="shower-step">
+                        <div class="shower-step__title"><span class="shower-step__number">02</span>Крепление панели</div>
+                        <div class="shower-fields">
+                            <div><label for="shower_floor_mount">К полу</label><select id="shower_floor_mount"><option value="leg">Ножка из нержавеющей стали</option><option value="profile">Алюминиевый P-профиль</option><option value="angle">Уголки</option></select></div>
+                            <div><label for="shower_wall_mount">К стене</label><select id="shower_wall_mount"><option value="profile">P-профиль</option><option value="angle">Уголки из нержавеющей стали</option></select></div>
+                            <div id="shower-ceiling-fields" class="field-hidden"><label for="shower_ceiling_mount">К потолку</label><select id="shower_ceiling_mount"><option value="profile">P-профиль</option><option value="angle">Уголки</option><option value="none">Не крепить</option></select></div>
+                            <div id="shower-angle-fields" class="field-hidden"><label for="shower_angle_sides">Уголки относительно панели</label><select id="shower_angle_sides"><option value="2">С двух сторон</option><option value="1">С одной стороны</option></select><div class="hint">100 мм от краёв, далее шаг не более 500 мм.</div></div>
+                        </div>
+                    </div>
+                    <div class="shower-step">
+                        <div class="shower-step__title"><span class="shower-step__number">03</span>Верхняя труба</div>
+                        <div class="shower-fields">
+                            <div><label for="shower_rail_route">Схема трубы</label><select id="shower_rail_route"><option value="straight">Прямая: от стены до стены</option><option value="elbow">Г-образная: ширина + глубина</option><option value="none">Без верхней трубы</option></select></div>
+                            <div><label for="shower_kerf">Пропил, мм</label><input id="shower_kerf" type="number" min="0" step="0.1" value="4"></div>
+                            <div><label for="shower_margin">Торцевание листа, мм</label><input id="shower_margin" type="number" min="0" step="0.1" value="5"></div>
+                            <label class="shower-check"><input id="shower_allow_rotation" type="checkbox"><span>Разрешить поворот деталей на листе</span></label>
+                        </div>
+                    </div>
+                    <div class="shower-step">
+                        <div class="shower-step__title"><span class="shower-step__number">04</span>Фурнитура из выбранной коллекции</div>
+                        <div id="hardware-role-list" class="hardware-picker"></div>
+                        <div class="shower-note">Подбор выполняется по категориям и названиям товаров. Перед расчётом проверьте выбранный артикул для каждой роли. Количество можно скорректировать в готовом расчёте.</div>
+                    </div>
+                </div>
+                <aside class="shower-schematic">
+                    <div class="shower-schematic__title"><span>Схема в плане</span><span id="shower-scheme-label">Прямая труба</span></div>
+                    <svg id="shower-schematic-svg" viewBox="0 0 360 220" role="img" aria-label="Схема душевой перегородки"></svg>
+                    <div id="shower-schematic-stats" class="shower-schematic__stats"></div>
+                </aside>
+            </div>
+        </div>
         <div class="actions" style="margin-top:18px">
             <button id="calculate-btn" class="hidden" type="button">Рассчитать</button>
             <button id="save-draft-btn" type="button" class="secondary">Сохранить</button>
@@ -360,10 +420,14 @@ tbody tr:hover td { background:#fbfcfe; }
     </div><!-- /tab-history -->
 
 </main>
+<script src="scripts/cutting_optimizer.js"></script>
+<script src="scripts/shower_partition_calculator.js"></script>
 <script>
 const partitionTypes = <?php echo json_encode($partitionTypes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const parametersByType = <?php echo json_encode($parametersByType, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const panels = <?php echo json_encode($panels, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const furnitureCatalog = <?php echo json_encode(array_values($furnitureCatalog), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const currencyRates = <?php echo json_encode(array_values($currencyRates), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const services = <?php echo json_encode($services, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const formatter = new Intl.NumberFormat('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const typeSelect = document.getElementById('partition_type_id');
@@ -518,7 +582,7 @@ async function saveCalculation(calc) {
     const form = new FormData();
     form.append('action', 'save_calculation');
     form.append('payload_json', JSON.stringify(calc));
-    const response = await fetch('calculator.php', {method: 'POST', body: form});
+    const response = await fetch('calculator_septic.php', {method: 'POST', body: form});
     const result = await response.json();
     document.getElementById('save-message').textContent = result.message || (result.ok ? 'Сохранено.' : 'Ошибка сохранения.');
 }
@@ -620,5 +684,6 @@ function loadCalculation(id) {
     alert('Загрузка расчёта #' + id + ' будет реализована после подключения API загрузки.');
 }
 </script>
+<script src="scripts/shower_partition_page.js"></script>
 </body>
 </html>
