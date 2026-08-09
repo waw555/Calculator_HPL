@@ -182,6 +182,7 @@ function ensure_panel_formats_table(PDO $pdo): void
     add_column_if_missing($pdo, 'panel_formats', 'manufacturer_id','manufacturer_id INT NULL');
     add_column_if_missing($pdo, 'panel_formats', 'decor_number',  'decor_number VARCHAR(6) NULL');
     add_column_if_missing($pdo, 'panel_formats', 'decor_name',    'decor_name VARCHAR(120) NULL');
+    add_column_if_missing($pdo, 'panel_formats', 'decor_color',   'decor_color VARCHAR(20) NULL');
     add_column_if_missing($pdo, 'panel_formats', 'decor_direction',"decor_direction ENUM('vertical','horizontal','none') NOT NULL DEFAULT 'none'");
     add_column_if_missing($pdo, 'panel_formats', 'is_stock_decor','is_stock_decor TINYINT(1) NOT NULL DEFAULT 0');
     add_column_if_missing($pdo, 'panel_formats', 'is_stock_program','is_stock_program TINYINT(1) NOT NULL DEFAULT 0');
