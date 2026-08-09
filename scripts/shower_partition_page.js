@@ -37,7 +37,8 @@
 
     function config() {
         return ShowerPartitionCalculator.normalizedConfig({
-            partitionCount: value('shower_partition_count'),
+            layoutType: document.getElementById('shower_layout_type').value,
+            sectionCount: value('shower_partition_count'),
             roomWidth: value('shower_room_width'),
             depth: value('shower_depth'),
             height: value('shower_height'),
@@ -113,46 +114,65 @@
     }
 
     function renderSchematic(current) {
-        const shownCount = Math.min(8, Math.max(1, Math.round(current.partitionCount)));
+        const shownSections = Math.min(8, Math.max(1, Math.round(current.sectionCount)));
         const decorPhoto = selectedDecorPhoto();
         const panelFill = decorPhoto ? 'url(#hplTexture)' : 'url(#hplFace)';
-        let panelsSvg = '';
-        for (let index = 0; index < shownCount; index += 1) {
-            const x = 92 + (270 / (shownCount + 1)) * (index + 1);
-            panelsSvg += '<g class="shower-model-shadow"><polygon points="' + x + ',300 ' + (x + 112) + ',236 ' + (x + 112) + ',92 ' + x + ',156" fill="' + panelFill + '" stroke="#2453a6" stroke-width="2"/><line x1="' + x + '" y1="300" x2="' + x + '" y2="313" stroke="#e9164d" stroke-width="5"/><circle cx="' + (x + 112) + '" cy="92" r="5" fill="#e9164d"/></g>';
+        const panelPositions = [];
+        if (current.layoutType === 'built_in') {
+            for (let index = 1; index < shownSections; index += 1) panelPositions.push(index / shownSections);
+        } else if (current.layoutType === 'corner') {
+            for (let index = 1; index <= shownSections; index += 1) panelPositions.push(index / shownSections);
+        } else {
+            for (let index = 0; index <= shownSections; index += 1) panelPositions.push(index / shownSections);
         }
+
+        let panelsSvg = '';
+        panelPositions.forEach(function (position) {
+            const x = 70 + 300 * position;
+            panelsSvg += '<g class="shower-model-shadow"><polygon points="' + x + ',300 ' + (x + 105) + ',240 ' + (x + 105) + ',92 ' + x + ',152" fill="' + panelFill + '" stroke="#2453a6" stroke-width="2"/><line x1="' + x + '" y1="300" x2="' + x + '" y2="313" stroke="#e9164d" stroke-width="5"/><circle cx="' + x + '" cy="152" r="5" fill="#e9164d"/></g>';
+        });
+
         let frontSvg = '';
         if (current.variant === 'fascia') {
             frontSvg = '<g class="shower-model-shadow"><polygon points="355,300 397,276 397,112 355,136" fill="' + panelFill + '" stroke="#e9164d" stroke-width="2"/><text x="368" y="205" fill="#172033" font-size="10" transform="rotate(-30 368 205)">перемычка</text></g>';
         } else if (current.variant === 'doors') {
             const doorCount = Math.min(5, Math.max(1, Math.round(current.doorCount)));
-            const doorWidth = 210 / doorCount;
+            const doorWidth = 280 / doorCount;
             for (let door = 0; door < doorCount; door += 1) {
-                const x = 105 + door * doorWidth;
+                const x = 72 + door * doorWidth;
                 frontSvg += '<g class="shower-model-shadow"><polygon points="' + x + ',300 ' + (x + doorWidth - 5) + ',300 ' + (x + doorWidth - 5) + ',158 ' + x + ',158" fill="' + panelFill + '" stroke="#174ea6" stroke-width="2"/><circle cx="' + (x + doorWidth - 17) + '" cy="230" r="3" fill="#e9164d"/></g>';
             }
         }
+
+        const tubeOuter = ' fill="none" stroke="#aeb8c7" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"';
+        const tubeInner = ' fill="none" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"';
         let pipe = '';
-        let label = 'Без верхней трубы';
         if (current.railRoute === 'straight') {
-            pipe = '<path d="M78 134 L455 82" fill="none" stroke="#aeb8c7" stroke-width="10" stroke-linecap="round"/><path d="M78 131 L455 79" fill="none" stroke="#f8fafc" stroke-width="3" stroke-linecap="round"/>';
-            label = 'От стены до стены';
+            pipe = '<path d="M68 142 L372 142"' + tubeOuter + '/><path d="M68 139 L372 139"' + tubeInner + '/>';
         } else if (current.railRoute === 'elbow') {
-            pipe = '<path d="M78 134 L382 134 L466 84" fill="none" stroke="#aeb8c7" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M78 131 L382 131 L466 81" fill="none" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="382" cy="132" r="8" fill="#e9164d"/>';
-            label = 'Г-образный маршрут';
+            pipe = '<path d="M68 142 L372 142 L477 82"' + tubeOuter + '/><path d="M68 139 L372 139 L477 79"' + tubeInner + '/><circle cx="372" cy="141" r="8" fill="#e9164d"/>';
+        } else if (current.railRoute === 'u_shape') {
+            pipe = '<path d="M173 82 L68 142 L372 142 L477 82"' + tubeOuter + '/><path d="M173 79 L68 139 L372 139 L477 79"' + tubeInner + '/><circle cx="68" cy="141" r="8" fill="#e9164d"/><circle cx="372" cy="141" r="8" fill="#e9164d"/>';
         }
+
+        const sideWalls = (current.layoutType === 'built_in' || current.layoutType === 'corner'
+            ? '<polygon points="55,133 185,58 185,240 55,315" fill="#e2e8f0" stroke="#9aa9bc"/>'
+            : '') + (current.layoutType === 'built_in'
+            ? '<polygon points="355,133 485,58 485,240 355,315" fill="#e2e8f0" stroke="#9aa9bc"/>'
+            : '');
         const svg = document.getElementById('shower-schematic-svg');
         const textureDefinition = decorPhoto
             ? '<pattern id="hplTexture" patternUnits="userSpaceOnUse" width="260" height="260"><rect width="260" height="260" fill="#d9dde3"/><image href="' + escapeHtml(decorPhoto) + '" width="260" height="260" preserveAspectRatio="xMidYMid slice"/></pattern>'
             : '';
-        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef0f2"/><stop offset="1" stop-color="#c8cdd3"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)"><path d="M24 0H0V24" fill="none" stroke="#d9e2ec" stroke-width="1"/></pattern></defs><polygon points="55,315 355,315 485,240 185,240" fill="url(#floorGrid)" stroke="#9aa9bc"/><polygon points="185,58 485,58 485,240 185,240" fill="#eef2f7" stroke="#9aa9bc"/><polygon points="55,133 185,58 185,240 55,315" fill="#e2e8f0" stroke="#9aa9bc"/><path d="M185 58V240L55 315" fill="none" stroke="#64748b" stroke-width="3"/>' + panelsSvg + frontSvg + pipe + '<text x="270" y="360" text-anchor="middle" fill="#64748b" font-size="12">изометрическая модель · размеры пропорциональны условно</text>';
-        document.getElementById('shower-scheme-label').textContent = label;
-        const pipeLength = current.railRoute === 'none' ? 0 : (current.roomWidth + (current.railRoute === 'elbow' ? current.depth : 0)) / 1000;
+        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef0f2"/><stop offset="1" stop-color="#c8cdd3"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)"><path d="M24 0H0V24" fill="none" stroke="#d9e2ec" stroke-width="1"/></pattern></defs><polygon points="55,315 355,315 485,240 185,240" fill="url(#floorGrid)" stroke="#9aa9bc"/><polygon points="185,58 485,58 485,240 185,240" fill="#eef2f7" stroke="#9aa9bc"/>' + sideWalls + panelsSvg + frontSvg + pipe + '<text x="270" y="360" text-anchor="middle" fill="#64748b" font-size="12">изометрическая модель · схема трубы по выбранному типу</text>';
+        document.getElementById('shower-scheme-label').textContent = current.layoutLabel;
+        document.getElementById('shower_rail_route').value = current.railLabel;
+        document.getElementById('shower-panel-count-hint').textContent = 'HPL-перегородок: ' + current.partitionCount;
         document.getElementById('shower-schematic-stats').innerHTML =
-            '<span>Перегородки <b>' + current.partitionCount + ' шт.</b></span>' +
-            '<span>Глубина <b>' + formatter.format(current.depth) + ' мм</b></span>' +
-            '<span>Высота <b>' + formatter.format(current.height) + ' мм</b></span>' +
-            '<span>Верхняя труба <b>' + formatter.format(pipeLength) + ' м</b></span>';
+            '<span>Тип <b>' + escapeHtml(current.layoutLabel) + '</b></span>' +
+            '<span>Секции <b>' + current.sectionCount + ' шт.</b></span>' +
+            '<span>HPL-панели <b>' + current.partitionCount + ' шт.</b></span>' +
+            '<span>Верхняя труба <b>' + formatter.format(current.pipeLengthMm / 1000) + ' м</b></span>';
         syncModalModel();
     }
 
@@ -214,7 +234,14 @@
         showerNode.classList.toggle('hidden', !active);
         if (!active) return;
         paramsNode.innerHTML = '';
-        const current = config();
+        let current = config();
+        const sectionInput = document.getElementById('shower_partition_count');
+        const minimumSections = current.layoutType === 'built_in' ? 2 : 1;
+        sectionInput.min = String(minimumSections);
+        if (current.sectionCount < minimumSections) {
+            sectionInput.value = String(minimumSections);
+            current = config();
+        }
         const variant = current.variant;
         document.getElementById('shower-fascia-fields').classList.toggle('field-hidden', variant !== 'fascia');
         ['shower-door-count-fields', 'shower-door-width-fields', 'shower-door-height-fields'].forEach(function (id) {
@@ -326,7 +353,7 @@
             length: current.roomWidth,
             height: current.height,
             depth: current.depth,
-            doors: current.partitionCount,
+            doors: current.sectionCount,
             panel: panel,
             products: products,
             hardware: hardware,

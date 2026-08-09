@@ -35,5 +35,13 @@ assert.match(integration, /#d9dde3|#eef0f2/, 'При отсутствии фот
 assert.match(integration, /openModelModal/, 'Должно поддерживаться увеличение модели');
 assert.match(integration, /event\.key === 'Escape'/, 'Модальное окно должно закрываться по Escape');
 
+assert.match(page, /id="shower_layout_type"/, 'Должен быть выбор встроенной, угловой и отдельно стоящей схемы');
+assert.match(page, /value="built_in"/, 'Должна быть встроенная схема');
+assert.match(page, /value="corner"/, 'Должна быть угловая схема');
+assert.match(page, /value="freestanding"/, 'Должна быть отдельно стоящая схема');
+assert.match(integration, /current\.layoutType === 'built_in'/, '3D-модель должна учитывать боковые стены встроенной схемы');
+assert.match(integration, /current\.railRoute === 'u_shape'/, '3D-модель должна отображать П-образную трубу отдельно стоящей схемы');
+assert.match(integration, /current\.pipeLengthMm/, 'Длина трубы должна браться из единой расчетной модели');
+
 new Function(integration);
 console.log('shower_partition_page.test.js: OK');
