@@ -5,6 +5,8 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'calculator_septic.php'), 'utf8');
 const integration = fs.readFileSync(path.join(__dirname, 'shower_partition_page.js'), 'utf8');
+const schema = fs.readFileSync(path.join(root, 'includes', 'admin_schema.php'), 'utf8');
+const panelAdmin = fs.readFileSync(path.join(root, 'admin_panels.php'), 'utf8');
 
 assert.match(page, /id="shower-config"/, 'Форма душевой перегородки должна присутствовать');
 assert.match(page, /id="panel_format_id"/, 'Должен быть выбор формата листа');
@@ -14,6 +16,8 @@ assert.match(page, /id="shower_fascia_width"/, 'Должна быть ширин
 assert.match(page, /id="shower_fascia_height"/, 'Должна быть высота перемычки');
 assert.match(page, /id="collection-field" class="hidden"/, 'Коллекция должна быть скрыта до выбора поставщика');
 assert.match(page, /3D-модель перегородки/, 'Вместо плана должна отображаться 3D-модель');
+assert.match(page, /id="shower-model-modal"/, 'Должно быть модальное окно увеличенной модели');
+assert.match(page, /id="shower-model-trigger"/, 'Модель должна быть доступна для открытия');
 assert.match(page, /scripts\/cutting_optimizer\.js/, 'Оптимизатор раскроя должен загружаться');
 assert.match(page, /scripts\/shower_partition_calculator\.js/, 'Расчётная модель должна загружаться');
 assert.match(page, /scripts\/shower_partition_page\.js/, 'Интеграция страницы должна загружаться');
@@ -27,6 +31,12 @@ assert.match(integration, /__custom__/, 'Должен поддерживатьс
 assert.match(integration, /chooseBestPanelFormat/, 'Автоматический режим должен сравнивать существующие форматы');
 assert.match(integration, /renderCollections/, 'Коллекции должны зависеть от поставщика');
 assert.match(integration, /polygon points/, '3D-модель должна строиться из объёмных граней');
+assert.match(integration, /decor\?\.decor_color/, 'Цвет модели должен браться из выбранного декора');
+assert.match(integration, /#d9dde3/, 'При отсутствии цвета должен использоваться светло-серый');
+assert.match(integration, /openModelModal/, 'Должно поддерживаться увеличение модели');
+assert.match(integration, /event\.key === 'Escape'/, 'Модальное окно должно закрываться по Escape');
+assert.match(schema, /decor_color VARCHAR\(20\)/, 'Схема должна хранить цвет декора');
+assert.match(panelAdmin, /name="decor_color"/, 'Редактор панели должен позволять выбрать цвет декора');
 
 new Function(integration);
 console.log('shower_partition_page.test.js: OK');

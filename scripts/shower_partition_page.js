@@ -11,6 +11,7 @@
     const roleSelections = {};
     let availableFormats = [];
     let fasciaHeightTouched = false;
+    let modelTriggerBeforeOpen = null;
 
     function value(id) {
         return parseFloat(document.getElementById(id)?.value || '0') || 0;
@@ -21,6 +22,26 @@
         if (code === 'RUB') return Number(amount || 0);
         const row = currencyRates.find(function (rate) { return String(rate.code).toUpperCase() === code; });
         return row ? Number(amount || 0) * Number(row.rate_to_rub || 0) / Math.max(1, Number(row.nominal || 1)) : Number(amount || 0);
+    }
+
+    function normalizedDecorColor(rawColor) {
+        const color = String(rawColor || '').trim().toLowerCase();
+        return /^#[0-9a-f]{6}$/.test(color) ? color : '#d9dde3';
+    }
+
+    function shadeColor(hex, percent) {
+        const value = normalizedDecorColor(hex).slice(1);
+        const amount = Math.round(255 * percent / 100);
+        const channels = [0, 2, 4].map(function (offset) {
+            return Math.max(0, Math.min(255, parseInt(value.slice(offset, offset + 2), 16) + amount)).toString(16).padStart(2, '0');
+        });
+        return '#' + channels.join('');
+    }
+
+    function selectedDecorColor() {
+        const decorId = document.getElementById('decor_input').value;
+        const decor = panels.find(function (panel) { return String(panel.id) === String(decorId); });
+        return normalizedDecorColor(decor?.decor_color);
     }
 
     function showerSelected() {
@@ -106,6 +127,9 @@
 
     function renderSchematic(current) {
         const shownCount = Math.min(8, Math.max(1, Math.round(current.partitionCount)));
+        const panelColor = selectedDecorColor();
+        const panelLight = shadeColor(panelColor, 24);
+        const panelDark = shadeColor(panelColor, -12);
         let panelsSvg = '';
         for (let index = 0; index < shownCount; index += 1) {
             const x = 92 + (270 / (shownCount + 1)) * (index + 1);
@@ -132,7 +156,7 @@
             label = 'Г-образный маршрут';
         }
         const svg = document.getElementById('shower-schematic-svg');
-        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#cfe3ff"/></linearGradient><linearGradient id="fasciaFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#ffd8e2"/></linearGradient><linearGradient id="doorFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef6ff"/><stop offset="1" stop-color="#aac9f4"/></linearGradient><pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)"><path d="M24 0H0V24" fill="none" stroke="#d9e2ec" stroke-width="1"/></pattern></defs><polygon points="55,315 355,315 485,240 185,240" fill="url(#floorGrid)" stroke="#9aa9bc"/><polygon points="185,58 485,58 485,240 185,240" fill="#eef2f7" stroke="#9aa9bc"/><polygon points="55,133 185,58 185,240 55,315" fill="#e2e8f0" stroke="#9aa9bc"/><path d="M185 58V240L55 315" fill="none" stroke="#64748b" stroke-width="3"/>' + panelsSvg + frontSvg + pipe + '<text x="270" y="360" text-anchor="middle" fill="#64748b" font-size="12">изометрическая модель · размеры пропорциональны условно</text>';
+        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + panelLight + '"/><stop offset="1" stop-color="' + panelDark + '"/></linearGradient><linearGradient id="fasciaFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + panelLight + '"/><stop offset="1" stop-color="' + panelColor + '"/></linearGradient><linearGradient id="doorFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + panelLight + '"/><stop offset="1" stop-color="' + panelDark + '"/></linearGradient><pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)"><path d="M24 0H0V24" fill="none" stroke="#d9e2ec" stroke-width="1"/></pattern></defs><polygon points="55,315 355,315 485,240 185,240" fill="url(#floorGrid)" stroke="#9aa9bc"/><polygon points="185,58 485,58 485,240 185,240" fill="#eef2f7" stroke="#9aa9bc"/><polygon points="55,133 185,58 185,240 55,315" fill="#e2e8f0" stroke="#9aa9bc"/><path d="M185 58V240L55 315" fill="none" stroke="#64748b" stroke-width="3"/>' + panelsSvg + frontSvg + pipe + '<text x="270" y="360" text-anchor="middle" fill="#64748b" font-size="12">изометрическая модель · размеры пропорциональны условно</text>';
         document.getElementById('shower-scheme-label').textContent = label;
         const pipeLength = current.railRoute === 'none' ? 0 : (current.roomWidth + (current.railRoute === 'elbow' ? current.depth : 0)) / 1000;
         document.getElementById('shower-schematic-stats').innerHTML =
@@ -140,6 +164,33 @@
             '<span>Глубина <b>' + formatter.format(current.depth) + ' мм</b></span>' +
             '<span>Высота <b>' + formatter.format(current.height) + ' мм</b></span>' +
             '<span>Верхняя труба <b>' + formatter.format(pipeLength) + ' м</b></span>';
+        syncModalModel();
+    }
+
+    function syncModalModel() {
+        const source = document.getElementById('shower-schematic-svg');
+        const target = document.getElementById('shower-model-modal-svg');
+        if (!source || !target) return;
+        target.setAttribute('viewBox', source.getAttribute('viewBox') || '0 0 520 390');
+        target.innerHTML = source.innerHTML;
+    }
+
+    function openModelModal() {
+        const modal = document.getElementById('shower-model-modal');
+        modelTriggerBeforeOpen = document.activeElement;
+        syncModalModel();
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        document.getElementById('shower-model-modal-close').focus();
+    }
+
+    function closeModelModal() {
+        const modal = document.getElementById('shower-model-modal');
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        if (modelTriggerBeforeOpen?.focus) modelTriggerBeforeOpen.focus();
     }
 
     function renderRoles(requirements) {
@@ -298,9 +349,26 @@
         renderCalculation(currentCalculation);
     }
 
-    document.getElementById('decor_input').addEventListener('change', renderFormats);
+    document.getElementById('decor_input').addEventListener('change', function () { renderFormats(); refresh(); });
     formatSelect.addEventListener('change', toggleCustomFormat);
-    document.getElementById('manufacturer_id').addEventListener('change', renderFormats);
+    const modelTrigger = document.getElementById('shower-model-trigger');
+    const modelModal = document.getElementById('shower-model-modal');
+    modelTrigger.addEventListener('click', openModelModal);
+    modelTrigger.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openModelModal();
+        }
+    });
+    document.getElementById('shower-model-modal-close').addEventListener('click', closeModelModal);
+    modelModal.addEventListener('click', function (event) {
+        if (event.target === modelModal) closeModelModal();
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !modelModal.classList.contains('hidden')) closeModelModal();
+    });
+
+    document.getElementById('manufacturer_id').addEventListener('change', function () { renderFormats(); refresh(); });
     typeSelect.addEventListener('change', refresh);
     document.getElementById('supplier_id').addEventListener('change', function () { renderCollections(); refresh(); });
     document.getElementById('collection_id').addEventListener('change', refresh);
