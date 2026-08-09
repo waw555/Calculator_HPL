@@ -24,24 +24,11 @@
         return row ? Number(amount || 0) * Number(row.rate_to_rub || 0) / Math.max(1, Number(row.nominal || 1)) : Number(amount || 0);
     }
 
-    function normalizedDecorColor(rawColor) {
-        const color = String(rawColor || '').trim().toLowerCase();
-        return /^#[0-9a-f]{6}$/.test(color) ? color : '#d9dde3';
-    }
-
-    function shadeColor(hex, percent) {
-        const value = normalizedDecorColor(hex).slice(1);
-        const amount = Math.round(255 * percent / 100);
-        const channels = [0, 2, 4].map(function (offset) {
-            return Math.max(0, Math.min(255, parseInt(value.slice(offset, offset + 2), 16) + amount)).toString(16).padStart(2, '0');
-        });
-        return '#' + channels.join('');
-    }
-
-    function selectedDecorColor() {
+    function selectedDecorPhoto() {
         const decorId = document.getElementById('decor_input').value;
         const decor = panels.find(function (panel) { return String(panel.id) === String(decorId); });
-        return normalizedDecorColor(decor?.decor_color);
+        const photoPath = String(decor?.decor_photo_path || '').trim();
+        return /^(javascript|data):/i.test(photoPath) ? '' : photoPath;
     }
 
     function showerSelected() {
@@ -127,23 +114,22 @@
 
     function renderSchematic(current) {
         const shownCount = Math.min(8, Math.max(1, Math.round(current.partitionCount)));
-        const panelColor = selectedDecorColor();
-        const panelLight = shadeColor(panelColor, 24);
-        const panelDark = shadeColor(panelColor, -12);
+        const decorPhoto = selectedDecorPhoto();
+        const panelFill = decorPhoto ? 'url(#hplTexture)' : 'url(#hplFace)';
         let panelsSvg = '';
         for (let index = 0; index < shownCount; index += 1) {
             const x = 92 + (270 / (shownCount + 1)) * (index + 1);
-            panelsSvg += '<g class="shower-model-shadow"><polygon points="' + x + ',300 ' + (x + 112) + ',236 ' + (x + 112) + ',92 ' + x + ',156" fill="url(#hplFace)" stroke="#2453a6" stroke-width="2"/><line x1="' + x + '" y1="300" x2="' + x + '" y2="313" stroke="#e9164d" stroke-width="5"/><circle cx="' + (x + 112) + '" cy="92" r="5" fill="#e9164d"/></g>';
+            panelsSvg += '<g class="shower-model-shadow"><polygon points="' + x + ',300 ' + (x + 112) + ',236 ' + (x + 112) + ',92 ' + x + ',156" fill="' + panelFill + '" stroke="#2453a6" stroke-width="2"/><line x1="' + x + '" y1="300" x2="' + x + '" y2="313" stroke="#e9164d" stroke-width="5"/><circle cx="' + (x + 112) + '" cy="92" r="5" fill="#e9164d"/></g>';
         }
         let frontSvg = '';
         if (current.variant === 'fascia') {
-            frontSvg = '<g class="shower-model-shadow"><polygon points="355,300 397,276 397,112 355,136" fill="url(#fasciaFace)" stroke="#e9164d" stroke-width="2"/><text x="368" y="205" fill="#172033" font-size="10" transform="rotate(-30 368 205)">перемычка</text></g>';
+            frontSvg = '<g class="shower-model-shadow"><polygon points="355,300 397,276 397,112 355,136" fill="' + panelFill + '" stroke="#e9164d" stroke-width="2"/><text x="368" y="205" fill="#172033" font-size="10" transform="rotate(-30 368 205)">перемычка</text></g>';
         } else if (current.variant === 'doors') {
             const doorCount = Math.min(5, Math.max(1, Math.round(current.doorCount)));
             const doorWidth = 210 / doorCount;
             for (let door = 0; door < doorCount; door += 1) {
                 const x = 105 + door * doorWidth;
-                frontSvg += '<g class="shower-model-shadow"><polygon points="' + x + ',300 ' + (x + doorWidth - 5) + ',300 ' + (x + doorWidth - 5) + ',158 ' + x + ',158" fill="url(#doorFace)" stroke="#174ea6" stroke-width="2"/><circle cx="' + (x + doorWidth - 17) + '" cy="230" r="3" fill="#e9164d"/></g>';
+                frontSvg += '<g class="shower-model-shadow"><polygon points="' + x + ',300 ' + (x + doorWidth - 5) + ',300 ' + (x + doorWidth - 5) + ',158 ' + x + ',158" fill="' + panelFill + '" stroke="#174ea6" stroke-width="2"/><circle cx="' + (x + doorWidth - 17) + '" cy="230" r="3" fill="#e9164d"/></g>';
             }
         }
         let pipe = '';
@@ -156,7 +142,10 @@
             label = 'Г-образный маршрут';
         }
         const svg = document.getElementById('shower-schematic-svg');
-        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + panelLight + '"/><stop offset="1" stop-color="' + panelDark + '"/></linearGradient><linearGradient id="fasciaFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + panelLight + '"/><stop offset="1" stop-color="' + panelColor + '"/></linearGradient><linearGradient id="doorFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + panelLight + '"/><stop offset="1" stop-color="' + panelDark + '"/></linearGradient><pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)"><path d="M24 0H0V24" fill="none" stroke="#d9e2ec" stroke-width="1"/></pattern></defs><polygon points="55,315 355,315 485,240 185,240" fill="url(#floorGrid)" stroke="#9aa9bc"/><polygon points="185,58 485,58 485,240 185,240" fill="#eef2f7" stroke="#9aa9bc"/><polygon points="55,133 185,58 185,240 55,315" fill="#e2e8f0" stroke="#9aa9bc"/><path d="M185 58V240L55 315" fill="none" stroke="#64748b" stroke-width="3"/>' + panelsSvg + frontSvg + pipe + '<text x="270" y="360" text-anchor="middle" fill="#64748b" font-size="12">изометрическая модель · размеры пропорциональны условно</text>';
+        const textureDefinition = decorPhoto
+            ? '<pattern id="hplTexture" patternUnits="userSpaceOnUse" width="260" height="260"><rect width="260" height="260" fill="#d9dde3"/><image href="' + escapeHtml(decorPhoto) + '" width="260" height="260" preserveAspectRatio="xMidYMid slice"/></pattern>'
+            : '';
+        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef0f2"/><stop offset="1" stop-color="#c8cdd3"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)"><path d="M24 0H0V24" fill="none" stroke="#d9e2ec" stroke-width="1"/></pattern></defs><polygon points="55,315 355,315 485,240 185,240" fill="url(#floorGrid)" stroke="#9aa9bc"/><polygon points="185,58 485,58 485,240 185,240" fill="#eef2f7" stroke="#9aa9bc"/><polygon points="55,133 185,58 185,240 55,315" fill="#e2e8f0" stroke="#9aa9bc"/><path d="M185 58V240L55 315" fill="none" stroke="#64748b" stroke-width="3"/>' + panelsSvg + frontSvg + pipe + '<text x="270" y="360" text-anchor="middle" fill="#64748b" font-size="12">изометрическая модель · размеры пропорциональны условно</text>';
         document.getElementById('shower-scheme-label').textContent = label;
         const pipeLength = current.railRoute === 'none' ? 0 : (current.roomWidth + (current.railRoute === 'elbow' ? current.depth : 0)) / 1000;
         document.getElementById('shower-schematic-stats').innerHTML =
