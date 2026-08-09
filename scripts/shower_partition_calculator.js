@@ -23,13 +23,15 @@
 
     function normalizedConfig(input = {}) {
         const fullHeight = Boolean(input.fullHeight);
+        const height = positive(input.height, 2000);
         return {
             partitionCount: integer(input.partitionCount),
             depth: positive(input.depth, 1000),
-            height: positive(input.height, 2000),
+            height,
             roomWidth: positive(input.roomWidth, 3000),
             variant: ['open', 'fascia', 'doors'].includes(input.variant) ? input.variant : 'open',
-            fasciaHeight: positive(input.fasciaHeight, 200),
+            fasciaWidth: positive(input.fasciaWidth, 200),
+            fasciaHeight: positive(input.fasciaHeight, height),
             doorCount: integer(input.doorCount, integer(input.partitionCount)),
             doorWidth: positive(input.doorWidth, 700),
             doorHeight: positive(input.doorHeight, 1900),
@@ -54,7 +56,7 @@
             height: config.height,
             quantity: config.partitionCount
         }];
-        if (config.variant === 'fascia') pieces.push({id: 'fascia', name: 'Фасадная перемычка', width: config.roomWidth, height: config.fasciaHeight, quantity: 1});
+        if (config.variant === 'fascia') pieces.push({id: 'fascia', name: 'Фасадная перемычка', width: config.fasciaWidth, height: config.fasciaHeight, quantity: 1});
         if (config.variant === 'doors') pieces.push({id: 'door', name: 'Дверное полотно', width: config.doorWidth, height: config.doorHeight, quantity: config.doorCount});
         return pieces.map(piece => ({...piece, area: piece.width * piece.height * piece.quantity / 1000000}));
     }
@@ -124,6 +126,19 @@
         return {pieces, sheets, usedArea, sheetArea, wasteArea: Math.max(0, sheetArea - usedArea), remaining: result.remaining, layouts: result.sheets};
     }
 
+    function chooseBestPanelFormat(input, panelCandidates, optimizer) {
+        const ranked = (panelCandidates || []).map(panel => ({
+            panel,
+            layout: estimatePanelLayout(input, panel, optimizer)
+        })).filter(candidate => candidate.layout.remaining.length === 0 && candidate.layout.sheets > 0);
+        ranked.sort((a, b) =>
+            a.layout.wasteArea - b.layout.wasteArea ||
+            a.layout.sheets - b.layout.sheets ||
+            (Number(a.panel.width_mm) * Number(a.panel.height_mm)) - (Number(b.panel.width_mm) * Number(b.panel.height_mm))
+        );
+        return ranked[0] || null;
+    }
+
     function normalizeText(value) {
         return String(value || '').toLocaleLowerCase('ru-RU').replace(/ё/g, 'е');
     }
@@ -147,5 +162,5 @@
             .sort((a, b) => b.matchScore - a.matchScore || String(a.material_name).localeCompare(String(b.material_name), 'ru'));
     }
 
-    return {ROLE_DEFINITIONS, anglePointCount, normalizedConfig, buildPanelPieces, buildRequirements, estimatePanelLayout, matchingFurniture, itemScore};
+    return {ROLE_DEFINITIONS, anglePointCount, normalizedConfig, buildPanelPieces, buildRequirements, estimatePanelLayout, chooseBestPanelFormat, matchingFurniture, itemScore};
 });

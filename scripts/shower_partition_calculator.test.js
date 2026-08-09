@@ -48,4 +48,25 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
     assert.equal(matches[0].id, 1, 'лучшее совпадение должно подниматься первым');
 }
 
+{
+    const pieces = shower.buildPanelPieces({partitionCount: 1, depth: 900, height: 2100, variant: 'fascia', fasciaWidth: 250});
+    const fascia = pieces.find(piece => piece.id === 'fascia');
+    assert.equal(fascia.width, 250);
+    assert.equal(fascia.height, 2100, 'высота перемычки по умолчанию равна высоте перегородки');
+    assert.equal(fascia.area, 0.525);
+}
+
+{
+    const best = shower.chooseBestPanelFormat(
+        {partitionCount: 2, depth: 900, height: 2000, kerf: 4, margin: 5},
+        [
+            {id: 1, width_mm: 1300, height_mm: 3050},
+            {id: 2, width_mm: 1900, height_mm: 3050}
+        ],
+        optimizer
+    );
+    assert.equal(best.panel.id, 2, 'режим «Любой» должен выбрать формат с меньшим отходом');
+    assert.equal(best.layout.sheets, 1);
+}
+
 console.log('shower_partition_calculator: все тесты пройдены');

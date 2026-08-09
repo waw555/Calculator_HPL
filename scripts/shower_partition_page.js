@@ -9,6 +9,8 @@
     const showerNode = document.getElementById('shower-config');
     const formatSelect = document.getElementById('panel_format_id');
     const roleSelections = {};
+    let availableFormats = [];
+    let fasciaHeightTouched = false;
 
     function value(id) {
         return parseFloat(document.getElementById(id)?.value || '0') || 0;
@@ -33,6 +35,7 @@
             height: value('shower_height'),
             variant: document.getElementById('shower_variant').value,
             fullHeight: document.getElementById('shower_full_height').checked,
+            fasciaWidth: value('shower_fascia_width'),
             fasciaHeight: value('shower_fascia_height'),
             doorCount: value('shower_door_count'),
             doorWidth: value('shower_door_width'),
@@ -53,48 +56,89 @@
         const decor = panels.find(function (panel) { return String(panel.id) === String(decorId); });
         const previous = formatSelect.value;
         formatSelect.innerHTML = '';
+        availableFormats = [];
         if (!decor) {
             formatSelect.innerHTML = '<option value="">— Сначала выберите декор —</option>';
+            document.getElementById('custom-format-fields').classList.add('field-hidden');
             return;
         }
-        const matches = panels.filter(function (panel) {
+        availableFormats = panels.filter(function (panel) {
             return Number(panel.manufacturer_id || 0) === Number(decor.manufacturer_id || 0)
                 && String(panel.decor_number || '') === String(decor.decor_number || '')
                 && String(panel.decor_name || '') === String(decor.decor_name || '');
         });
-        matches.forEach(function (panel) {
+        formatSelect.innerHTML = '<option value="__auto__">Любой — подобрать оптимальный</option>';
+        availableFormats.forEach(function (panel) {
             const option = document.createElement('option');
             option.value = panel.id;
             option.textContent = Math.round(Number(panel.height_mm || 0)) + '×' + Math.round(Number(panel.width_mm || 0)) + ' мм' + (panel.name ? ' · ' + panel.name : '');
             formatSelect.append(option);
         });
-        formatSelect.value = matches.some(function (panel) { return String(panel.id) === String(previous); }) ? previous : String(decor.id);
+        formatSelect.insertAdjacentHTML('beforeend', '<option value="__custom__">Свой — указать размеры</option>');
+        const allowed = previous === '__auto__' || previous === '__custom__' || availableFormats.some(function (panel) { return String(panel.id) === String(previous); });
+        formatSelect.value = allowed ? previous : '__auto__';
+        toggleCustomFormat();
+    }
+
+    function toggleCustomFormat() {
+        document.getElementById('custom-format-fields').classList.toggle('field-hidden', formatSelect.value !== '__custom__');
+    }
+
+    function renderCollections() {
+        const supplierId = Number(document.getElementById('supplier_id').value || 0);
+        const select = document.getElementById('collection_id');
+        const field = document.getElementById('collection-field');
+        let available = 0;
+        Array.from(select.options).forEach(function (option) {
+            if (!option.value || option.value === '0') return;
+            const matches = supplierId > 0 && Number(option.dataset.supplier || 0) === supplierId;
+            option.hidden = !matches;
+            if (matches) available += 1;
+        });
+        if (!supplierId || !available) {
+            select.value = '0';
+            field.classList.add('hidden');
+        } else {
+            if (select.selectedOptions[0]?.hidden) select.value = '0';
+            field.classList.remove('hidden');
+        }
     }
 
     function renderSchematic(current) {
-        const count = Math.max(1, Math.round(current.partitionCount));
-        const gap = 260 / (count + 1);
-        let partitions = '';
-        for (let index = 0; index < count; index += 1) {
-            const x = 50 + gap * (index + 1);
-            partitions += '<line x1="' + x + '" y1="55" x2="' + x + '" y2="175" stroke="#2563eb" stroke-width="7" stroke-linecap="round"/><circle cx="' + x + '" cy="55" r="5" fill="#e9164d"/>';
+        const shownCount = Math.min(8, Math.max(1, Math.round(current.partitionCount)));
+        let panelsSvg = '';
+        for (let index = 0; index < shownCount; index += 1) {
+            const x = 92 + (270 / (shownCount + 1)) * (index + 1);
+            panelsSvg += '<g class="shower-model-shadow"><polygon points="' + x + ',300 ' + (x + 112) + ',236 ' + (x + 112) + ',92 ' + x + ',156" fill="url(#hplFace)" stroke="#2453a6" stroke-width="2"/><line x1="' + x + '" y1="300" x2="' + x + '" y2="313" stroke="#e9164d" stroke-width="5"/><circle cx="' + (x + 112) + '" cy="92" r="5" fill="#e9164d"/></g>';
         }
-        let rail = '';
+        let frontSvg = '';
+        if (current.variant === 'fascia') {
+            frontSvg = '<g class="shower-model-shadow"><polygon points="355,300 397,276 397,112 355,136" fill="url(#fasciaFace)" stroke="#e9164d" stroke-width="2"/><text x="368" y="205" fill="#172033" font-size="10" transform="rotate(-30 368 205)">перемычка</text></g>';
+        } else if (current.variant === 'doors') {
+            const doorCount = Math.min(5, Math.max(1, Math.round(current.doorCount)));
+            const doorWidth = 210 / doorCount;
+            for (let door = 0; door < doorCount; door += 1) {
+                const x = 105 + door * doorWidth;
+                frontSvg += '<g class="shower-model-shadow"><polygon points="' + x + ',300 ' + (x + doorWidth - 5) + ',300 ' + (x + doorWidth - 5) + ',158 ' + x + ',158" fill="url(#doorFace)" stroke="#174ea6" stroke-width="2"/><circle cx="' + (x + doorWidth - 17) + '" cy="230" r="3" fill="#e9164d"/></g>';
+            }
+        }
+        let pipe = '';
         let label = 'Без верхней трубы';
         if (current.railRoute === 'straight') {
-            rail = '<line x1="40" y1="48" x2="320" y2="48" stroke="#e9164d" stroke-width="5" stroke-linecap="round"/>';
+            pipe = '<path d="M78 134 L455 82" fill="none" stroke="#aeb8c7" stroke-width="10" stroke-linecap="round"/><path d="M78 131 L455 79" fill="none" stroke="#f8fafc" stroke-width="3" stroke-linecap="round"/>';
             label = 'От стены до стены';
         } else if (current.railRoute === 'elbow') {
-            rail = '<polyline points="40,48 315,48 315,184" fill="none" stroke="#e9164d" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>';
+            pipe = '<path d="M78 134 L382 134 L466 84" fill="none" stroke="#aeb8c7" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M78 131 L382 131 L466 81" fill="none" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="382" cy="132" r="8" fill="#e9164d"/>';
             label = 'Г-образный маршрут';
         }
-        document.getElementById('shower-schematic-svg').innerHTML = '<rect x="30" y="30" width="300" height="170" rx="8" fill="#fff" stroke="#cbd5e1"/><path d="M40 190V48H320" fill="none" stroke="#172033" stroke-width="9"/>' + partitions + rail + '<text x="180" y="213" text-anchor="middle" fill="#64748b" font-size="11">вид сверху · схема не в масштабе</text>';
+        const svg = document.getElementById('shower-schematic-svg');
+        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#cfe3ff"/></linearGradient><linearGradient id="fasciaFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#ffd8e2"/></linearGradient><linearGradient id="doorFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef6ff"/><stop offset="1" stop-color="#aac9f4"/></linearGradient><pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)"><path d="M24 0H0V24" fill="none" stroke="#d9e2ec" stroke-width="1"/></pattern></defs><polygon points="55,315 355,315 485,240 185,240" fill="url(#floorGrid)" stroke="#9aa9bc"/><polygon points="185,58 485,58 485,240 185,240" fill="#eef2f7" stroke="#9aa9bc"/><polygon points="55,133 185,58 185,240 55,315" fill="#e2e8f0" stroke="#9aa9bc"/><path d="M185 58V240L55 315" fill="none" stroke="#64748b" stroke-width="3"/>' + panelsSvg + frontSvg + pipe + '<text x="270" y="360" text-anchor="middle" fill="#64748b" font-size="12">изометрическая модель · размеры пропорциональны условно</text>';
         document.getElementById('shower-scheme-label').textContent = label;
         const pipeLength = current.railRoute === 'none' ? 0 : (current.roomWidth + (current.railRoute === 'elbow' ? current.depth : 0)) / 1000;
         document.getElementById('shower-schematic-stats').innerHTML =
-            '<span>Перегородки <b>' + count + ' шт.</b></span>' +
+            '<span>Перегородки <b>' + current.partitionCount + ' шт.</b></span>' +
             '<span>Глубина <b>' + formatter.format(current.depth) + ' мм</b></span>' +
-            '<span>Ширина помещения <b>' + formatter.format(current.roomWidth) + ' мм</b></span>' +
+            '<span>Высота <b>' + formatter.format(current.height) + ' мм</b></span>' +
             '<span>Верхняя труба <b>' + formatter.format(pipeLength) + ' м</b></span>';
     }
 
@@ -144,6 +188,36 @@
         renderRoles(requirements);
     }
 
+    function resolvePanelSelection(current) {
+        const mode = formatSelect.value;
+        const decorId = document.getElementById('decor_input').value;
+        const source = panels.find(function (panel) { return String(panel.id) === String(decorId); });
+        if (!source) return null;
+        if (mode === '__auto__') {
+            const best = ShowerPartitionCalculator.chooseBestPanelFormat(current, availableFormats, window.CuttingOptimizer);
+            if (!best) return {panel: null, layout: null, error: 'Ни один из существующих форматов выбранного декора не вмещает все детали.'};
+            best.panel = Object.assign({}, best.panel, {name: 'Оптимальный формат · ' + (best.panel.name || (best.panel.height_mm + '×' + best.panel.width_mm + ' мм'))});
+            return best;
+        }
+        if (mode === '__custom__') {
+            const width = value('custom_sheet_width');
+            const height = value('custom_sheet_height');
+            if (!width || !height) return {panel: null, layout: null, error: 'Укажите ширину и длину своего листа.'};
+            const sourceArea = Number(source.width_mm || 0) * Number(source.height_mm || 0) / 1000000;
+            const pricePerM2 = Number(source.price_per_m2 || 0) || (sourceArea > 0 ? Number(source.price_per_sheet || 0) / sourceArea : 0);
+            const panel = Object.assign({}, source, {
+                id: 'custom',
+                name: 'Свой формат ' + Math.round(height) + '×' + Math.round(width) + ' мм',
+                width_mm: width,
+                height_mm: height,
+                price_per_sheet: pricePerM2 * width * height / 1000000
+            });
+            return {panel: panel, layout: ShowerPartitionCalculator.estimatePanelLayout(current, panel, window.CuttingOptimizer)};
+        }
+        const panel = availableFormats.find(function (row) { return String(row.id) === String(mode); });
+        return panel ? {panel: panel, layout: ShowerPartitionCalculator.estimatePanelLayout(current, panel, window.CuttingOptimizer)} : null;
+    }
+
     function serviceRows(area, quantity) {
         return services.slice(0, 4).map(function (service) {
             const volume = String(service.unit || '').toLocaleLowerCase('ru-RU').includes('м') ? area : quantity;
@@ -161,14 +235,16 @@
         const inputs = collectInputs();
         inputs.decor = document.getElementById('decor_input').selectedOptions[0]?.textContent?.trim() || '';
         inputs.panel_format_id = formatSelect.value;
-        const panel = panels.find(function (row) { return String(row.id) === String(formatSelect.value); });
-        if (!panel) {
-            alert('Выберите декор и формат листа для расчёта раскроя.');
+        const current = config();
+        const selection = resolvePanelSelection(current);
+        if (!selection || selection.error || !selection.panel || !selection.layout) {
+            alert(selection?.error || 'Выберите декор и формат листа для расчёта раскроя.');
             formatSelect.focus();
             return;
         }
-        const current = config();
-        const layout = ShowerPartitionCalculator.estimatePanelLayout(current, panel, window.CuttingOptimizer);
+        const panel = selection.panel;
+        const layout = selection.layout;
+        inputs.panel_format_name = panel.name;
         if (layout.remaining.length) {
             alert('Часть деталей не помещается в выбранный формат листа:\n' + layout.remaining.map(function (item) { return item.name + ': ' + item.qtyLeft + ' шт.'; }).join('\n'));
             return;
@@ -223,10 +299,15 @@
     }
 
     document.getElementById('decor_input').addEventListener('change', renderFormats);
+    formatSelect.addEventListener('change', toggleCustomFormat);
     document.getElementById('manufacturer_id').addEventListener('change', renderFormats);
     typeSelect.addEventListener('change', refresh);
-    document.getElementById('supplier_id').addEventListener('change', refresh);
+    document.getElementById('supplier_id').addEventListener('change', function () { renderCollections(); refresh(); });
     document.getElementById('collection_id').addEventListener('change', refresh);
+    document.getElementById('shower_height').addEventListener('input', function () {
+        if (!fasciaHeightTouched) document.getElementById('shower_fascia_height').value = document.getElementById('shower_height').value;
+    });
+    document.getElementById('shower_fascia_height').addEventListener('input', function () { fasciaHeightTouched = true; });
     showerNode.addEventListener('input', refresh);
     showerNode.addEventListener('change', refresh);
     calculateBtn.addEventListener('click', function (event) {
@@ -237,5 +318,6 @@
     }, true);
 
     renderFormats();
+    renderCollections();
     refresh();
 })();
