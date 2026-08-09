@@ -21,25 +21,44 @@
         return Math.ceil((length - 200) / 500) + 1;
     }
 
+    const LAYOUT_DEFINITIONS = {
+        built_in: {label: 'Встроенная', panelOffset: -1, railRoute: 'straight', railLabel: 'Прямая: от стены до стены', depthSegments: 0, elbows: 0},
+        corner: {label: 'Угловая', panelOffset: 0, railRoute: 'elbow', railLabel: 'Г-образная: ширина + глубина', depthSegments: 1, elbows: 1},
+        freestanding: {label: 'Отдельно стоящая', panelOffset: 1, railRoute: 'u_shape', railLabel: 'П-образная: ширина + две глубины', depthSegments: 2, elbows: 2}
+    };
+
     function normalizedConfig(input = {}) {
         const fullHeight = Boolean(input.fullHeight);
         const height = positive(input.height, 2000);
+        const layoutType = Object.prototype.hasOwnProperty.call(LAYOUT_DEFINITIONS, input.layoutType) ? input.layoutType : 'built_in';
+        const layout = LAYOUT_DEFINITIONS[layoutType];
+        const sectionCount = integer(input.sectionCount ?? input.partitionCount, layoutType === 'built_in' ? 2 : 1);
+        const partitionCount = Math.max(0, sectionCount + layout.panelOffset);
+        const roomWidth = positive(input.roomWidth, 3000);
+        const depth = positive(input.depth, 1000);
+        const railRoute = fullHeight ? 'none' : layout.railRoute;
         return {
-            partitionCount: integer(input.partitionCount),
-            depth: positive(input.depth, 1000),
+            layoutType,
+            layoutLabel: layout.label,
+            sectionCount,
+            partitionCount,
+            depth,
             height,
-            roomWidth: positive(input.roomWidth, 3000),
+            roomWidth,
             variant: ['open', 'fascia', 'doors'].includes(input.variant) ? input.variant : 'open',
             fasciaWidth: positive(input.fasciaWidth, 200),
             fasciaHeight: positive(input.fasciaHeight, height),
-            doorCount: integer(input.doorCount, integer(input.partitionCount)),
+            doorCount: integer(input.doorCount, sectionCount),
             doorWidth: positive(input.doorWidth, 700),
             doorHeight: positive(input.doorHeight, 1900),
             floorMount: ['profile', 'leg', 'angle'].includes(input.floorMount) ? input.floorMount : 'leg',
             wallMount: ['profile', 'angle'].includes(input.wallMount) ? input.wallMount : 'profile',
             ceilingMount: ['none', 'profile', 'angle'].includes(input.ceilingMount) ? input.ceilingMount : 'none',
             angleSides: Number(input.angleSides) === 2 ? 2 : 1,
-            railRoute: ['none', 'straight', 'elbow'].includes(input.railRoute) ? input.railRoute : (fullHeight ? 'none' : 'straight'),
+            railRoute,
+            railLabel: fullHeight ? 'Без верхней трубы: крепление к потолку' : layout.railLabel,
+            pipeLengthMm: fullHeight ? 0 : roomWidth + depth * layout.depthSegments,
+            pipeElbows: fullHeight ? 0 : layout.elbows,
             fullHeight,
             allowPanelRotation: Boolean(input.allowPanelRotation),
             kerf: Math.max(0, Number(input.kerf) || 0),
@@ -49,13 +68,13 @@
 
     function buildPanelPieces(input = {}) {
         const config = normalizedConfig(input);
-        const pieces = [{
+        const pieces = config.partitionCount ? [{
             id: 'partition',
             name: 'Панель душевой перегородки',
             width: config.depth,
             height: config.height,
             quantity: config.partitionCount
-        }];
+        }] : [];
         if (config.variant === 'fascia') pieces.push({id: 'fascia', name: 'Фасадная перемычка', width: config.fasciaWidth, height: config.fasciaHeight, quantity: 1});
         if (config.variant === 'doors') pieces.push({id: 'door', name: 'Дверное полотно', width: config.doorWidth, height: config.doorHeight, quantity: config.doorCount});
         return pieces.map(piece => ({...piece, area: piece.width * piece.height * piece.quantity / 1000000}));
@@ -99,11 +118,11 @@
         else if (config.fullHeight && config.ceilingMount === 'angle') rows.push(requirement('ceiling_angle', anglePointCount(config.depth) * config.partitionCount * sideMultiplier, sideMultiplier === 2 ? 'С двух сторон' : 'С одной стороны'));
 
         if (config.railRoute !== 'none') {
-            const pipeLength = (config.roomWidth + (config.railRoute === 'elbow' ? config.depth : 0)) / 1000;
-            rows.push(requirement('top_pipe', pipeLength, config.railRoute === 'elbow' ? 'Г-образный маршрут' : 'От стены до стены'));
+            const pipeLength = config.pipeLengthMm / 1000;
+            rows.push(requirement('top_pipe', pipeLength, config.layoutLabel + ': ' + config.railLabel.toLocaleLowerCase('ru-RU')));
             rows.push(requirement('panel_pipe_holder', config.partitionCount, 'По одному на перегородку'));
             rows.push(requirement('wall_pipe_holder', 2, 'Начальная и конечная точки'));
-            if (config.railRoute === 'elbow') rows.push(requirement('elbow_90', 1, 'Один поворот трубы'));
+            if (config.pipeElbows) rows.push(requirement('elbow_90', config.pipeElbows, config.pipeElbows === 1 ? 'Один поворот трубы' : 'Два поворота трубы'));
         }
         if (config.variant === 'doors') rows.push(requirement('door_set', config.doorCount, 'Один комплект на дверь; состав выбирается из каталога'));
         return rows.filter(row => row.quantity > 0);
@@ -162,5 +181,5 @@
             .sort((a, b) => b.matchScore - a.matchScore || String(a.material_name).localeCompare(String(b.material_name), 'ru'));
     }
 
-    return {ROLE_DEFINITIONS, anglePointCount, normalizedConfig, buildPanelPieces, buildRequirements, estimatePanelLayout, chooseBestPanelFormat, matchingFurniture, itemScore};
+    return {LAYOUT_DEFINITIONS, ROLE_DEFINITIONS, anglePointCount, normalizedConfig, buildPanelPieces, buildRequirements, estimatePanelLayout, chooseBestPanelFormat, matchingFurniture, itemScore};
 });

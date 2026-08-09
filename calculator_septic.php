@@ -255,7 +255,7 @@ tbody tr:hover td { background:#fbfcfe; }
         <div id="dynamic-parameters" class="grid" style="margin-top:14px"></div>
         <div id="shower-config" class="shower-config hidden">
             <div class="shower-config__intro">
-                <div><h3>Конфигурация душевой перегородки</h3><p>Задайте геометрию, точки крепления и маршрут верхней трубы. Калькулятор рассчитает HPL, раскрой и требуемые роли фурнитуры.</p></div>
+                <div><h3>Конфигурация душевой перегородки</h3><p>Выберите тип размещения и задайте размеры. Количество HPL-панелей и маршрут верхней трубы рассчитываются автоматически по технической схеме.</p></div>
                 <span class="shower-badge">Душевая перегородка</span>
             </div>
             <div class="shower-workspace">
@@ -263,7 +263,8 @@ tbody tr:hover td { background:#fbfcfe; }
                     <div class="shower-step">
                         <div class="shower-step__title"><span class="shower-step__number">01</span>Геометрия и состав</div>
                         <div class="shower-fields">
-                            <div><label for="shower_partition_count">Количество перегородок</label><input id="shower_partition_count" type="number" min="1" step="1" value="1"></div>
+                            <div><label for="shower_layout_type">Тип размещения</label><select id="shower_layout_type"><option value="built_in">Встроенная — между двумя стенами</option><option value="corner">Угловая — одна боковая стена</option><option value="freestanding">Отдельно стоящая — без боковых стен</option></select><div class="hint">Торцевые HPL-панели и верхняя труба добавятся автоматически.</div></div>
+                            <div><label for="shower_partition_count">Количество душевых мест (секций)</label><input id="shower_partition_count" type="number" min="2" step="1" value="2"><div id="shower-panel-count-hint" class="hint">HPL-перегородок: 1</div></div>
                             <div><label for="shower_room_width">От стены до стены, мм</label><input id="shower_room_width" type="number" min="1" step="1" value="3000"></div>
                             <div><label for="shower_depth">Глубина перегородки, мм</label><input id="shower_depth" type="number" min="1" step="1" value="1000"></div>
                             <div><label for="shower_height">Высота перегородки, мм</label><input id="shower_height" type="number" min="1" step="1" value="2000"></div>
@@ -287,7 +288,7 @@ tbody tr:hover td { background:#fbfcfe; }
                     <div class="shower-step">
                         <div class="shower-step__title"><span class="shower-step__number">03</span>Верхняя труба</div>
                         <div class="shower-fields">
-                            <div><label for="shower_rail_route">Схема трубы</label><select id="shower_rail_route"><option value="straight">Прямая: от стены до стены</option><option value="elbow">Г-образная: ширина + глубина</option><option value="none">Без верхней трубы</option></select></div>
+                            <div><label for="shower_rail_route">Схема трубы</label><input id="shower_rail_route" value="Прямая: от стены до стены" readonly><div class="hint">Определяется типом размещения; для панелей до потолка труба не требуется.</div></div>
                             <div><label for="shower_kerf">Пропил, мм</label><input id="shower_kerf" type="number" min="0" step="0.1" value="4"></div>
                             <div><label for="shower_margin">Торцевание листа, мм</label><input id="shower_margin" type="number" min="0" step="0.1" value="5"></div>
                             <label class="shower-check"><input id="shower_allow_rotation" type="checkbox"><span>Разрешить поворот деталей на листе</span></label>
