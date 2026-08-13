@@ -277,6 +277,10 @@ th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-alig
 th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 .errors{background:#fee2e2;color:#991b1b;padding:12px;border-radius:12px}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:12px;border:none;padding:0;margin:0;cursor:pointer;text-decoration:none;box-sizing:border-box;-webkit-appearance:none;transition:all .15s;box-shadow:none}
+.btn-edit{background:#eff6ff;color:#2563eb}.btn-edit:hover{background:#2563eb;color:#fff}
+.btn-delete{background:#fef2f2;color:#dc2626}.btn-delete:hover{background:#dc2626;color:#fff}
+.btn-icon svg{display:block;flex-shrink:0}
 .status,.price{font-weight:700}
 .preview{max-width:96px;max-height:64px;border-radius:8px;border:1px solid #e5e7eb;object-fit:cover}
 .hint{color:#64748b;font-size:13px;margin-top:4px}
@@ -312,8 +316,8 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
             <input type="hidden" name="action" value="<?php echo $editing ? 'update_furniture' : 'create_furniture'; ?>">
             <input type="hidden" name="id" value="<?php echo e((string)($editing['id'] ?? '')); ?>">
             <div class="grid">
-                <div><label>Название</label><input name="material_name" required value="<?php echo e((string)($editing['material_name'] ?? '')); ?>"></div>
                 <div><label>Артикул</label><input name="article" maxlength="120" value="<?php echo e((string)($editing['article'] ?? '')); ?>"></div>
+                <div><label>Название</label><input name="material_name" required value="<?php echo e((string)($editing['material_name'] ?? '')); ?>"></div>
                 <div><label>Категория</label><select name="category_id"><option value="0">Без категории</option><?php foreach ($categories as $c): ?><option value="<?php echo e((string)$c['id']); ?>" <?php echo (int)($editing['category_id'] ?? 0)===(int)$c['id']?'selected':''; ?>><?php echo e($c['name']); ?></option><?php endforeach; ?></select></div>
                 <div><label>Поставщик</label><select name="supplier_id"><option value="0">Поставщик не выбран</option><?php foreach ($suppliers as $s): ?><option value="<?php echo e((string)$s['id']); ?>" <?php echo (int)($editing['supplier_id'] ?? 0)===(int)$s['id']?'selected':''; ?>><?php echo e($s['company_name']); ?></option><?php endforeach; ?></select></div>
                 <div><label>Серия</label><select name="collection_id"><option value="0">Без серии</option><?php foreach ($collections as $col): ?><option value="<?php echo e((string)$col['id']); ?>" <?php echo (int)($editing['collection_id'] ?? 0)===(int)$col['id']?'selected':''; ?>><?php echo e(($col['supplier_name']?$col['supplier_name'].' — ':'').$col['name']); ?></option><?php endforeach; ?></select></div>
@@ -322,7 +326,7 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
                 <div><label>Сумма</label><input type="number" step="0.001" min="0.001" name="amount" required value="<?php echo e((string)($editing['amount'] ?? '1')); ?>"></div>
                 <div><label>Цена за ед. изм.</label><input type="number" step="0.01" min="0" name="price" required value="<?php echo e((string)($editing['price'] ?? '')); ?>"></div>
                 <div><label>Валюта</label><select name="currency"><?php foreach ($currencies as $cr): ?><option value="<?php echo e($cr['code']); ?>" data-rate="<?php echo e((string)$cr['rate_to_rub']); ?>" <?php echo (string)($editing['currency']??'RUB')===$cr['code']?'selected':''; ?>><?php echo e($cr['code']); ?> — <?php echo e($cr['name']); ?></option><?php endforeach; ?></select></div>
-                <div><label>Фото</label><?php if (!empty($editing['photo_path'])): ?><p><img class="preview" src="<?php echo e($editing['photo_path']); ?>" alt=""></p><?php endif; ?><input type="file" name="photo" accept=".jpg,.jpeg,.png,.tif,.tiff,.webp"><p><img class="preview" id="photo_preview" src="<?php echo e((string)($editing['photo_path'] ?? '')); ?>" alt="" style="<?php echo empty($editing['photo_path'])?'display:none;':'' ?>"></p></div>
+                <div><label>Фото</label><input type="file" name="photo" accept=".jpg,.jpeg,.png,.tif,.tiff,.webp"><p><img class="preview" id="photo_preview" src="<?php echo e((string)($editing['photo_path'] ?? '')); ?>" alt="" style="<?php echo empty($editing['photo_path'])?'display:none;':'' ?>"></p></div>
             </div>
             <p><label><input type="checkbox" name="is_stock_program" <?php echo !empty($editing['is_stock_program'])?'checked':''; ?>> Складская программа</label></p>
             <p><label>Примечание</label><textarea name="note"><?php echo e((string)($editing['note'] ?? '')); ?></textarea></p>
@@ -334,13 +338,13 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
     <section class="panel">
         <h2>Позиции фурнитуры</h2>
         <table>
-            <thead><tr><th>Фото</th><th>Артикул</th><th>Название</th><th>Категория</th><th>Поставщик</th><th>Серия</th><th>Ед.</th><th>Кратн.</th><th>Сумма</th><th>Цена</th><th>Скл.</th><th>Статус</th><th>Действия</th></tr></thead>
+            <thead><tr><th>Фото</th><th>Название</th><th>Артикул</th><th>Категория</th><th>Поставщик</th><th>Серия</th><th>Ед.</th><th>Кратн.</th><th>Сумма</th><th>Цена</th><th>Скл.</th><th>Статус</th><th>Действия</th></tr></thead>
             <tbody>
             <?php foreach ($prices as $p): ?>
                 <tr>
                     <td><?php if (!empty($p['photo_path'])): ?><img class="preview" src="<?php echo e($p['photo_path']); ?>" alt=""><?php else: ?>—<?php endif; ?></td>
-                    <td><?php echo e((string)($p['article'] ?? '—')); ?></td>
                     <td><?php echo e($p['material_name']); ?></td>
+                    <td><?php echo e((string)($p['article'] ?? '—')); ?></td>
                     <td><?php echo e((string)($p['category_name'] ?? '—')); ?></td>
                     <td><?php echo e((string)($p['supplier_name'] ?? '—')); ?></td>
                     <td><?php echo e((string)($p['collection_name'] ?? '—')); ?></td>
@@ -350,7 +354,7 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
                     <td class="price"><?php echo e(number_format((float)$p['price'],2,',',' ')); ?> <?php echo e($p['currency']); ?></td>
                     <td><?php echo (int)$p['is_stock_program']===1?'Да':'Нет'; ?></td>
                     <td class="status"><?php echo (int)$p['is_active']===1?'Акт.':'Скрыт'; ?></td>
-                    <td class="actions"><a class="button secondary" href="admin_furniture.php?tab=furniture&edit=<?php echo e((string)$p['id']); ?>">Изм.</a><form method="post" onsubmit="return confirm('Удалить?');" style="display:inline"><input type="hidden" name="action" value="delete_furniture"><input type="hidden" name="id" value="<?php echo e((string)$p['id']); ?>"><button class="danger" type="submit" style="padding:8px 12px;font-size:12px">Удал.</button></form></td>
+                    <td class="actions"><a class="btn-icon btn-edit" href="admin_furniture.php?tab=furniture&edit=<?php echo e((string)$p['id']); ?>" title="Изменить" aria-label="Изменить"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a><form method="post" onsubmit="return confirm('Удалить?');" style="display:inline"><input type="hidden" name="action" value="delete_furniture"><input type="hidden" name="id" value="<?php echo e((string)$p['id']); ?>"><button class="btn-icon btn-delete" type="submit" title="Удалить" aria-label="Удалить"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></form></td>
                 </tr>
             <?php endforeach; ?>
             <?php if (!$prices): ?><tr><td colspan="13">Позиции фурнитуры пока не добавлены.</td></tr><?php endif; ?>
