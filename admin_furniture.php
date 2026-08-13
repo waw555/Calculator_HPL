@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $supplierId = (int)($_POST['supplier_id'] ?? 0);
         $categoryId = (int)($_POST['category_id'] ?? 0);
         $collectionId = (int)($_POST['collection_id'] ?? 0);
+        $article = trim($_POST['article'] ?? '');
         $materialName = trim($_POST['material_name'] ?? '');
         $unit = trim($_POST['unit'] ?? 'шт.');
         $multiplicityRaw = trim($_POST['multiplicity'] ?? '1');
@@ -64,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'supplier_id' => $supplierId > 0 ? $supplierId : null,
                 'category_id' => $categoryId > 0 ? $categoryId : null,
                 'collection_id' => $collectionId > 0 ? $collectionId : null,
+                'article' => $article === '' ? null : $article,
                 'material_name' => $materialName, 'unit' => $unit,
                 'multiplicity' => (float)$multiplicityRaw, 'amount' => (float)$amountRaw,
                 'price' => (float)$priceRaw, 'currency' => $currency,
@@ -72,12 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             if ($action === 'update_furniture' && $id > 0) {
                 $params['id'] = $id;
-                $stmt = $pdo->prepare('UPDATE price_list SET supplier_id=:supplier_id, category_id=:category_id, collection_id=:collection_id, material_name=:material_name, unit=:unit, multiplicity=:multiplicity, amount=:amount, price=:price, currency=:currency, photo_path=:photo_path, is_stock_program=:is_stock_program, note=:note, is_active=:is_active WHERE id=:id');
+                $stmt = $pdo->prepare('UPDATE price_list SET supplier_id=:supplier_id, category_id=:category_id, collection_id=:collection_id, article=:article, material_name=:material_name, unit=:unit, multiplicity=:multiplicity, amount=:amount, price=:price, currency=:currency, photo_path=:photo_path, is_stock_program=:is_stock_program, note=:note, is_active=:is_active WHERE id=:id');
                 $stmt->execute($params);
                 header('Location: admin_furniture.php?tab=furniture&edit=' . $id);
                 exit;
             } else {
-                $stmt = $pdo->prepare('INSERT INTO price_list (supplier_id, category_id, collection_id, material_name, unit, multiplicity, amount, price, currency, photo_path, is_stock_program, note, is_active) VALUES (:supplier_id, :category_id, :collection_id, :material_name, :unit, :multiplicity, :amount, :price, :currency, :photo_path, :is_stock_program, :note, :is_active)');
+                $stmt = $pdo->prepare('INSERT INTO price_list (supplier_id, category_id, collection_id, article, material_name, unit, multiplicity, amount, price, currency, photo_path, is_stock_program, note, is_active) VALUES (:supplier_id, :category_id, :collection_id, :article, :material_name, :unit, :multiplicity, :amount, :price, :currency, :photo_path, :is_stock_program, :note, :is_active)');
                 $stmt->execute($params);
                 header('Location: admin_furniture.php?tab=furniture&edit=' . $pdo->lastInsertId());
                 exit;
@@ -311,6 +313,7 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
             <input type="hidden" name="id" value="<?php echo e((string)($editing['id'] ?? '')); ?>">
             <div class="grid">
                 <div><label>Название</label><input name="material_name" required value="<?php echo e((string)($editing['material_name'] ?? '')); ?>"></div>
+                <div><label>Артикул</label><input name="article" maxlength="120" value="<?php echo e((string)($editing['article'] ?? '')); ?>"></div>
                 <div><label>Категория</label><select name="category_id"><option value="0">Без категории</option><?php foreach ($categories as $c): ?><option value="<?php echo e((string)$c['id']); ?>" <?php echo (int)($editing['category_id'] ?? 0)===(int)$c['id']?'selected':''; ?>><?php echo e($c['name']); ?></option><?php endforeach; ?></select></div>
                 <div><label>Поставщик</label><select name="supplier_id"><option value="0">Поставщик не выбран</option><?php foreach ($suppliers as $s): ?><option value="<?php echo e((string)$s['id']); ?>" <?php echo (int)($editing['supplier_id'] ?? 0)===(int)$s['id']?'selected':''; ?>><?php echo e($s['company_name']); ?></option><?php endforeach; ?></select></div>
                 <div><label>Серия</label><select name="collection_id"><option value="0">Без серии</option><?php foreach ($collections as $col): ?><option value="<?php echo e((string)$col['id']); ?>" <?php echo (int)($editing['collection_id'] ?? 0)===(int)$col['id']?'selected':''; ?>><?php echo e(($col['supplier_name']?$col['supplier_name'].' — ':'').$col['name']); ?></option><?php endforeach; ?></select></div>
@@ -331,11 +334,12 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
     <section class="panel">
         <h2>Позиции фурнитуры</h2>
         <table>
-            <thead><tr><th>Фото</th><th>Название</th><th>Категория</th><th>Поставщик</th><th>Серия</th><th>Ед.</th><th>Кратн.</th><th>Сумма</th><th>Цена</th><th>Скл.</th><th>Статус</th><th>Действия</th></tr></thead>
+            <thead><tr><th>Фото</th><th>Артикул</th><th>Название</th><th>Категория</th><th>Поставщик</th><th>Серия</th><th>Ед.</th><th>Кратн.</th><th>Сумма</th><th>Цена</th><th>Скл.</th><th>Статус</th><th>Действия</th></tr></thead>
             <tbody>
             <?php foreach ($prices as $p): ?>
                 <tr>
                     <td><?php if (!empty($p['photo_path'])): ?><img class="preview" src="<?php echo e($p['photo_path']); ?>" alt=""><?php else: ?>—<?php endif; ?></td>
+                    <td><?php echo e((string)($p['article'] ?? '—')); ?></td>
                     <td><?php echo e($p['material_name']); ?></td>
                     <td><?php echo e((string)($p['category_name'] ?? '—')); ?></td>
                     <td><?php echo e((string)($p['supplier_name'] ?? '—')); ?></td>
@@ -349,7 +353,7 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
                     <td class="actions"><a class="button secondary" href="admin_furniture.php?tab=furniture&edit=<?php echo e((string)$p['id']); ?>">Изм.</a><form method="post" onsubmit="return confirm('Удалить?');" style="display:inline"><input type="hidden" name="action" value="delete_furniture"><input type="hidden" name="id" value="<?php echo e((string)$p['id']); ?>"><button class="danger" type="submit" style="padding:8px 12px;font-size:12px">Удал.</button></form></td>
                 </tr>
             <?php endforeach; ?>
-            <?php if (!$prices): ?><tr><td colspan="12">Позиции фурнитуры пока не добавлены.</td></tr><?php endif; ?>
+            <?php if (!$prices): ?><tr><td colspan="13">Позиции фурнитуры пока не добавлены.</td></tr><?php endif; ?>
             </tbody>
         </table>
     </section>
