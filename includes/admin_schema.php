@@ -226,6 +226,7 @@ function ensure_price_list_table(PDO $pdo): void
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     add_column_if_missing($pdo, 'price_list', 'supplier_id', 'supplier_id INT NULL');
+    add_column_if_missing($pdo, 'price_list', 'article', 'article VARCHAR(120) NULL');
     add_column_if_missing($pdo, 'price_list', 'category_id', 'category_id INT NULL');
     add_column_if_missing($pdo, 'price_list', 'multiplicity', 'multiplicity DECIMAL(12,3) NOT NULL DEFAULT 1');
     add_column_if_missing($pdo, 'price_list', 'amount', 'amount DECIMAL(12,3) NOT NULL DEFAULT 1');
