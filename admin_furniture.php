@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $stmt = $pdo->prepare('INSERT INTO price_list (supplier_id, category_id, collection_id, article, material_name, unit, multiplicity, amount, price, currency, photo_path, is_stock_program, note, is_active) VALUES (:supplier_id, :category_id, :collection_id, :article, :material_name, :unit, :multiplicity, :amount, :price, :currency, :photo_path, :is_stock_program, :note, :is_active)');
                 $stmt->execute($params);
-                header('Location: admin_furniture.php?tab=furniture&edit=' . $pdo->lastInsertId());
+                header('Location: admin_furniture.php?tab=furniture');
                 exit;
             }
         }
