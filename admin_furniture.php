@@ -276,8 +276,8 @@ table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;ove
 th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}
 th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 .errors{background:#fee2e2;color:#991b1b;padding:12px;border-radius:12px}
-.actions{display:flex;gap:8px;align-items:center;flex-wrap:nowrap;white-space:nowrap;min-width:80px}
-.actions form{display:flex!important;margin:0}
+.actions{white-space:nowrap;min-width:80px;vertical-align:middle}
+.actions form{display:inline-flex!important;margin:0 0 0 8px;vertical-align:middle}
 .btn-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:12px;border:none;padding:0;margin:0;cursor:pointer;text-decoration:none;box-sizing:border-box;-webkit-appearance:none;transition:all .15s;box-shadow:none}
 .btn-edit{background:#eff6ff;color:#2563eb}.btn-edit:hover{background:#2563eb;color:#fff}
 .btn-delete{background:#fef2f2;color:#dc2626}.btn-delete:hover{background:#dc2626;color:#fff}
