@@ -35,13 +35,21 @@ assert.match(integration, /#d9dde3|#eef0f2/, 'При отсутствии фот
 assert.match(integration, /openModelModal/, 'Должно поддерживаться увеличение модели');
 assert.match(integration, /event\.key === 'Escape'/, 'Модальное окно должно закрываться по Escape');
 
-assert.match(page, /id="shower_layout_type"/, 'Должен быть выбор встроенной, угловой и отдельно стоящей схемы');
-assert.match(page, /value="built_in"/, 'Должна быть встроенная схема');
-assert.match(page, /value="corner"/, 'Должна быть угловая схема');
-assert.match(page, /value="freestanding"/, 'Должна быть отдельно стоящая схема');
+assert.match(page, /id="shower_layout_type"/, 'Должен быть выбор прямой, угловой и П-образной схемы');
+assert.match(page, /value="built_in">Прямая</, 'Должна быть прямая схема');
+assert.match(page, /value="corner">Угловая</, 'Должна быть угловая схема');
+assert.match(page, /value="freestanding">П-образная</, 'Должна быть П-образная схема');
 assert.match(integration, /current\.layoutType === 'built_in'/, '3D-модель должна учитывать боковые стены встроенной схемы');
-assert.match(integration, /current\.railRoute === 'u_shape'/, '3D-модель должна отображать П-образную трубу отдельно стоящей схемы');
-assert.match(integration, /current\.pipeLengthMm/, 'Длина трубы должна браться из единой расчетной модели');
+assert.match(integration, /current\.railRoute === 'u_shape'/, '3D-модель должна отображать П-образную верхнюю связь');
+
+assert.match(page, /Количество кабин/, 'Поле должно называться «Количество кабин»');
+assert.match(page, /Длина фасада, мм/, 'Поле должно называться «Длина фасада»');
+assert.doesNotMatch(page, /id="shower_variant"/, 'Отдельного параметра фасадной части быть не должно');
+assert.doesNotMatch(page, /id="shower_full_height"/, 'Параметра панели от пола до потолка быть не должно');
+assert.doesNotMatch(page, />Верхняя труба</, 'Отдельного раздела верхней трубы быть не должно');
+assert.match(page, /id="shower_top_support"[\s\S]*Труба[\s\S]*Профиль алюминиевый/, 'Без крепления к потолку должен выбираться тип верхней связи');
+assert.match(integration, /partitionVariant/, 'Вариант фасада должен определяться типом перегородки');
+assert.match(integration, /item\.photo_path/, 'В 3D-модели должны использоваться фотографии выбранной фурнитуры');
 
 new Function(integration);
 console.log('shower_partition_page.test.js: OK');

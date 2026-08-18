@@ -51,9 +51,9 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
 }
 
 {
-    const rows = shower.buildRequirements({layoutType: 'corner', sectionCount: 2, fullHeight: true, ceilingMount: 'profile'});
+    const rows = shower.buildRequirements({layoutType: 'corner', sectionCount: 2, ceilingMount: 'profile'});
     const byRole = Object.fromEntries(rows.map(row => [row.role, row]));
-    assert.equal(byRole.top_pipe, undefined, 'для панелей от пола до потолка верхняя труба не нужна');
+    assert.equal(byRole.top_pipe, undefined, 'при креплении к потолку труба не нужна');
     assert.equal(byRole.ceiling_profile.quantity, 2);
 }
 
@@ -71,7 +71,7 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
 }
 
 {
-    const requirement = shower.buildRequirements({layoutType: 'corner', sectionCount: 1, floorMount: 'leg', wallMount: 'profile', fullHeight: true})[0];
+    const requirement = shower.buildRequirements({layoutType: 'corner', sectionCount: 1, floorMount: 'leg', wallMount: 'profile', ceilingMount: 'profile'})[0];
     const matches = shower.matchingFurniture(requirement, [
         {id: 1, material_name: 'Опора для панели', category_name: 'Ножки', unit: 'шт.', supplier_id: 1, collection_id: 2},
         {id: 2, material_name: 'Профиль алюминиевый', category_name: 'Профили', unit: 'м.п.', supplier_id: 1, collection_id: 2}
@@ -98,6 +98,13 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
     );
     assert.equal(best.panel.id, 2);
     assert.equal(best.layout.sheets, 1);
+}
+
+{
+    const rows = shower.buildRequirements({layoutType: 'corner', sectionCount: 2, roomWidth: 3000, depth: 1000, ceilingMount: 'none', topSupport: 'aluminium_profile'});
+    const byRole = Object.fromEntries(rows.map(row => [row.role, row]));
+    assert.equal(byRole.top_aluminium_profile.quantity, 4);
+    assert.equal(byRole.top_pipe, undefined);
 }
 
 console.log('shower_partition_calculator: все тесты пройдены');
