@@ -558,7 +558,7 @@ input.md-input{width:100px;padding:4px 8px;font-size:13px;border:1px solid #cbd5
                         <select data-action="update_material" data-id="<?php echo $m['id']; ?>" data-field="currency_id" class="auto-save field-save currency-select">
                             <option value="0">—</option>
                             <?php foreach ($subCurrencies as $c): ?>
-                                <option value="<?php echo $c['id']; ?>" <?php echo (int)$m['currency_id'] === (int)$c['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($c['code']); ?></option>
+                                <option value="<?php echo $c['id']; ?>" <?php echo (int)$m['currency_id'] === (int)$c['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars(app_currency_symbol((string)$c['code'])); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </td>
@@ -616,7 +616,7 @@ input.md-input{width:100px;padding:4px 8px;font-size:13px;border:1px solid #cbd5
                 <label>Валюта</label>
                 <select name="currency_id" style="width:auto;">
                     <?php foreach ($subCurrencies as $c): ?>
-                        <option value="<?php echo $c['id']; ?>" <?php echo (int)$c['id'] === (int)$rubId ? 'selected' : ''; ?>><?php echo htmlspecialchars($c['code']); ?></option>
+                        <option value="<?php echo $c['id']; ?>" <?php echo (int)$c['id'] === (int)$rubId ? 'selected' : ''; ?>><?php echo htmlspecialchars(app_currency_symbol((string)$c['code'])); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -699,7 +699,7 @@ input.md-input{width:100px;padding:4px 8px;font-size:13px;border:1px solid #cbd5
                         <td>
                             <select data-action="update_sub_item" data-id="<?php echo $si['id']; ?>" data-field="currency_id" class="auto-save field-save currency-select">
                                 <?php foreach ($subCurrencies as $c): ?>
-                                    <option value="<?php echo $c['id']; ?>" <?php echo (int)$si['currency_id'] === (int)$c['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($c['code']); ?></option>
+                                    <option value="<?php echo $c['id']; ?>" <?php echo (int)$si['currency_id'] === (int)$c['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars(app_currency_symbol((string)$c['code'])); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </td>
@@ -757,7 +757,7 @@ input.md-input{width:100px;padding:4px 8px;font-size:13px;border:1px solid #cbd5
                 <label>Валюта</label>
                 <select name="currency_id" style="width:auto;">
                     <?php foreach ($subCurrencies as $c): ?>
-                        <option value="<?php echo $c['id']; ?>" <?php echo (int)$c['id'] === (int)$rubId ? 'selected' : ''; ?>><?php echo htmlspecialchars($c['code']); ?></option>
+                        <option value="<?php echo $c['id']; ?>" <?php echo (int)$c['id'] === (int)$rubId ? 'selected' : ''; ?>><?php echo htmlspecialchars(app_currency_symbol((string)$c['code'])); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -882,7 +882,7 @@ input.md-input{width:100px;padding:4px 8px;font-size:13px;border:1px solid #cbd5
                             <select data-action="update_fastener" data-id="<?php echo $f['id']; ?>" data-field="currency_id" class="auto-save field-save currency-select">
                                 <option value="0">—</option>
                                 <?php foreach ($subCurrencies as $c): ?>
-                                    <option value="<?php echo $c['id']; ?>" <?php echo (int)$f['currency_id'] === (int)$c['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($c['code']); ?></option>
+                                    <option value="<?php echo $c['id']; ?>" <?php echo (int)$f['currency_id'] === (int)$c['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars(app_currency_symbol((string)$c['code'])); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </td>
@@ -937,7 +937,7 @@ input.md-input{width:100px;padding:4px 8px;font-size:13px;border:1px solid #cbd5
                 <label>Валюта</label>
                 <select name="currency_id" style="width:auto;">
                     <?php foreach ($subCurrencies as $c): ?>
-                        <option value="<?php echo $c['id']; ?>" <?php echo (int)$c['id'] === (int)$rubId ? 'selected' : ''; ?>><?php echo htmlspecialchars($c['code']); ?></option>
+                        <option value="<?php echo $c['id']; ?>" <?php echo (int)$c['id'] === (int)$rubId ? 'selected' : ''; ?>><?php echo htmlspecialchars(app_currency_symbol((string)$c['code'])); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>

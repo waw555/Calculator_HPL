@@ -332,12 +332,12 @@ tbody tr:hover td { background:#fbfcfe; }
                     <table><thead><tr><th>Позиция</th><th>Кол-во</th><th>Цена</th><th>Стоимость</th></tr></thead><tbody id="hardware-body"></tbody></table>
                 </div>
                 <div class="cost-stack" style="margin-top:18px">
-                    <div class="cost-line purple"><span>DISCOUNT %</span><strong>РУБ</strong></div>
-                    <div class="cost-line cyan"><span>Фурнитура <small>комплектующие</small></span><strong id="hardware-total-card">0,00 RUB</strong></div>
-                    <div class="cost-line cyan"><span>HPL <small>панели и раскрой</small></span><strong id="material-total-card">0,00 RUB</strong></div>
-                    <div class="cost-line green"><span>Производство <small>услуги</small></span><strong id="services-total-card">0,00 RUB</strong></div>
-                    <div class="cost-line"><span>ИТОГО за проект</span><strong id="project-total-card">0,00 RUB</strong></div>
-                    <div class="cost-line orange"><span>ИТОГО за кабину</span><strong id="grand-total">0,00 RUB</strong></div>
+                    <div class="cost-line purple"><span>DISCOUNT %</span><strong>₽</strong></div>
+                    <div class="cost-line cyan"><span>Фурнитура <small>комплектующие</small></span><strong id="hardware-total-card">0,00 ₽</strong></div>
+                    <div class="cost-line cyan"><span>HPL <small>панели и раскрой</small></span><strong id="material-total-card">0,00 ₽</strong></div>
+                    <div class="cost-line green"><span>Производство <small>услуги</small></span><strong id="services-total-card">0,00 ₽</strong></div>
+                    <div class="cost-line"><span>ИТОГО за проект</span><strong id="project-total-card">0,00 ₽</strong></div>
+                    <div class="cost-line orange"><span>ИТОГО за кабину</span><strong id="grand-total">0,00 ₽</strong></div>
                 </div>
             </div>
             <div>
@@ -408,7 +408,7 @@ tbody tr:hover td { background:#fbfcfe; }
                 <tr>
                     <td><?php echo e((string)$calc['id']); ?></td>
                     <td><?php echo e($calc['title']); ?></td>
-                    <td><?php echo e(number_format((float)$calc['total_amount'], 2, ',', ' ') . ' ' . $calc['currency']); ?></td>
+                    <td><?php echo e(number_format((float)$calc['total_amount'], 2, ',', ' ') . ' ' . app_currency_symbol((string)$calc['currency'])); ?></td>
                     <td><?php echo e($calc['created_at']); ?></td>
                     <td><button type="button" class="secondary" style="padding:6px 12px;font-size:12px;" onclick="loadCalculation(<?php echo e((string)$calc['id']); ?>)">Открыть</button></td>
                 </tr>
@@ -452,7 +452,10 @@ const resultPanel = document.getElementById('result-panel');
 let currentCalculation = null;
 let offerItems = [];
 let partitionCounter = 0;
-function money(value, currency = 'RUB') { return `${formatter.format(Number(value) || 0)} ${currency}`; }
+function money(value, currency = 'RUB') {
+    const symbol = ({RUR: '₽', RUB: '₽', EUR: '€', USD: '$'})[currency] || currency;
+    return `${formatter.format(Number(value) || 0)} ${symbol}`;
+}
 function numberValue(id) { return parseFloat(document.getElementById(id)?.value || '0') || 0; }
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[ch])); }
 function selectedPanel() {
