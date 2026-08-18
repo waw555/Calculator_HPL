@@ -471,6 +471,41 @@ function ensure_partition_constructor_table(PDO $pdo): void
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
+function prepare_upload_directory(string $subdir, array &$errors): ?array
+{
+    $subdir = trim(str_replace('\\', '/', $subdir), '/');
+    if ($subdir === '' || preg_match('~(^|/)\.\.(/|$)~', $subdir)) {
+        $errors[] = 'Некорректная директория для загрузки файлов.';
+        return null;
+    }
+
+    // Файлы должны сохраняться именно относительно текущего корня приложения.
+    // Жёстко заданный путь приводил к записи в другой релиз сайта, после чего
+    // корректный относительный URL указывал на несуществующий файл.
+    $baseDir = dirname(__DIR__);
+    $relativeDir = 'uploads/' . $subdir;
+    $uploadsDir = $baseDir . '/uploads';
+    $absoluteDir = $baseDir . '/' . $relativeDir;
+
+    foreach ([$uploadsDir, $absoluteDir] as $directory) {
+        if (!is_dir($directory) && !@mkdir($directory, 0777, true)) {
+            $errors[] = 'Не удалось создать директорию для загрузки файлов.';
+            return null;
+        }
+
+        // Каталог uploads переживает обновления, выполняемые другим системным
+        // пользователем. Восстанавливаем права и для уже существующих папок.
+        @chmod($directory, 0777);
+        clearstatcache(true, $directory);
+        if (!is_writable($directory)) {
+            $errors[] = 'Директория uploads недоступна для записи. Проверьте её владельца и права доступа.';
+            return null;
+        }
+    }
+
+    return [$relativeDir, $absoluteDir];
+}
+
 function upload_file(string $fieldName, string $subdir, array &$errors, ?string $currentPath = null): ?string
 {
     if (!isset($_FILES[$fieldName]) || ($_FILES[$fieldName]['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
@@ -491,19 +526,13 @@ function upload_file(string $fieldName, string $subdir, array &$errors, ?string 
         $errors[] = 'Поддерживаются файлы JPG, PNG, TIFF, WEBP, PDF, DWG и DXF.';
         return $currentPath;
     }
-    $relativeDir = 'uploads/' . trim($subdir, '/');
-    $deployBase = '/home/waw555/www/hpl';
-    $baseDir = (is_dir($deployBase) && is_writable($deployBase)) ? $deployBase : dirname(__DIR__);
-    $absoluteDir = $baseDir . '/' . $relativeDir;
-    if (!is_dir($absoluteDir)) {
-        if (!@mkdir($absoluteDir, 0777, true)) {
-            $errors[] = 'Не удалось создать директорию для загрузки файлов.';
-            return $currentPath;
-        }
-        @chmod($absoluteDir, 0755);
+    $uploadDirectory = prepare_upload_directory($subdir, $errors);
+    if ($uploadDirectory === null) {
+        return $currentPath;
     }
+    [$relativeDir, $absoluteDir] = $uploadDirectory;
     $relativePath = $relativeDir . '/' . bin2hex(random_bytes(12)) . '.' . $extension;
-    $absolutePath = $baseDir . '/' . $relativePath;
+    $absolutePath = $absoluteDir . '/' . basename($relativePath);
     if (!@move_uploaded_file($_FILES[$fieldName]['tmp_name'], $absolutePath)) {
         $errors[] = 'Не удалось сохранить файл. Проверьте права доступа к папке uploads.';
         return $currentPath;
@@ -548,17 +577,11 @@ function upload_image(string $fieldName, string $subdir, array &$errors, ?string
         return $currentPath;
     }
 
-    $relativeDir = 'uploads/' . trim($subdir, '/');
-    $deployBase = '/home/waw555/www/hpl';
-    $baseDir = (is_dir($deployBase) && is_writable($deployBase)) ? $deployBase : dirname(__DIR__);
-    $absoluteDir = $baseDir . '/' . $relativeDir;
-    if (!is_dir($absoluteDir)) {
-        if (!@mkdir($absoluteDir, 0777, true)) {
-            $errors[] = 'Не удалось создать директорию для загрузки изображений.';
-            return $currentPath;
-        }
-        @chmod($absoluteDir, 0755);
+    $uploadDirectory = prepare_upload_directory($subdir, $errors);
+    if ($uploadDirectory === null) {
+        return $currentPath;
     }
+    [$relativeDir, $absoluteDir] = $uploadDirectory;
 
     $ext = $extensions[$imageType];
     if ($customName !== null && $customName !== '') {
@@ -569,7 +592,7 @@ function upload_image(string $fieldName, string $subdir, array &$errors, ?string
         $fileName = bin2hex(random_bytes(12)) . '.' . $ext;
     }
     $relativePath = $relativeDir . '/' . $fileName;
-    $absolutePath = $baseDir . '/' . $relativePath;
+    $absolutePath = $absoluteDir . '/' . $fileName;
     if (!@move_uploaded_file($tmpPath, $absolutePath)) {
         $errors[] = 'Не удалось сохранить изображение. Проверьте права доступа к папке uploads.';
         return $currentPath;
