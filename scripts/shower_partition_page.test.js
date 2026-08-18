@@ -12,7 +12,7 @@ assert.match(page, /id="custom_sheet_width"/, 'Должен быть ввод ш
 assert.match(page, /id="custom_sheet_height"/, 'Должен быть ввод длины своего листа');
 assert.match(page, /id="shower_fascia_width"/, 'Должна быть ширина перемычки');
 assert.match(page, /id="shower_fascia_height"/, 'Должна быть высота перемычки');
-assert.match(page, /id="collection-field" class="hidden"/, 'Коллекция должна быть скрыта до выбора поставщика');
+assert.match(page, /id="collection-field" class="hidden"/, 'Серия должна быть скрыта до выбора поставщика');
 assert.match(page, /3D-модель перегородки/, 'Вместо плана должна отображаться 3D-модель');
 assert.match(page, /id="shower-model-modal"/, 'Должно быть модальное окно увеличенной модели');
 assert.match(page, /id="shower-model-trigger"/, 'Модель должна быть доступна для открытия');
@@ -27,7 +27,7 @@ assert.match(integration, /buildRequirements/, 'Расчёт должен фор
 assert.match(integration, /__auto__/, 'Должен поддерживаться автоматический выбор формата');
 assert.match(integration, /__custom__/, 'Должен поддерживаться собственный формат');
 assert.match(integration, /chooseBestPanelFormat/, 'Автоматический режим должен сравнивать существующие форматы');
-assert.match(integration, /renderCollections/, 'Коллекции должны зависеть от поставщика');
+assert.match(integration, /renderCollections/, 'Серии должны зависеть от поставщика');
 assert.match(integration, /polygon points/, '3D-модель должна строиться из объёмных граней');
 assert.match(integration, /decor\?\.decor_photo_path/, 'Текстура модели должна браться из фотографии выбранного декора');
 assert.match(integration, /id="hplTexture"/, 'Фотография декора должна использоваться как SVG-текстура');

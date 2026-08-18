@@ -36,9 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)($_POST['id'] ?? 0);
         $currentPhotoPath = null;
         if ($id > 0) {
-            $stmt = $pdo->prepare('SELECT photo_path FROM price_list WHERE id = :id');
+            $stmt = $pdo->prepare('SELECT photo_path, multiplicity, amount FROM price_list WHERE id = :id');
             $stmt->execute(['id' => $id]);
-            $currentPhotoPath = $stmt->fetchColumn() ?: null;
+            $currentFurniture = $stmt->fetch() ?: [];
+            $currentPhotoPath = $currentFurniture['photo_path'] ?? null;
         }
         $supplierId = (int)($_POST['supplier_id'] ?? 0);
         $categoryId = (int)($_POST['category_id'] ?? 0);
@@ -46,8 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $article = trim($_POST['article'] ?? '');
         $materialName = trim($_POST['material_name'] ?? '');
         $unit = trim($_POST['unit'] ?? 'шт.');
-        $multiplicityRaw = trim($_POST['multiplicity'] ?? '1');
-        $amountRaw = trim($_POST['amount'] ?? '1');
+        // Поля сохранены в БД для обратной совместимости, но больше не управляются со страницы.
+        $multiplicityRaw = (string)($currentFurniture['multiplicity'] ?? 1);
+        $amountRaw = (string)($currentFurniture['amount'] ?? 1);
         $priceRaw = trim($_POST['price'] ?? '');
         $currency = strtoupper(trim($_POST['currency'] ?? 'RUB'));
         $note = trim($_POST['note'] ?? '');
@@ -55,8 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $isActive = isset($_POST['is_active']) ? 1 : 0;
         if ($materialName === '') $errors[] = 'Укажите наименование фурнитуры.';
         if ($unit === '') $errors[] = 'Выберите единицу измерения.';
-        if ($multiplicityRaw === '' || !is_numeric($multiplicityRaw) || (float)$multiplicityRaw <= 0) $errors[] = 'Кратность должна быть числом больше нуля.';
-        if ($amountRaw === '' || !is_numeric($amountRaw) || (float)$amountRaw <= 0) $errors[] = 'Сумма должна быть числом больше нуля.';
         if ($priceRaw === '' || !is_numeric($priceRaw) || (float)$priceRaw < 0) $errors[] = 'Цена за ед. изм. должна быть неотрицательным числом.';
         if ($currency === '') $errors[] = 'Выберите валюту.';
         $photoPath = upload_image('photo', 'furniture', $errors, $currentPhotoPath);
@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ═══ КОЛЛЕКЦИИ ═══
+    // ═══ СЕРИИ ═══
     if ($action === 'delete_collection') {
         $id = (int)($_POST['id'] ?? 0);
         if ($id > 0) { $stmt = $pdo->prepare('DELETE FROM furniture_collections WHERE id = :id'); $stmt->execute(['id' => $id]); }
@@ -190,11 +190,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)($_POST['id'] ?? 0);
         $supplierId = (int)($_POST['supplier_id'] ?? 0);
         $name = trim($_POST['name'] ?? '');
-        if ($name === '') $errors[] = 'Укажите название коллекции.';
+        if ($name === '') $errors[] = 'Укажите название серии.';
         if (!$errors) {
             $dupCheck = $pdo->prepare('SELECT id FROM furniture_collections WHERE supplier_id <=> :sid AND name = :name AND id != :id');
             $dupCheck->execute(['sid' => $supplierId > 0 ? $supplierId : null, 'name' => $name, 'id' => $id]);
-            if ($dupCheck->fetch()) $errors[] = 'Коллекция с таким поставщиком и названием уже существует.';
+            if ($dupCheck->fetch()) $errors[] = 'Серия с таким поставщиком и названием уже существует.';
         }
         if (!$errors) {
             if ($action === 'update_collection' && $id > 0) {
@@ -273,6 +273,10 @@ button,.button{border:0;border-radius:12px;padding:11px 16px;background:linear-g
 .button.secondary,button.secondary{background:linear-gradient(135deg,#64748b,#475569);box-shadow:none}
 button.danger{background:linear-gradient(135deg,#ef4444,#b91c1c)}
 table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}
+.table-wrap{width:100%;overflow-x:auto;border-radius:14px}
+.furniture-table{table-layout:fixed;min-width:1080px}
+.furniture-table th,.furniture-table td{overflow-wrap:anywhere}
+.furniture-table th:first-child{width:72px}.furniture-table th:nth-child(2){width:140px}.furniture-table th:nth-child(3){width:120px}.furniture-table th:nth-child(4){width:105px}.furniture-table th:nth-child(5){width:110px}.furniture-table th:nth-child(6){width:130px}.furniture-table th:nth-child(7){width:60px}.furniture-table th:nth-child(8){width:95px}.furniture-table th:nth-child(9){width:55px}.furniture-table th:nth-child(10){width:65px}.furniture-table th:last-child{width:92px}
 th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}
 th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 .errors{background:#fee2e2;color:#991b1b;padding:12px;border-radius:12px}
@@ -283,7 +287,12 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
 .btn-delete{background:#fef2f2;color:#dc2626}.btn-delete:hover{background:#dc2626;color:#fff}
 .btn-icon svg{display:block;flex-shrink:0}
 .status,.price{font-weight:700}
-.preview{max-width:96px;max-height:64px;border-radius:8px;border:1px solid #e5e7eb;object-fit:cover}
+.preview{width:64px;height:64px;border-radius:8px;border:1px solid #e5e7eb;object-fit:contain;background:#f8fafc}
+button.photo-button{display:block;padding:0;border:0;background:none;box-shadow:none;line-height:0}
+.photo-button .preview{cursor:zoom-in;transition:transform .15s,box-shadow .15s}.photo-button:hover .preview{transform:scale(1.04);box-shadow:0 6px 18px rgba(15,23,42,.18)}
+.photo-modal{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(15,23,42,.82)}
+.photo-modal.open{display:flex}.photo-modal img{max-width:min(1100px,95vw);max-height:90vh;object-fit:contain;border-radius:12px;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.45)}
+.photo-modal__close{position:absolute;top:18px;right:18px;width:44px;height:44px;padding:0;border-radius:50%;font-size:28px;line-height:1;box-shadow:none}
 .hint{color:#64748b;font-size:13px;margin-top:4px}
 .muted{color:#64748b}
 .quick-links{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
@@ -304,7 +313,7 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
         <a class="quick-link <?php echo $activeTab==='categories'?'active':'';?>" href="admin_furniture.php?tab=categories">🗂️ Категории</a>
         <a class="quick-link <?php echo $activeTab==='kits'?'active':'';?>" href="admin_furniture.php?tab=kits">📦 Комплекты</a>
         <a class="quick-link <?php echo $activeTab==='bindings'?'active':'';?>" href="admin_furniture.php?tab=bindings">🔗 Комплектация перегородок</a>
-        <a class="quick-link <?php echo $activeTab==='collections'?'active':'';?>" href="admin_furniture.php?tab=collections">🏷️ Коллекции</a>
+        <a class="quick-link <?php echo $activeTab==='collections'?'active':'';?>" href="admin_furniture.php?tab=collections">🏷️ Серии</a>
     </div>
 
 <?php if ($errors): ?><div class="errors"><?php echo e(implode(' ', $errors)); ?></div><?php endif; ?>
@@ -323,8 +332,6 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
                 <div><label>Поставщик</label><select name="supplier_id"><option value="0">Поставщик не выбран</option><?php foreach ($suppliers as $s): ?><option value="<?php echo e((string)$s['id']); ?>" <?php echo (int)($editing['supplier_id'] ?? 0)===(int)$s['id']?'selected':''; ?>><?php echo e($s['company_name']); ?></option><?php endforeach; ?></select></div>
                 <div><label>Серия</label><select name="collection_id"><option value="0">Без серии</option><?php foreach ($collections as $col): ?><option value="<?php echo e((string)$col['id']); ?>" <?php echo (int)($editing['collection_id'] ?? 0)===(int)$col['id']?'selected':''; ?>><?php echo e(($col['supplier_name']?$col['supplier_name'].' — ':'').$col['name']); ?></option><?php endforeach; ?></select></div>
                 <div><label>Ед. изм.</label><select name="unit" required><?php foreach ($units as $u): ?><option value="<?php echo e($u['short_name']); ?>" <?php echo (string)($editing['unit']??'шт.')===$u['short_name']?'selected':''; ?>><?php echo e($u['short_name']); ?> — <?php echo e($u['full_name']); ?></option><?php endforeach; ?></select></div>
-                <div><label>Кратность</label><input type="number" step="0.001" min="0.001" name="multiplicity" required value="<?php echo e((string)($editing['multiplicity'] ?? '1')); ?>"></div>
-                <div><label>Сумма</label><input type="number" step="0.001" min="0.001" name="amount" required value="<?php echo e((string)($editing['amount'] ?? '1')); ?>"></div>
                 <div><label>Цена за ед. изм.</label><input type="number" step="0.01" min="0" name="price" required value="<?php echo e((string)($editing['price'] ?? '')); ?>"></div>
                 <div><label>Валюта</label><select name="currency"><?php foreach ($currencies as $cr): ?><option value="<?php echo e($cr['code']); ?>" data-rate="<?php echo e((string)$cr['rate_to_rub']); ?>" <?php echo (string)($editing['currency']??'RUB')===$cr['code']?'selected':''; ?>><?php echo e($cr['code']); ?> — <?php echo e($cr['name']); ?></option><?php endforeach; ?></select></div>
                 <div><label>Фото</label><input type="file" name="photo" accept=".jpg,.jpeg,.png,.tif,.tiff,.webp"><p><img class="preview" id="photo_preview" src="<?php echo e((string)($editing['photo_path'] ?? '')); ?>" alt="" style="<?php echo empty($editing['photo_path'])?'display:none;':'' ?>"></p></div>
@@ -338,29 +345,27 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
     </section>
     <section class="panel">
         <h2>Позиции фурнитуры</h2>
-        <table>
-            <thead><tr><th>Фото</th><th>Название</th><th>Артикул</th><th>Категория</th><th>Поставщик</th><th>Серия</th><th>Ед.</th><th>Кратн.</th><th>Сумма</th><th>Цена</th><th>Скл.</th><th>Статус</th><th>Действия</th></tr></thead>
+        <div class="table-wrap"><table class="furniture-table">
+            <thead><tr><th>Фото</th><th>Название</th><th>Артикул</th><th>Категория</th><th>Поставщик</th><th>Серия</th><th>Ед.</th><th>Цена</th><th>Скл.</th><th>Статус</th><th>Действия</th></tr></thead>
             <tbody>
             <?php foreach ($prices as $p): ?>
                 <tr>
-                    <td><?php if (!empty($p['photo_path'])): ?><img class="preview" src="<?php echo e($p['photo_path']); ?>" alt=""><?php else: ?>—<?php endif; ?></td>
+                    <td><?php if (!empty($p['photo_path'])): ?><button class="photo-button" type="button" data-photo="<?php echo e($p['photo_path']); ?>" aria-label="Увеличить фотографию"><img class="preview" src="<?php echo e($p['photo_path']); ?>" alt="Фотография: <?php echo e($p['material_name']); ?>"></button><?php else: ?>—<?php endif; ?></td>
                     <td><?php echo e($p['material_name']); ?></td>
                     <td><?php echo e((string)($p['article'] ?? '—')); ?></td>
                     <td><?php echo e((string)($p['category_name'] ?? '—')); ?></td>
                     <td><?php echo e((string)($p['supplier_name'] ?? '—')); ?></td>
                     <td><?php echo e((string)($p['collection_name'] ?? '—')); ?></td>
                     <td><?php echo e($p['unit']); ?></td>
-                    <td><?php echo e(number_format((float)$p['multiplicity'],3,',',' ')); ?></td>
-                    <td><?php echo e(number_format((float)$p['amount'],3,',',' ')); ?></td>
                     <td class="price"><?php echo e(number_format((float)$p['price'],2,',',' ')); ?> <?php echo e($p['currency']); ?></td>
                     <td><?php echo (int)$p['is_stock_program']===1?'Да':'Нет'; ?></td>
                     <td class="status"><?php echo (int)$p['is_active']===1?'Акт.':'Скрыт'; ?></td>
                     <td class="actions"><a class="btn-icon btn-edit" href="admin_furniture.php?tab=furniture&edit=<?php echo e((string)$p['id']); ?>" title="Изменить" aria-label="Изменить"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a><form method="post" onsubmit="return confirm('Удалить?');" style="display:inline"><input type="hidden" name="action" value="delete_furniture"><input type="hidden" name="id" value="<?php echo e((string)$p['id']); ?>"><button class="btn-icon btn-delete" type="submit" title="Удалить" aria-label="Удалить"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></form></td>
                 </tr>
             <?php endforeach; ?>
-            <?php if (!$prices): ?><tr><td colspan="13">Позиции фурнитуры пока не добавлены.</td></tr><?php endif; ?>
+            <?php if (!$prices): ?><tr><td colspan="11">Позиции фурнитуры пока не добавлены.</td></tr><?php endif; ?>
             </tbody>
-        </table>
+        </table></div>
     </section>
 </div>
 
@@ -408,7 +413,7 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
             <input type="hidden" name="id" value="<?php echo e((string)($editing['id'] ?? '')); ?>">
             <div class="grid">
                 <div><label>Название</label><input name="name" required value="<?php echo e((string)($editing['name'] ?? '')); ?>"></div>
-                <div><label>Коллекция</label><select name="collection_id"><option value="0">Без коллекции</option><?php foreach ($collections as $col): ?><option value="<?php echo e((string)$col['id']); ?>" <?php echo (int)($editing['collection_id'] ?? 0)===(int)$col['id']?'selected':''; ?>><?php echo e(($col['supplier_name']?$col['supplier_name'].' — ':'').$col['name']); ?></option><?php endforeach; ?></select></div>
+                <div><label>Серия</label><select name="collection_id"><option value="0">Без серии</option><?php foreach ($collections as $col): ?><option value="<?php echo e((string)$col['id']); ?>" <?php echo (int)($editing['collection_id'] ?? 0)===(int)$col['id']?'selected':''; ?>><?php echo e(($col['supplier_name']?$col['supplier_name'].' — ':'').$col['name']); ?></option><?php endforeach; ?></select></div>
                 <div><label>Примечание</label><textarea name="note"><?php echo e((string)($editing['note'] ?? '')); ?></textarea></div>
             </div>
             <h3>Фурнитура в комплекте</h3>
@@ -429,7 +434,7 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
     <section class="panel">
         <h2>Список комплектов</h2>
         <table>
-            <thead><tr><th>Название</th><th>Коллекция</th><th>Позиций</th><th>Примечание</th><th>Действия</th></tr></thead>
+            <thead><tr><th>Название</th><th>Серия</th><th>Позиций</th><th>Примечание</th><th>Действия</th></tr></thead>
             <tbody>
             <?php foreach ($kits as $kit): ?>
                 <tr>
@@ -481,24 +486,24 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
     </section>
 </div>
 
-<!-- ════════════ ВКЛАДКА: КОЛЛЕКЦИИ ════════════ -->
+<!-- ════════════ ВКЛАДКА: СЕРИИ ════════════ -->
 <div class="tab-pane <?php echo $activeTab==='collections'?'active':''; ?>" id="tab-collections">
     <section class="panel">
-        <h2><?php echo $editing ? 'Редактировать коллекцию' : 'Добавить коллекцию'; ?></h2>
+        <h2><?php echo $editing ? 'Редактировать серию' : 'Добавить серию'; ?></h2>
         <form method="post">
             <input type="hidden" name="action" value="<?php echo $editing ? 'update_collection' : 'create_collection'; ?>">
             <input type="hidden" name="id" value="<?php echo e((string)($editing['id'] ?? '')); ?>">
             <div class="grid">
                 <div><label>Поставщик</label><select name="supplier_id"><option value="0">Поставщик не выбран</option><?php foreach ($suppliers as $s): ?><option value="<?php echo e((string)$s['id']); ?>" <?php echo (int)($editing['supplier_id'] ?? 0)===(int)$s['id']?'selected':''; ?>><?php echo e($s['company_name']); ?></option><?php endforeach; ?></select></div>
-                <div><label>Название коллекции</label><input name="name" required value="<?php echo e((string)($editing['name'] ?? '')); ?>"></div>
+                <div><label>Название серии</label><input name="name" required value="<?php echo e((string)($editing['name'] ?? '')); ?>"></div>
             </div>
             <p style="margin-top:14px"><button type="submit">Сохранить</button> <?php if ($editing): ?><a class="button secondary" href="admin_furniture.php?tab=collections">Отмена</a><?php endif; ?></p>
         </form>
     </section>
     <section class="panel">
-        <h2>Список коллекций</h2>
+        <h2>Список серий</h2>
         <table>
-            <thead><tr><th>Поставщик</th><th>Название коллекции</th><th>Действия</th></tr></thead>
+            <thead><tr><th>Поставщик</th><th>Название серии</th><th>Действия</th></tr></thead>
             <tbody>
             <?php foreach ($collections as $col): ?>
                 <tr>
@@ -506,20 +511,28 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
                     <td><?php echo e($col['name']); ?></td>
                     <td class="actions">
                         <a class="button secondary" href="admin_furniture.php?tab=collections&edit=<?php echo e((string)$col['id']); ?>">Изменить</a>
-                        <form method="post" onsubmit="return confirm('Удалить коллекцию?');" style="display:inline"><input type="hidden" name="action" value="delete_collection"><input type="hidden" name="id" value="<?php echo e((string)$col['id']); ?>"><button class="danger" type="submit">Удалить</button></form>
+                        <form method="post" onsubmit="return confirm('Удалить серию?');" style="display:inline"><input type="hidden" name="action" value="delete_collection"><input type="hidden" name="id" value="<?php echo e((string)$col['id']); ?>"><button class="danger" type="submit">Удалить</button></form>
                     </td>
                 </tr>
             <?php endforeach; ?>
-            <?php if (!$collections): ?><tr><td colspan="3">Коллекции пока не добавлены.</td></tr><?php endif; ?>
+            <?php if (!$collections): ?><tr><td colspan="3">Серии пока не добавлены.</td></tr><?php endif; ?>
             </tbody>
         </table>
     </section>
 </div>
 
 </main>
+<div class="photo-modal" id="photo-modal" role="dialog" aria-modal="true" aria-label="Увеличенная фотография"><button class="photo-modal__close" type="button" aria-label="Закрыть">×</button><img src="" alt="Увеличенная фотография"></div>
 <template id="item-template"><div class="kit-row"><div><label>Позиция</label><select name="furniture_id[]"><option value="0">Выберите фурнитуру</option><?php foreach ($furniture as $f): ?><option value="<?php echo e((string)$f['id']); ?>"><?php echo e(($f['category_name']??'Без категории').' — '.$f['material_name'].' / '.$f['unit']); ?></option><?php endforeach; ?></select></div><div><label>Кол-во</label><input type="number" step="0.001" min="0.001" name="quantity[]" value="1"></div><button type="button" class="danger" onclick="this.closest('.kit-row').remove()">Удалить</button></div></template>
 <script>
 document.getElementById('add-item')?.addEventListener('click', () => document.getElementById('items').append(document.getElementById('item-template').content.cloneNode(true)));
+const photoInput = document.querySelector('input[name=\"photo\"]');
+photoInput?.addEventListener('change', () => { const preview = document.getElementById('photo_preview'); const file = photoInput.files?.[0]; if (!file) return; preview.src = URL.createObjectURL(file); preview.style.display = ''; });
+const photoModal = document.getElementById('photo-modal');
+const closePhotoModal = () => { photoModal.classList.remove('open'); photoModal.querySelector('img').src = ''; };
+document.querySelectorAll('.photo-button').forEach(button => button.addEventListener('click', () => { photoModal.querySelector('img').src = button.dataset.photo; photoModal.classList.add('open'); }));
+photoModal.addEventListener('click', event => { if (event.target === photoModal || event.target.closest('.photo-modal__close')) closePhotoModal(); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && photoModal.classList.contains('open')) closePhotoModal(); });
 </script>
 </body>
 </html>
