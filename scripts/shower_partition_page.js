@@ -119,77 +119,117 @@
         }
     }
 
-    function selectedHardwarePhotos() {
-        return Object.values(roleSelections).map(function (id) {
-            return furnitureCatalog.find(function (item) { return String(item.id) === String(id); });
-        }).filter(function (item) {
-            const photo = String(item?.photo_path || '').trim();
-            return photo && !/^(javascript|data):/i.test(photo);
-        }).slice(0, 6);
-    }
-
     function renderSchematic(current) {
-        const shownPartitions = Math.min(8, Math.max(1, Math.round(current.partitionCount)));
+        const shownPartitions = Math.min(12, Math.max(1, Math.round(current.partitionCount)));
         const decorPhoto = selectedDecorPhoto();
         const panelFill = decorPhoto ? 'url(#hplTexture)' : 'url(#hplFace)';
-        const panelPositions = [];
+
+        // Все три оси используют один масштаб. Изометрическое сокращение глубины
+        // задаётся только проекцией, поэтому пропорции введённых размеров сохраняются.
+        const projection = {x: 0.72, y: -0.42};
+        const available = {width: 390, height: 235};
+        const scale = Math.min(
+            available.width / Math.max(1, current.roomWidth + current.depth * projection.x),
+            available.height / Math.max(1, current.height + current.depth * Math.abs(projection.y))
+        );
+        const widthPx = current.roomWidth * scale;
+        const depthX = current.depth * scale * projection.x;
+        const depthY = current.depth * scale * projection.y;
+        const origin = {x: (520 - widthPx - depthX) / 2, y: 305};
+        const point = function (x, depth, height) {
+            return {
+                x: origin.x + x * scale + depth * scale * projection.x,
+                y: origin.y + depth * scale * projection.y - height * scale
+            };
+        };
+        const xy = function (item) { return item.x.toFixed(1) + ',' + item.y.toFixed(1); };
+        const line = function (a, b, attrs) { return '<line x1="' + a.x.toFixed(1) + '" y1="' + a.y.toFixed(1) + '" x2="' + b.x.toFixed(1) + '" y2="' + b.y.toFixed(1) + '" ' + attrs + '/>'; };
+        const polygon = function (items, attrs) { return '<polygon points="' + items.map(xy).join(' ') + '" ' + attrs + '/>'; };
+
+        const floor = [point(0, 0, 0), point(current.roomWidth, 0, 0), point(current.roomWidth, current.depth, 0), point(0, current.depth, 0)];
+        const backWall = [point(0, current.depth, 0), point(current.roomWidth, current.depth, 0), point(current.roomWidth, current.depth, current.height), point(0, current.depth, current.height)];
+        let roomSvg = polygon(floor, 'fill="url(#floorGrid)" stroke="#b7c4d4"') + polygon(backWall, 'fill="url(#wallFace)" stroke="#b7c4d4"');
+        if (current.layoutType === 'built_in' || current.layoutType === 'corner') {
+            roomSvg += polygon([point(0, 0, 0), point(0, current.depth, 0), point(0, current.depth, current.height), point(0, 0, current.height)], 'fill="url(#sideWall)" stroke="#a9b8cb"');
+        }
         if (current.layoutType === 'built_in') {
-            for (let index = 1; index <= shownPartitions; index += 1) panelPositions.push(index / (shownPartitions + 1));
-        } else if (current.layoutType === 'corner') {
-            for (let index = 1; index <= shownPartitions; index += 1) panelPositions.push(index / shownPartitions);
-        } else {
-            for (let index = 0; index < shownPartitions; index += 1) panelPositions.push(shownPartitions === 1 ? 0.5 : index / (shownPartitions - 1));
+            roomSvg += polygon([point(current.roomWidth, 0, 0), point(current.roomWidth, current.depth, 0), point(current.roomWidth, current.depth, current.height), point(current.roomWidth, 0, current.height)], 'fill="url(#sideWall)" stroke="#a9b8cb"');
         }
 
+        const panelPositions = [];
+        for (let index = 0; index < shownPartitions; index += 1) {
+            const fraction = current.layoutType === 'built_in'
+                ? (index + 1) / (shownPartitions + 1)
+                : (shownPartitions === 1 ? 0.5 : index / (shownPartitions - 1));
+            panelPositions.push(current.roomWidth * fraction);
+        }
         let panelsSvg = '';
-        panelPositions.forEach(function (position) {
-            const x = 70 + 300 * position;
-            panelsSvg += '<g class="shower-model-shadow"><polygon points="' + x + ',300 ' + (x + 105) + ',240 ' + (x + 105) + ',92 ' + x + ',152" fill="' + panelFill + '" stroke="#2453a6" stroke-width="2"/><line x1="' + x + '" y1="300" x2="' + x + '" y2="313" stroke="#e9164d" stroke-width="5"/><circle cx="' + x + '" cy="152" r="5" fill="#e9164d"/></g>';
+        let hardwareSvg = '';
+        panelPositions.forEach(function (x) {
+            const panel = [point(x, 0, 0), point(x, current.depth, 0), point(x, current.depth, current.height), point(x, 0, current.height)];
+            panelsSvg += '<g class="shower-model-shadow">' + polygon(panel, 'fill="' + panelFill + '" fill-opacity=".96" stroke="#315b8d" stroke-width="1.5"') + '</g>';
+
+            if (current.floorMount === 'leg') {
+                [current.depth * 0.12, current.depth * 0.88].forEach(function (depth) {
+                    const foot = point(x, depth, 0);
+                    hardwareSvg += '<g class="model-fitting"><rect x="' + (foot.x - 3).toFixed(1) + '" y="' + (foot.y - 9).toFixed(1) + '" width="6" height="9" rx="2"/><ellipse cx="' + foot.x.toFixed(1) + '" cy="' + foot.y.toFixed(1) + '" rx="7" ry="3"/></g>';
+                });
+            } else {
+                hardwareSvg += line(panel[0], panel[1], 'class="model-profile"');
+            }
+            if (current.railRoute !== 'none') {
+                const clamp = point(x, 0, current.height);
+                hardwareSvg += '<g class="model-fitting"><circle cx="' + clamp.x.toFixed(1) + '" cy="' + clamp.y.toFixed(1) + '" r="6"/><circle class="model-fitting__cut" cx="' + clamp.x.toFixed(1) + '" cy="' + clamp.y.toFixed(1) + '" r="2.5"/></g>';
+            }
         });
 
         let frontSvg = '';
         if (current.variant === 'fascia') {
-            frontSvg = '<g class="shower-model-shadow"><polygon points="355,300 397,276 397,112 355,136" fill="' + panelFill + '" stroke="#e9164d" stroke-width="2"/><text x="368" y="205" fill="#172033" font-size="10" transform="rotate(-30 368 205)">перемычка</text></g>';
+            const fasciaWidth = Math.min(current.roomWidth, current.fasciaWidth);
+            const start = (current.roomWidth - fasciaWidth) / 2;
+            frontSvg = polygon([point(start, 0, 0), point(start + fasciaWidth, 0, 0), point(start + fasciaWidth, 0, current.fasciaHeight), point(start, 0, current.fasciaHeight)], 'fill="' + panelFill + '" stroke="#315b8d" stroke-width="1.5"');
         } else if (current.variant === 'doors') {
-            const doorCount = Math.min(5, Math.max(1, Math.round(current.doorCount)));
-            const doorWidth = 280 / doorCount;
-            for (let door = 0; door < doorCount; door += 1) {
-                const x = 72 + door * doorWidth;
-                frontSvg += '<g class="shower-model-shadow"><polygon points="' + x + ',300 ' + (x + doorWidth - 5) + ',300 ' + (x + doorWidth - 5) + ',158 ' + x + ',158" fill="' + panelFill + '" stroke="#174ea6" stroke-width="2"/><circle cx="' + (x + doorWidth - 17) + '" cy="230" r="3" fill="#e9164d"/></g>';
+            const count = Math.min(6, Math.max(1, Math.round(current.doorCount)));
+            const totalWidth = Math.min(current.roomWidth * 0.94, current.doorWidth * count);
+            const start = (current.roomWidth - totalWidth) / 2;
+            for (let door = 0; door < count; door += 1) {
+                const left = start + totalWidth * door / count;
+                const right = start + totalWidth * (door + 1) / count;
+                const doorHeight = Math.min(current.height, current.doorHeight);
+                frontSvg += polygon([point(left, 0, 0), point(right, 0, 0), point(right, 0, doorHeight), point(left, 0, doorHeight)], 'fill="' + panelFill + '" stroke="#315b8d" stroke-width="1.4"');
+                const handle = point(right - (right - left) * 0.16, 0, doorHeight * 0.48);
+                hardwareSvg += '<circle class="model-handle" cx="' + handle.x.toFixed(1) + '" cy="' + handle.y.toFixed(1) + '" r="3.5"/>';
             }
         }
 
-        const supportColor = current.topSupport === 'aluminium_profile' ? '#8a98aa' : '#aeb8c7';
-        const tubeOuter = ' fill="none" stroke="' + supportColor + '" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"';
-        const tubeInner = ' fill="none" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"';
+        const railStyle = current.topSupport === 'aluminium_profile' ? 'model-rail model-rail--profile' : 'model-rail';
         let pipe = '';
-        if (current.railRoute === 'straight') {
-            pipe = '<path d="M68 142 L372 142"' + tubeOuter + '/><path d="M68 139 L372 139"' + tubeInner + '/>';
-        } else if (current.railRoute === 'elbow') {
-            pipe = '<path d="M68 142 L372 142 L477 82"' + tubeOuter + '/><path d="M68 139 L372 139 L477 79"' + tubeInner + '/><circle cx="372" cy="141" r="8" fill="#e9164d"/>';
-        } else if (current.railRoute === 'u_shape') {
-            pipe = '<path d="M173 82 L68 142 L372 142 L477 82"' + tubeOuter + '/><path d="M173 79 L68 139 L372 139 L477 79"' + tubeInner + '/><circle cx="68" cy="141" r="8" fill="#e9164d"/><circle cx="372" cy="141" r="8" fill="#e9164d"/>';
-        }
+        const frontLeft = point(0, 0, current.height);
+        const frontRight = point(current.roomWidth, 0, current.height);
+        if (current.railRoute === 'straight') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"');
+        if (current.railRoute === 'elbow') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, current.height), 'class="' + railStyle + '"');
+        if (current.railRoute === 'u_shape') pipe = line(point(0, current.depth, current.height), frontLeft, 'class="' + railStyle + '"') + line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, current.height), 'class="' + railStyle + '"');
 
-        const sideWalls = (current.layoutType === 'built_in' || current.layoutType === 'corner'
-            ? '<polygon points="55,133 185,58 185,240 55,315" fill="#e2e8f0" stroke="#9aa9bc"/>'
-            : '') + (current.layoutType === 'built_in'
-            ? '<polygon points="355,133 485,58 485,240 355,315" fill="#e2e8f0" stroke="#9aa9bc"/>'
-            : '');
-        const svg = document.getElementById('shower-schematic-svg');
+        const dimensionStyle = 'stroke="#64748b" stroke-width="1"';
+        const widthA = point(0, 0, 0); const widthB = point(current.roomWidth, 0, 0);
+        const depthB = point(current.roomWidth, current.depth, 0);
+        const heightB = point(current.roomWidth, 0, current.height);
+        const dimensions = line({x: widthA.x, y: widthA.y + 18}, {x: widthB.x, y: widthB.y + 18}, dimensionStyle) +
+            '<text x="' + ((widthA.x + widthB.x) / 2).toFixed(1) + '" y="' + (widthA.y + 34).toFixed(1) + '" class="model-dimension">' + Math.round(current.roomWidth) + ' мм</text>' +
+            line({x: widthB.x + 12, y: widthB.y + 9}, {x: depthB.x + 12, y: depthB.y + 9}, dimensionStyle) +
+            '<text x="' + ((widthB.x + depthB.x) / 2 + 18).toFixed(1) + '" y="' + ((widthB.y + depthB.y) / 2 + 10).toFixed(1) + '" class="model-dimension">' + Math.round(current.depth) + ' мм</text>' +
+            line({x: widthB.x + 13, y: widthB.y}, {x: heightB.x + 13, y: heightB.y}, dimensionStyle) +
+            '<text x="' + (widthB.x + 21).toFixed(1) + '" y="' + ((widthB.y + heightB.y) / 2).toFixed(1) + '" class="model-dimension model-dimension--vertical">' + Math.round(current.height) + ' мм</text>';
+
         const textureDefinition = decorPhoto
-            ? '<pattern id="hplTexture" patternUnits="userSpaceOnUse" width="260" height="260"><rect width="260" height="260" fill="#d9dde3"/><image href="' + escapeHtml(decorPhoto) + '" width="260" height="260" preserveAspectRatio="xMidYMid slice"/></pattern>'
+            ? '<pattern id="hplTexture" patternUnits="userSpaceOnUse" width="220" height="220"><rect width="220" height="220" fill="#d9dde3"/><image href="' + escapeHtml(decorPhoto) + '" width="220" height="220" preserveAspectRatio="xMidYMid slice"/></pattern>'
             : '';
-        const hardwareSvg = selectedHardwarePhotos().map(function (item, index) {
-            const x = 82 + (index % 3) * 116;
-            const y = index < 3 ? 282 : 128;
-            const photo = String(item.photo_path || '');
-            return '<image href="' + escapeHtml(photo) + '" x="' + x + '" y="' + y + '" width="28" height="28" preserveAspectRatio="xMidYMid meet"><title>' + escapeHtml(item.material_name || 'Фурнитура') + '</title></image>';
-        }).join('');
-        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef0f2"/><stop offset="1" stop-color="#c8cdd3"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)"><path d="M24 0H0V24" fill="none" stroke="#d9e2ec" stroke-width="1"/></pattern></defs><polygon points="55,315 355,315 485,240 185,240" fill="url(#floorGrid)" stroke="#9aa9bc"/><polygon points="185,58 485,58 485,240 185,240" fill="#eef2f7" stroke="#9aa9bc"/>' + sideWalls + panelsSvg + frontSvg + pipe + hardwareSvg + '<text x="270" y="360" text-anchor="middle" fill="#64748b" font-size="12">изометрическая модель · верхняя связь по выбранному типу</text>';
+        const svg = document.getElementById('shower-schematic-svg');
+        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f8fa"/><stop offset=".55" stop-color="#d9dde2"/><stop offset="1" stop-color="#b9c0c9"/></linearGradient><linearGradient id="wallFace" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#e7edf4"/></linearGradient><linearGradient id="sideWall"><stop stop-color="#edf2f7"/><stop offset="1" stop-color="#dbe4ee"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#d6e0eb" stroke-width="1"/></pattern></defs><style>.model-fitting{fill:#697788;stroke:#344256;stroke-width:1}.model-fitting__cut{fill:#eef2f7;stroke:none}.model-profile{stroke:#7a8797;stroke-width:6;stroke-linecap:round}.model-rail{stroke:#657486;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 3px 2px rgba(15,23,42,.25))}.model-rail--profile{stroke:#9ba8b7;stroke-width:10}.model-handle{fill:#606f80;stroke:#f8fafc;stroke-width:1}.model-dimension{fill:#52637a;font:600 10px sans-serif;text-anchor:middle}.model-dimension--vertical{writing-mode:vertical-rl}</style>' + roomSvg + panelsSvg + frontSvg + pipe + hardwareSvg + dimensions;
         document.getElementById('shower-scheme-label').textContent = current.layoutLabel;
         document.getElementById('shower-schematic-stats').innerHTML =
             '<span>Тип <b>' + escapeHtml(current.layoutLabel) + '</b></span>' +
+            '<span>Габариты <b>' + Math.round(current.roomWidth) + '×' + Math.round(current.depth) + '×' + Math.round(current.height) + ' мм</b></span>' +
             '<span>Кабины <b>' + current.sectionCount + ' шт.</b></span>' +
             '<span>HPL-панели <b>' + current.partitionCount + ' шт.</b></span>';
         syncModalModel();
