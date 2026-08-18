@@ -15,6 +15,36 @@ $activeTab = $_GET['tab'] ?? 'furniture';
 $validTabs = ['furniture', 'categories', 'kits', 'bindings', 'collections'];
 if (!in_array($activeTab, $validTabs, true)) $activeTab = 'furniture';
 
+$furnitureSortColumns = [
+    'name' => 'pl.material_name',
+    'article' => 'pl.article',
+    'category' => 'category_name',
+    'supplier' => 'supplier_name',
+    'collection' => 'collection_name',
+    'unit' => 'pl.unit',
+    'price' => 'pl.price',
+    'stock' => 'pl.is_stock_program',
+    'status' => 'pl.is_active',
+];
+$furnitureSort = (string)($_GET['sort'] ?? 'status');
+if (!isset($furnitureSortColumns[$furnitureSort])) $furnitureSort = 'status';
+$furnitureDirection = strtolower((string)($_GET['direction'] ?? 'desc'));
+if (!in_array($furnitureDirection, ['asc', 'desc'], true)) $furnitureDirection = 'asc';
+
+function furniture_sort_link(string $column, string $label, string $currentSort, string $currentDirection): string
+{
+    $isCurrent = $column === $currentSort;
+    $nextDirection = $isCurrent && $currentDirection === 'asc' ? 'desc' : 'asc';
+    $indicator = $isCurrent ? ($currentDirection === 'asc' ? ' ↑' : ' ↓') : '';
+    $url = 'admin_furniture.php?' . http_build_query([
+        'tab' => 'furniture',
+        'sort' => $column,
+        'direction' => $nextDirection,
+    ]);
+
+    return '<a class="sort-link' . ($isCurrent ? ' active' : '') . '" href="' . e($url) . '">' . e($label . $indicator) . '</a>';
+}
+
 $errors = [];
 $editing = null;
 $editingItems = [];
@@ -218,7 +248,8 @@ $categories = $pdo->query('SELECT * FROM furniture_categories ORDER BY name ASC'
 $collections = $pdo->query('SELECT fc.*, s.company_name AS supplier_name FROM furniture_collections fc LEFT JOIN suppliers s ON s.id = fc.supplier_id ORDER BY s.company_name ASC, fc.name ASC')->fetchAll();
 $units = $pdo->query('SELECT * FROM measurement_units WHERE is_active = 1 ORDER BY short_name ASC')->fetchAll();
 $currencies = $pdo->query("SELECT * FROM currencies WHERE is_active = 1 ORDER BY code = 'RUB' DESC, code ASC")->fetchAll();
-$prices = $pdo->query('SELECT pl.*, s.company_name AS supplier_name, fc.name AS category_name, fcol.name AS collection_name FROM price_list pl LEFT JOIN suppliers s ON s.id = pl.supplier_id LEFT JOIN furniture_categories fc ON fc.id = pl.category_id LEFT JOIN furniture_collections fcol ON fcol.id = pl.collection_id ORDER BY pl.is_active DESC, pl.material_name ASC, s.company_name ASC')->fetchAll();
+$pricesOrder = $furnitureSortColumns[$furnitureSort] . ' ' . strtoupper($furnitureDirection) . ', pl.material_name ASC, s.company_name ASC, pl.id ASC';
+$prices = $pdo->query('SELECT pl.*, s.company_name AS supplier_name, fc.name AS category_name, fcol.name AS collection_name FROM price_list pl LEFT JOIN suppliers s ON s.id = pl.supplier_id LEFT JOIN furniture_categories fc ON fc.id = pl.category_id LEFT JOIN furniture_collections fcol ON fcol.id = pl.collection_id ORDER BY ' . $pricesOrder)->fetchAll();
 $furniture = $pdo->query('SELECT pl.*, fc.name AS category_name FROM price_list pl LEFT JOIN furniture_categories fc ON fc.id = pl.category_id WHERE pl.is_active = 1 ORDER BY fc.name ASC, pl.material_name ASC')->fetchAll();
 $kits = $pdo->query('SELECT fk.*, COUNT(fki.id) AS items_count, fcol.name AS collection_name, s.company_name AS supplier_name FROM furniture_kits fk LEFT JOIN furniture_kit_items fki ON fki.kit_id=fk.id LEFT JOIN furniture_collections fcol ON fcol.id=fk.collection_id LEFT JOIN suppliers s ON s.id=fcol.supplier_id GROUP BY fk.id ORDER BY fk.name ASC')->fetchAll();
 $kitDetails = [];
@@ -279,6 +310,8 @@ table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;ove
 .furniture-table th:first-child{width:72px}.furniture-table th:nth-child(2){width:140px}.furniture-table th:nth-child(3){width:120px}.furniture-table th:nth-child(4){width:105px}.furniture-table th:nth-child(5){width:110px}.furniture-table th:nth-child(6){width:130px}.furniture-table th:nth-child(7){width:60px}.furniture-table th:nth-child(8){width:95px}.furniture-table th:nth-child(9){width:55px}.furniture-table th:nth-child(10){width:65px}.furniture-table th:last-child{width:92px}
 th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}
 th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.sort-link{display:flex;align-items:center;min-height:32px;color:inherit;text-decoration:none;border-radius:8px;margin:-6px;padding:6px;transition:background .15s,color .15s}
+.sort-link:hover{background:#dbeafe;color:#1d4ed8}.sort-link.active{color:#1d4ed8}
 .errors{background:#fee2e2;color:#991b1b;padding:12px;border-radius:12px}
 .actions{white-space:nowrap;min-width:80px;vertical-align:middle}
 .actions form{display:inline-flex!important;margin:0 0 0 8px;vertical-align:middle}
@@ -346,7 +379,17 @@ button.photo-button{display:block;padding:0;border:0;background:none;box-shadow:
     <section class="panel">
         <h2>Позиции фурнитуры</h2>
         <div class="table-wrap"><table class="furniture-table">
-            <thead><tr><th>Фото</th><th>Название</th><th>Артикул</th><th>Категория</th><th>Поставщик</th><th>Серия</th><th>Ед.</th><th>Цена</th><th>Скл.</th><th>Статус</th><th>Действия</th></tr></thead>
+            <thead><tr>
+                <th>Фото</th>
+                <?php foreach ([
+                    'name' => 'Название', 'article' => 'Артикул', 'category' => 'Категория',
+                    'supplier' => 'Поставщик', 'collection' => 'Серия', 'unit' => 'Ед.',
+                    'price' => 'Цена', 'stock' => 'Скл.', 'status' => 'Статус',
+                ] as $sortColumn => $sortLabel): ?>
+                    <th aria-sort="<?php echo $furnitureSort === $sortColumn ? ($furnitureDirection === 'asc' ? 'ascending' : 'descending') : 'none'; ?>"><?php echo furniture_sort_link($sortColumn, $sortLabel, $furnitureSort, $furnitureDirection); ?></th>
+                <?php endforeach; ?>
+                <th>Действия</th>
+            </tr></thead>
             <tbody>
             <?php foreach ($prices as $p): ?>
                 <tr>
