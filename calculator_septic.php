@@ -250,7 +250,7 @@ tbody tr:hover td { background:#fbfcfe; }
             <div id="custom-format-fields" class="custom-format field-hidden"><div><label for="custom_sheet_width">Ширина своего листа, мм</label><input id="custom_sheet_width" type="number" min="1" step="1" value="1830"></div><div><label for="custom_sheet_height">Длина своего листа, мм</label><input id="custom_sheet_height" type="number" min="1" step="1" value="4320"></div></div>
             <div><label for="partition_type_id">Тип перегородки</label><select id="partition_type_id"><option value="0">Выберите тип</option><?php foreach ($partitionTypes as $type): ?><option value="<?php echo e((string)$type['id']); ?>"><?php echo e($type['name']); ?></option><?php endforeach; ?></select></div>
             <div><label for="supplier_id">Производитель фурнитуры</label><select id="supplier_id"><option value="0">Все поставщики</option><?php foreach ($suppliersList as $sup): ?><option value="<?php echo e((string)$sup['id']); ?>"><?php echo e($sup['company_name']); ?></option><?php endforeach; ?></select><div class="hint">Выберите поставщика для фильтрации.</div></div>
-            <div id="collection-field" class="hidden"><label for="collection_id">Коллекция</label><select id="collection_id"><option value="0">Все коллекции</option><?php foreach ($collections as $col): ?><option value="<?php echo e((string)$col['id']); ?>" data-supplier="<?php echo e((string)($col['supplier_id'] ?? 0)); ?>"><?php echo e($col['name']); ?><?php if (!empty($col['supplier_name'])): ?> (<?php echo e($col['supplier_name']); ?>)<?php endif; ?></option><?php endforeach; ?></select><div class="hint">Фильтр по коллекции.</div></div>
+            <div id="collection-field" class="hidden"><label for="collection_id">Серия</label><select id="collection_id"><option value="0">Все серии</option><?php foreach ($collections as $col): ?><option value="<?php echo e((string)$col['id']); ?>" data-supplier="<?php echo e((string)($col['supplier_id'] ?? 0)); ?>"><?php echo e($col['name']); ?><?php if (!empty($col['supplier_name'])): ?> (<?php echo e($col['supplier_name']); ?>)<?php endif; ?></option><?php endforeach; ?></select><div class="hint">Фильтр по серии.</div></div>
         </div>
         <div id="dynamic-parameters" class="grid" style="margin-top:14px"></div>
         <div id="shower-config" class="shower-config hidden">
@@ -295,7 +295,7 @@ tbody tr:hover td { background:#fbfcfe; }
                         </div>
                     </div>
                     <div class="shower-step">
-                        <div class="shower-step__title"><span class="shower-step__number">04</span>Фурнитура из выбранной коллекции</div>
+                        <div class="shower-step__title"><span class="shower-step__number">04</span>Фурнитура из выбранной серии</div>
                         <div id="hardware-role-list" class="hardware-picker"></div>
                         <div class="shower-note">Подбор выполняется по категориям и названиям товаров. Перед расчётом проверьте выбранный артикул для каждой роли. Количество можно скорректировать в готовом расчёте.</div>
                     </div>
@@ -477,7 +477,7 @@ function filterDecors() {
 document.getElementById('manufacturer_id').addEventListener('change', filterDecors);
 filterDecors();
 
-/* Фильтрация: Поставщик → Коллекция */
+/* Фильтрация: Поставщик → Серия */
 function filterCollections() {
     const supId = Number(document.getElementById('supplier_id').value || 0);
     const sel = document.getElementById('collection_id');
