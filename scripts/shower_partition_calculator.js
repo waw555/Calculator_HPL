@@ -32,7 +32,10 @@
         const layoutType = Object.prototype.hasOwnProperty.call(LAYOUT_DEFINITIONS, input.layoutType) ? input.layoutType : 'built_in';
         const layout = LAYOUT_DEFINITIONS[layoutType];
         const sectionCount = integer(input.sectionCount ?? input.partitionCount, layoutType === 'built_in' ? 2 : 1);
-        const partitionCount = Math.max(0, sectionCount + layout.panelOffset);
+        const calculatedPartitionCount = Math.max(0, sectionCount + layout.panelOffset);
+        const partitionCount = input.partitionCount == null
+            ? calculatedPartitionCount
+            : integer(input.partitionCount, Math.max(1, calculatedPartitionCount));
         const roomWidth = positive(input.roomWidth, 3000);
         const depth = positive(input.depth, 1000);
         const ceilingMount = ['none', 'profile', 'angle'].includes(input.ceilingMount) ? input.ceilingMount : 'none';

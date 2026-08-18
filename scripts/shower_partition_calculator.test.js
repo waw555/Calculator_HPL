@@ -20,6 +20,9 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
     assert.deepEqual([builtIn.railRoute, corner.railRoute, freestanding.railRoute], ['straight', 'elbow', 'u_shape']);
     assert.deepEqual([builtIn.pipeLengthMm, corner.pipeLengthMm, freestanding.pipeLengthMm], [3000, 4000, 5000]);
     assert.deepEqual([builtIn.pipeElbows, corner.pipeElbows, freestanding.pipeElbows], [0, 1, 2]);
+
+    const manual = shower.normalizedConfig({layoutType: 'built_in', sectionCount: 2, partitionCount: 4});
+    assert.equal(manual.partitionCount, 4, 'явно указанное количество перегородок должно использоваться в расчёте');
 }
 
 {

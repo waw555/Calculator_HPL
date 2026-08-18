@@ -45,6 +45,7 @@
         return ShowerPartitionCalculator.normalizedConfig({
             layoutType: document.getElementById('shower_layout_type').value,
             sectionCount: value('shower_partition_count'),
+            partitionCount: value('shower_panel_count'),
             roomWidth: value('shower_room_width'),
             depth: value('shower_depth'),
             height: value('shower_height'),
@@ -128,16 +129,16 @@
     }
 
     function renderSchematic(current) {
-        const shownSections = Math.min(8, Math.max(1, Math.round(current.sectionCount)));
+        const shownPartitions = Math.min(8, Math.max(1, Math.round(current.partitionCount)));
         const decorPhoto = selectedDecorPhoto();
         const panelFill = decorPhoto ? 'url(#hplTexture)' : 'url(#hplFace)';
         const panelPositions = [];
         if (current.layoutType === 'built_in') {
-            for (let index = 1; index < shownSections; index += 1) panelPositions.push(index / shownSections);
+            for (let index = 1; index <= shownPartitions; index += 1) panelPositions.push(index / (shownPartitions + 1));
         } else if (current.layoutType === 'corner') {
-            for (let index = 1; index <= shownSections; index += 1) panelPositions.push(index / shownSections);
+            for (let index = 1; index <= shownPartitions; index += 1) panelPositions.push(index / shownPartitions);
         } else {
-            for (let index = 0; index <= shownSections; index += 1) panelPositions.push(index / shownSections);
+            for (let index = 0; index < shownPartitions; index += 1) panelPositions.push(shownPartitions === 1 ? 0.5 : index / (shownPartitions - 1));
         }
 
         let panelsSvg = '';
@@ -187,7 +188,6 @@
         }).join('');
         svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef0f2"/><stop offset="1" stop-color="#c8cdd3"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)"><path d="M24 0H0V24" fill="none" stroke="#d9e2ec" stroke-width="1"/></pattern></defs><polygon points="55,315 355,315 485,240 185,240" fill="url(#floorGrid)" stroke="#9aa9bc"/><polygon points="185,58 485,58 485,240 185,240" fill="#eef2f7" stroke="#9aa9bc"/>' + sideWalls + panelsSvg + frontSvg + pipe + hardwareSvg + '<text x="270" y="360" text-anchor="middle" fill="#64748b" font-size="12">изометрическая модель · верхняя связь по выбранному типу</text>';
         document.getElementById('shower-scheme-label').textContent = current.layoutLabel;
-        document.getElementById('shower-panel-count-hint').textContent = 'HPL-перегородок: ' + current.partitionCount;
         document.getElementById('shower-schematic-stats').innerHTML =
             '<span>Тип <b>' + escapeHtml(current.layoutLabel) + '</b></span>' +
             '<span>Кабины <b>' + current.sectionCount + ' шт.</b></span>' +

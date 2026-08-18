@@ -43,6 +43,9 @@ assert.match(integration, /current\.layoutType === 'built_in'/, '3D-модель
 assert.match(integration, /current\.railRoute === 'u_shape'/, '3D-модель должна отображать П-образную верхнюю связь');
 
 assert.match(page, /Количество кабин/, 'Поле должно называться «Количество кабин»');
+assert.match(page, /id="shower_panel_count"/, 'Должно быть поле количества перегородок');
+assert.match(page, /Количество перегородок/, 'Поле должно называться «Количество перегородок»');
+assert.match(integration, /partitionCount: value\('shower_panel_count'\)/, 'Количество перегородок должно передаваться в расчёт');
 assert.match(page, /Длина фасада, мм/, 'Поле должно называться «Длина фасада»');
 assert.doesNotMatch(page, /id="shower_variant"/, 'Отдельного параметра фасадной части быть не должно');
 assert.doesNotMatch(page, /id="shower_full_height"/, 'Параметра панели от пола до потолка быть не должно');

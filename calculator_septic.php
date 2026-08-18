@@ -264,7 +264,8 @@ tbody tr:hover td { background:#fbfcfe; }
                         <div class="shower-step__title"><span class="shower-step__number">01</span>Геометрия и состав</div>
                         <div class="shower-fields">
                             <div><label for="shower_layout_type">Тип размещения</label><select id="shower_layout_type"><option value="built_in">Прямая</option><option value="corner">Угловая</option><option value="freestanding">П-образная</option></select></div>
-                            <div><label for="shower_partition_count">Количество кабин</label><input id="shower_partition_count" type="number" min="2" step="1" value="2"><div id="shower-panel-count-hint" class="hint">HPL-перегородок: 1</div></div>
+                            <div><label for="shower_partition_count">Количество кабин</label><input id="shower_partition_count" type="number" min="2" step="1" value="2"></div>
+                            <div><label for="shower_panel_count">Количество перегородок</label><input id="shower_panel_count" type="number" min="1" step="1" value="1"><div id="shower-panel-count-hint" class="hint">Количество HPL-панелей для расчёта.</div></div>
                             <div><label for="shower_room_width">Длина фасада, мм</label><input id="shower_room_width" type="number" min="1" step="1" value="3000"></div>
                             <div><label for="shower_depth">Глубина перегородки, мм</label><input id="shower_depth" type="number" min="1" step="1" value="1000"></div>
                             <div><label for="shower_height">Высота перегородки, мм</label><input id="shower_height" type="number" min="1" step="1" value="2000"></div>
