@@ -142,7 +142,7 @@ td.na { color: #94a3b8; text-align: center; font-weight: 600; }
                 <label for="currency">Валюта</label>
                 <select id="currency" name="currency">
                     <?php foreach ($activeCurrencies as $c): ?>
-                        <option value="<?php echo e($c['code']); ?>" <?php echo $selectedCurrency === $c['code'] ? 'selected' : ''; ?>><?php echo e($c['code']); ?> — <?php echo e($c['name']); ?></option>
+                        <option value="<?php echo e($c['code']); ?>" <?php echo $selectedCurrency === $c['code'] ? 'selected' : ''; ?>><?php echo e(app_currency_symbol((string)$c['code'])); ?> — <?php echo e($c['name']); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>

@@ -63,7 +63,7 @@ th { background: #f8fafc; }
 <?php foreach ($currencies as $currency): ?>
 <tr>
 <td><input type="checkbox" name="active[]" value="<?php echo e($currency['code']); ?>" <?php echo (int)$currency['is_active'] === 1 ? 'checked' : ''; ?> <?php echo $currency['code'] === 'RUB' ? 'disabled' : ''; ?>></td>
-<td><?php echo e($currency['code']); ?></td><td><?php echo e($currency['name']); ?></td>
+<td><?php echo e(app_currency_symbol((string)$currency['code'])); ?></td><td><?php echo e($currency['name']); ?></td>
 <td><?php echo e(number_format((float)$currency['rate_to_rub'], 6, ',', ' ')); ?></td><td><?php echo e((string)($currency['updated_at'] ?? '—')); ?></td>
 </tr>
 <?php endforeach; ?>

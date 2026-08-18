@@ -7,6 +7,13 @@ function app_version(): string
     return preg_match('/^\d+\.\d+\.\d+$/', $version) ? $version : '0.0.0';
 }
 
+/** Return a user-facing currency mark while keeping ISO codes in stored data. */
+function app_currency_symbol(string $code): string
+{
+    $code = strtoupper(trim($code));
+    return ['RUR' => '₽', 'RUB' => '₽', 'EUR' => '€', 'USD' => '$'][$code] ?? $code;
+}
+
 function app_header_currency_rates(): array
 {
     if (!isset($GLOBALS['pdo']) || !$GLOBALS['pdo'] instanceof PDO) {
@@ -100,7 +107,7 @@ function render_app_header(string $section = 'Калькулятор'): void
     <a class="app-header__brand" href="<?php echo $isAdminPage ? 'admin.php' : 'calculator.php'; ?>" aria-label="На главную"><span class="app-header__logo"><?php if ($logoPath !== ''): ?><img src="<?php echo e($logoPath); ?>" alt="Логотип <?php echo e($organizationName); ?>"><?php else: ?><span aria-hidden="true">🧮</span><?php endif; ?></span><span class="app-header__title"><span class="app-header__title-row"><span class="app-header__name"><?php echo e($section); ?></span><span class="app-header__pill" title="Версия приложения">v<?php echo e(app_version()); ?></span></span><span class="app-header__subtitle"><?php echo e($organizationName); ?></span></span></a>
     <span class="app-header__spacer"></span>
     <span class="app-header__rates" title="Курсы ЦБ РФ. Обновляются при входе или вручную"><span>ЦБ РФ</span><strong><?php echo e($eur); ?> ₽</strong><strong><?php echo e($usd); ?> ₽</strong><button class="app-header__refresh" type="button" data-refresh-currency title="Обновить курсы валют" aria-label="Обновить курсы валют">↻</button></span>
-    <span class="app-header__currency" role="group" aria-label="Валюта отображения"><span class="app-header__currency-label">Валюта</span><?php foreach ($rates as $code => $rate): ?><button class="app-header__currency-option" type="button" data-app-currency="<?php echo e($code); ?>" title="<?php echo e($rate['name']); ?>"><?php echo e($code); ?></button><?php endforeach; ?></span>
+    <span class="app-header__currency" role="group" aria-label="Валюта отображения"><span class="app-header__currency-label">Валюта</span><?php foreach ($rates as $code => $rate): ?><button class="app-header__currency-option" type="button" data-app-currency="<?php echo e($code); ?>" title="<?php echo e($rate['name']); ?>"><?php echo e(app_currency_symbol($code)); ?></button><?php endforeach; ?></span>
     <button class="app-header__button" type="button" onclick="window.print()" title="Печать страницы">▣ <span>Печать</span></button>
     <span class="app-header__user">♙ <?php echo e($username . ($role === 'admin' ? ' · Админ' : '')); ?><?php if ($role === 'admin'): ?><a class="app-header__mode" href="<?php echo $isAdminPage ? 'calculator.php' : 'admin.php'; ?>" title="<?php echo $isAdminPage ? 'Перейти в режим пользователя' : 'Открыть панель администратора'; ?>" aria-label="<?php echo $isAdminPage ? 'Перейти в режим пользователя' : 'Открыть панель администратора'; ?>"><?php echo $isAdminPage ? '👤' : '⚙'; ?></a><?php endif; ?><a class="app-header__logout" href="logout.php" title="Выйти" aria-label="Выйти">↪</a></span>
   </div>

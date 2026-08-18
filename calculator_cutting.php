@@ -328,7 +328,7 @@ table.parts-table tr.editing { background: #eff6ff; }
         <div class="source-table-wrap"><table class="source-table"><thead><tr><th>№</th><th>Наименование</th><th>Длина (мм)</th><th>Ширина (мм)</th><th>Торцевание (мм)</th><th>В наличии (шт)</th><th>Цена за м²</th><th>Рисунок</th><th>Удалить</th></tr></thead><tbody id="materials-list"></tbody></table></div>
         <div class="grid source-price-settings">
             <div><label for="material_price_m2">Цена за м²</label><input id="material_price_m2" type="number" min="0" step="0.01" value="0"></div>
-            <div><label for="sheet_currency">Валюта</label><select id="sheet_currency"><option value="RUB">RUB</option><option value="EUR">EUR</option><option value="USD">USD</option></select></div>
+            <div><label for="sheet_currency">Валюта</label><select id="sheet_currency"><option value="RUB">₽</option><option value="EUR">€</option><option value="USD">$</option></select></div>
         </div>
     </section>
 
@@ -485,7 +485,7 @@ function renderSourceMaterials() {
         materialsList.innerHTML = '<tr><td colspan="9" class="source-empty">Добавьте лист из базы или укажите его размеры вручную.</td></tr>';
         return;
     }
-    materialsList.innerHTML = sourceMaterials.map((m, index) => `<tr data-id="${m.materialId}"><td class="source-number">${index + 1}</td><td><input data-field="label" value="${escapeHtml(m.label)}"></td><td><input type="number" min="1" data-field="height" value="${m.height}"></td><td><input type="number" min="1" data-field="width" value="${m.width}"></td><td><div class="source-unit"><input type="number" min="0" step="0.1" data-field="margin" value="${m.margin ?? 0}"></div></td><td><input class="${m.qty == null ? 'unlimited-qty' : ''}" type="${m.qty == null ? 'text' : 'number'}" min="1" data-field="qty" value="${m.qty == null ? 'Авто' : m.qty}" aria-label="Количество листов; оставьте пустым для автоматического количества"></td><td><div class="source-unit"><input type="number" min="0" step="0.01" data-field="priceM2" value="${m.priceM2 ?? 0}"><small>${escapeHtml(m.currency || 'RUB')}</small></div></td><td><select data-field="grainDirection"><option value="none" ${m.grainDirection==='none'?'selected':''}>Нет</option><option value="vertical" ${m.grainDirection==='vertical'?'selected':''}>По длине листа</option><option value="horizontal" ${m.grainDirection==='horizontal'?'selected':''}>По ширине листа</option></select></td><td><button type="button" class="remove-source remove-material" data-id="${m.materialId}" aria-label="Удалить материал">&#128465;</button></td></tr>`).join('');
+    materialsList.innerHTML = sourceMaterials.map((m, index) => `<tr data-id="${m.materialId}"><td class="source-number">${index + 1}</td><td><input data-field="label" value="${escapeHtml(m.label)}"></td><td><input type="number" min="1" data-field="height" value="${m.height}"></td><td><input type="number" min="1" data-field="width" value="${m.width}"></td><td><div class="source-unit"><input type="number" min="0" step="0.1" data-field="margin" value="${m.margin ?? 0}"></div></td><td><input class="${m.qty == null ? 'unlimited-qty' : ''}" type="${m.qty == null ? 'text' : 'number'}" min="1" data-field="qty" value="${m.qty == null ? 'Авто' : m.qty}" aria-label="Количество листов; оставьте пустым для автоматического количества"></td><td><div class="source-unit"><input type="number" min="0" step="0.01" data-field="priceM2" value="${m.priceM2 ?? 0}"><small>${escapeHtml(({RUR:'₽', RUB:'₽', EUR:'€', USD:'$'})[m.currency || 'RUB'] || m.currency)}</small></div></td><td><select data-field="grainDirection"><option value="none" ${m.grainDirection==='none'?'selected':''}>Нет</option><option value="vertical" ${m.grainDirection==='vertical'?'selected':''}>По длине листа</option><option value="horizontal" ${m.grainDirection==='horizontal'?'selected':''}>По ширине листа</option></select></td><td><button type="button" class="remove-source remove-material" data-id="${m.materialId}" aria-label="Удалить материал">&#128465;</button></td></tr>`).join('');
 }
 function addSourceMaterial(format) {
     if (!(format.height > 0 && format.width > 0)) { alert('Укажите корректные размеры материала.'); return; }
@@ -1052,11 +1052,12 @@ function exportExcel(r) {
     csv += `Количество деталей;${r.totalPartsCount}\n`;
     csv += `Площадь деталей;${fmtNum(r.totalPartsArea,3)} м2\n`;
     csv += `Площадь отходов;${fmtNum(r.wasteArea,3)} м2\n`;
-    csv += `Стоимость листов;${fmtNum(r.sheetsCost,2)} ${r.currency}\n`;
-    csv += `Стоимость деталей;${fmtNum(r.partsCost,2)} ${r.currency}\n`;
-    csv += `Стоимость отходов;${fmtNum(r.wasteCost,2)} ${r.currency}\n\n`;
-    csv += `Стоимость распила;${fmtNum(sawingCost,2)} ${r.currency}\n`;
-    csv += `Стоимость торцевания;${fmtNum(trimmingCost,2)} ${r.currency}\n\n`;
+    const exportCurrency = ({RUR:'₽', RUB:'₽', EUR:'€', USD:'$'})[r.currency] || r.currency;
+    csv += `Стоимость листов;${fmtNum(r.sheetsCost,2)} ${exportCurrency}\n`;
+    csv += `Стоимость деталей;${fmtNum(r.partsCost,2)} ${exportCurrency}\n`;
+    csv += `Стоимость отходов;${fmtNum(r.wasteCost,2)} ${exportCurrency}\n\n`;
+    csv += `Стоимость распила;${fmtNum(sawingCost,2)} ${exportCurrency}\n`;
+    csv += `Стоимость торцевания;${fmtNum(trimmingCost,2)} ${exportCurrency}\n\n`;
     csv += 'Лист;Формат;Деталь;X;Y;Длина;Ширина;Поворот\n';
     r.sheets.forEach((sheet, idx) => {
         const sf = sheet.format || (r.formats && r.formats[0]) || {};
