@@ -22,13 +22,12 @@
     }
 
     const LAYOUT_DEFINITIONS = {
-        built_in: {label: 'Встроенная', panelOffset: -1, railRoute: 'straight', railLabel: 'Прямая: от стены до стены', depthSegments: 0, elbows: 0},
-        corner: {label: 'Угловая', panelOffset: 0, railRoute: 'elbow', railLabel: 'Г-образная: ширина + глубина', depthSegments: 1, elbows: 1},
-        freestanding: {label: 'Отдельно стоящая', panelOffset: 1, railRoute: 'u_shape', railLabel: 'П-образная: ширина + две глубины', depthSegments: 2, elbows: 2}
+        built_in: {label: 'Прямая', panelOffset: -1, railRoute: 'straight', depthSegments: 0, elbows: 0},
+        corner: {label: 'Угловая', panelOffset: 0, railRoute: 'elbow', depthSegments: 1, elbows: 1},
+        freestanding: {label: 'П-образная', panelOffset: 1, railRoute: 'u_shape', depthSegments: 2, elbows: 2}
     };
 
     function normalizedConfig(input = {}) {
-        const fullHeight = Boolean(input.fullHeight);
         const height = positive(input.height, 2000);
         const layoutType = Object.prototype.hasOwnProperty.call(LAYOUT_DEFINITIONS, input.layoutType) ? input.layoutType : 'built_in';
         const layout = LAYOUT_DEFINITIONS[layoutType];
@@ -36,7 +35,9 @@
         const partitionCount = Math.max(0, sectionCount + layout.panelOffset);
         const roomWidth = positive(input.roomWidth, 3000);
         const depth = positive(input.depth, 1000);
-        const railRoute = fullHeight ? 'none' : layout.railRoute;
+        const ceilingMount = ['none', 'profile', 'angle'].includes(input.ceilingMount) ? input.ceilingMount : 'none';
+        const topSupport = input.topSupport === 'aluminium_profile' ? 'aluminium_profile' : 'pipe';
+        const railRoute = ceilingMount === 'none' ? layout.railRoute : 'none';
         return {
             layoutType,
             layoutLabel: layout.label,
@@ -53,13 +54,12 @@
             doorHeight: positive(input.doorHeight, 1900),
             floorMount: ['profile', 'leg', 'angle'].includes(input.floorMount) ? input.floorMount : 'leg',
             wallMount: ['profile', 'angle'].includes(input.wallMount) ? input.wallMount : 'profile',
-            ceilingMount: ['none', 'profile', 'angle'].includes(input.ceilingMount) ? input.ceilingMount : 'none',
+            ceilingMount,
+            topSupport,
             angleSides: Number(input.angleSides) === 2 ? 2 : 1,
             railRoute,
-            railLabel: fullHeight ? 'Без верхней трубы: крепление к потолку' : layout.railLabel,
-            pipeLengthMm: fullHeight ? 0 : roomWidth + depth * layout.depthSegments,
-            pipeElbows: fullHeight ? 0 : layout.elbows,
-            fullHeight,
+            pipeLengthMm: railRoute === 'none' ? 0 : roomWidth + depth * layout.depthSegments,
+            pipeElbows: railRoute === 'none' ? 0 : layout.elbows,
             allowPanelRotation: Boolean(input.allowPanelRotation),
             kerf: Math.max(0, Number(input.kerf) || 0),
             margin: Math.max(0, Number(input.margin) || 0)
@@ -88,7 +88,8 @@
         floor_angle: {label: 'Уголок к полу', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов']},
         wall_angle: {label: 'Уголок к стене', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов']},
         ceiling_angle: {label: 'Уголок к потолку', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов']},
-        top_pipe: {label: 'Верхняя труба', unit: 'м', unitKind: 'linear', keywords: ['труб', 'штанг', 'ригель']},
+        top_aluminium_profile: {label: 'Верхний алюминиевый профиль', unit: 'м', unitKind: 'linear', keywords: ['алюмини', 'профиль', 'верхн']},
+        top_pipe: {label: 'Труба', unit: 'м', unitKind: 'linear', keywords: ['труб', 'штанг', 'ригель']},
         panel_pipe_holder: {label: 'Крепление панели к трубе', unit: 'шт.', unitKind: 'piece', keywords: ['панел', 'труб', 'держател', 'креплен']},
         wall_pipe_holder: {label: 'Стеновой держатель трубы', unit: 'шт.', unitKind: 'piece', keywords: ['стен', 'держател', 'фланец']},
         elbow_90: {label: 'Фитинг трубы 90°', unit: 'шт.', unitKind: 'piece', keywords: ['90', 'угол', 'колен', 'поворот']},
@@ -114,15 +115,19 @@
         if (config.wallMount === 'profile') rows.push(requirement('wall_profile', config.height * config.partitionCount / 1000, 'Суммарная высота стеновых кромок'));
         else rows.push(requirement('wall_angle', anglePointCount(config.height) * config.partitionCount * sideMultiplier, sideMultiplier === 2 ? 'С двух сторон' : 'С одной стороны'));
 
-        if (config.fullHeight && config.ceilingMount === 'profile') rows.push(requirement('ceiling_profile', config.depth * config.partitionCount / 1000, 'Суммарная длина верхних кромок'));
-        else if (config.fullHeight && config.ceilingMount === 'angle') rows.push(requirement('ceiling_angle', anglePointCount(config.depth) * config.partitionCount * sideMultiplier, sideMultiplier === 2 ? 'С двух сторон' : 'С одной стороны'));
+        if (config.ceilingMount === 'profile') rows.push(requirement('ceiling_profile', config.depth * config.partitionCount / 1000, 'Суммарная длина верхних кромок'));
+        else if (config.ceilingMount === 'angle') rows.push(requirement('ceiling_angle', anglePointCount(config.depth) * config.partitionCount * sideMultiplier, sideMultiplier === 2 ? 'С двух сторон' : 'С одной стороны'));
 
         if (config.railRoute !== 'none') {
             const pipeLength = config.pipeLengthMm / 1000;
-            rows.push(requirement('top_pipe', pipeLength, config.layoutLabel + ': ' + config.railLabel.toLocaleLowerCase('ru-RU')));
-            rows.push(requirement('panel_pipe_holder', config.partitionCount, 'По одному на перегородку'));
-            rows.push(requirement('wall_pipe_holder', 2, 'Начальная и конечная точки'));
-            if (config.pipeElbows) rows.push(requirement('elbow_90', config.pipeElbows, config.pipeElbows === 1 ? 'Один поворот трубы' : 'Два поворота трубы'));
+            if (config.topSupport === 'aluminium_profile') {
+                rows.push(requirement('top_aluminium_profile', pipeLength, config.layoutLabel));
+            } else {
+                rows.push(requirement('top_pipe', pipeLength, config.layoutLabel));
+                rows.push(requirement('panel_pipe_holder', config.partitionCount, 'По одному на перегородку'));
+                rows.push(requirement('wall_pipe_holder', 2, 'Начальная и конечная точки'));
+                if (config.pipeElbows) rows.push(requirement('elbow_90', config.pipeElbows, config.pipeElbows === 1 ? 'Один поворот трубы' : 'Два поворота трубы'));
+            }
         }
         if (config.variant === 'doors') rows.push(requirement('door_set', config.doorCount, 'Один комплект на дверь; состав выбирается из каталога'));
         return rows.filter(row => row.quantity > 0);

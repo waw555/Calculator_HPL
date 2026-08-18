@@ -255,7 +255,7 @@ tbody tr:hover td { background:#fbfcfe; }
         <div id="dynamic-parameters" class="grid" style="margin-top:14px"></div>
         <div id="shower-config" class="shower-config hidden">
             <div class="shower-config__intro">
-                <div><h3>Конфигурация душевой перегородки</h3><p>Выберите тип размещения и задайте размеры. Количество HPL-панелей и маршрут верхней трубы рассчитываются автоматически по технической схеме.</p></div>
+                <div><h3>Конфигурация душевой перегородки</h3><p>Выберите тип размещения и задайте размеры. Материал и выбранная фурнитура сразу отображаются в 3D-модели.</p></div>
                 <span class="shower-badge">Душевая перегородка</span>
             </div>
             <div class="shower-workspace">
@@ -263,13 +263,11 @@ tbody tr:hover td { background:#fbfcfe; }
                     <div class="shower-step">
                         <div class="shower-step__title"><span class="shower-step__number">01</span>Геометрия и состав</div>
                         <div class="shower-fields">
-                            <div><label for="shower_layout_type">Тип размещения</label><select id="shower_layout_type"><option value="built_in">Встроенная — между двумя стенами</option><option value="corner">Угловая — одна боковая стена</option><option value="freestanding">Отдельно стоящая — без боковых стен</option></select><div class="hint">Торцевые HPL-панели и верхняя труба добавятся автоматически.</div></div>
-                            <div><label for="shower_partition_count">Количество душевых мест (секций)</label><input id="shower_partition_count" type="number" min="2" step="1" value="2"><div id="shower-panel-count-hint" class="hint">HPL-перегородок: 1</div></div>
-                            <div><label for="shower_room_width">От стены до стены, мм</label><input id="shower_room_width" type="number" min="1" step="1" value="3000"></div>
+                            <div><label for="shower_layout_type">Тип размещения</label><select id="shower_layout_type"><option value="built_in">Прямая</option><option value="corner">Угловая</option><option value="freestanding">П-образная</option></select></div>
+                            <div><label for="shower_partition_count">Количество кабин</label><input id="shower_partition_count" type="number" min="2" step="1" value="2"><div id="shower-panel-count-hint" class="hint">HPL-перегородок: 1</div></div>
+                            <div><label for="shower_room_width">Длина фасада, мм</label><input id="shower_room_width" type="number" min="1" step="1" value="3000"></div>
                             <div><label for="shower_depth">Глубина перегородки, мм</label><input id="shower_depth" type="number" min="1" step="1" value="1000"></div>
                             <div><label for="shower_height">Высота перегородки, мм</label><input id="shower_height" type="number" min="1" step="1" value="2000"></div>
-                            <div><label for="shower_variant">Фасадная часть</label><select id="shower_variant"><option value="open">Без фасадной части</option><option value="fascia">С фасадной перемычкой</option><option value="doors">С дверями</option></select></div>
-                            <label class="shower-check"><input id="shower_full_height" type="checkbox"><span>Панель от пола до потолка</span></label>
                             <div id="shower-fascia-fields" class="field-hidden"><div><label for="shower_fascia_width">Ширина перемычки, мм</label><input id="shower_fascia_width" type="number" min="1" step="1" value="200"></div><div><label for="shower_fascia_height">Высота перемычки, мм</label><input id="shower_fascia_height" type="number" min="1" step="1" value="2000"><div class="hint">По умолчанию равна высоте перегородки.</div></div></div>
                             <div id="shower-door-count-fields" class="field-hidden"><label for="shower_door_count">Количество дверей</label><input id="shower_door_count" type="number" min="1" step="1" value="1"></div>
                             <div id="shower-door-width-fields" class="field-hidden"><label for="shower_door_width">Ширина двери, мм</label><input id="shower_door_width" type="number" min="1" step="1" value="700"></div>
@@ -279,16 +277,16 @@ tbody tr:hover td { background:#fbfcfe; }
                     <div class="shower-step">
                         <div class="shower-step__title"><span class="shower-step__number">02</span>Крепление панели</div>
                         <div class="shower-fields">
-                            <div><label for="shower_floor_mount">К полу</label><select id="shower_floor_mount"><option value="leg">Ножка из нержавеющей стали</option><option value="profile">Алюминиевый P-профиль</option><option value="angle">Уголки</option></select></div>
-                            <div><label for="shower_wall_mount">К стене</label><select id="shower_wall_mount"><option value="profile">P-профиль</option><option value="angle">Уголки из нержавеющей стали</option></select></div>
-                            <div id="shower-ceiling-fields" class="field-hidden"><label for="shower_ceiling_mount">К потолку</label><select id="shower_ceiling_mount"><option value="profile">P-профиль</option><option value="angle">Уголки</option><option value="none">Не крепить</option></select></div>
+                            <div><label for="shower_floor_mount">К полу</label><select id="shower_floor_mount"><option value="leg">Ножка</option><option value="profile">П-профиль</option><option value="angle">Уголок</option></select></div>
+                            <div><label for="shower_wall_mount">К стене</label><select id="shower_wall_mount"><option value="profile">П-профиль</option><option value="angle">Уголок</option></select></div>
+                            <div><label for="shower_ceiling_mount">К потолку</label><select id="shower_ceiling_mount"><option value="none">Нет</option><option value="profile">П-профиль</option><option value="angle">Уголок</option></select></div>
+                            <div id="shower-top-support-fields"><label for="shower_top_support">Верхняя связь</label><select id="shower_top_support"><option value="pipe">Труба</option><option value="aluminium_profile">Профиль алюминиевый</option></select><div class="hint">Показывается, когда крепление к потолку не используется.</div></div>
                             <div id="shower-angle-fields" class="field-hidden"><label for="shower_angle_sides">Уголки относительно панели</label><select id="shower_angle_sides"><option value="2">С двух сторон</option><option value="1">С одной стороны</option></select><div class="hint">100 мм от краёв, далее шаг не более 500 мм.</div></div>
                         </div>
                     </div>
                     <div class="shower-step">
-                        <div class="shower-step__title"><span class="shower-step__number">03</span>Верхняя труба</div>
+                        <div class="shower-step__title"><span class="shower-step__number">03</span>Раскрой</div>
                         <div class="shower-fields">
-                            <div><label for="shower_rail_route">Схема трубы</label><input id="shower_rail_route" value="Прямая: от стены до стены" readonly><div class="hint">Определяется типом размещения; для панелей до потолка труба не требуется.</div></div>
                             <div><label for="shower_kerf">Пропил, мм</label><input id="shower_kerf" type="number" min="0" step="0.1" value="4"></div>
                             <div><label for="shower_margin">Торцевание листа, мм</label><input id="shower_margin" type="number" min="0" step="0.1" value="5"></div>
                             <label class="shower-check"><input id="shower_allow_rotation" type="checkbox"><span>Разрешить поворот деталей на листе</span></label>
@@ -301,7 +299,7 @@ tbody tr:hover td { background:#fbfcfe; }
                     </div>
                 </div>
                 <aside id="shower-model-trigger" class="shower-schematic shower-schematic--zoom" role="button" tabindex="0" aria-label="Открыть увеличенную 3D-модель">
-                    <div class="shower-schematic__title"><span>3D-модель перегородки</span><span id="shower-scheme-label">Прямая труба</span></div>
+                    <div class="shower-schematic__title"><span>3D-модель перегородки</span><span id="shower-scheme-label">Прямая</span></div>
                     <svg id="shower-schematic-svg" viewBox="0 0 520 390" role="img" aria-label="Трёхмерная модель душевой перегородки"></svg>
                     <div id="shower-schematic-stats" class="shower-schematic__stats"></div>
                     <p class="shower-schematic__zoom-hint">Нажмите, чтобы увеличить модель</p>

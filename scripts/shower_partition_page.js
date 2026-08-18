@@ -10,7 +10,6 @@
     const formatSelect = document.getElementById('panel_format_id');
     const roleSelections = {};
     let availableFormats = [];
-    let fasciaHeightTouched = false;
     let modelTriggerBeforeOpen = null;
 
     function value(id) {
@@ -35,6 +34,13 @@
         return (typeSelect.selectedOptions[0]?.textContent || '').toLocaleLowerCase('ru-RU').includes('душ');
     }
 
+    function partitionVariant() {
+        const name = (typeSelect.selectedOptions[0]?.textContent || '').toLocaleLowerCase('ru-RU');
+        if (name.includes('двер')) return 'doors';
+        if (name.includes('перемыч')) return 'fascia';
+        return 'open';
+    }
+
     function config() {
         return ShowerPartitionCalculator.normalizedConfig({
             layoutType: document.getElementById('shower_layout_type').value,
@@ -42,8 +48,7 @@
             roomWidth: value('shower_room_width'),
             depth: value('shower_depth'),
             height: value('shower_height'),
-            variant: document.getElementById('shower_variant').value,
-            fullHeight: document.getElementById('shower_full_height').checked,
+            variant: partitionVariant(),
             fasciaWidth: value('shower_fascia_width'),
             fasciaHeight: value('shower_fascia_height'),
             doorCount: value('shower_door_count'),
@@ -52,8 +57,8 @@
             floorMount: document.getElementById('shower_floor_mount').value,
             wallMount: document.getElementById('shower_wall_mount').value,
             ceilingMount: document.getElementById('shower_ceiling_mount').value,
+            topSupport: document.getElementById('shower_top_support').value,
             angleSides: value('shower_angle_sides'),
-            railRoute: document.getElementById('shower_rail_route').value,
             kerf: value('shower_kerf'),
             margin: value('shower_margin'),
             allowPanelRotation: document.getElementById('shower_allow_rotation').checked
@@ -113,6 +118,15 @@
         }
     }
 
+    function selectedHardwarePhotos() {
+        return Object.values(roleSelections).map(function (id) {
+            return furnitureCatalog.find(function (item) { return String(item.id) === String(id); });
+        }).filter(function (item) {
+            const photo = String(item?.photo_path || '').trim();
+            return photo && !/^(javascript|data):/i.test(photo);
+        }).slice(0, 6);
+    }
+
     function renderSchematic(current) {
         const shownSections = Math.min(8, Math.max(1, Math.round(current.sectionCount)));
         const decorPhoto = selectedDecorPhoto();
@@ -144,7 +158,8 @@
             }
         }
 
-        const tubeOuter = ' fill="none" stroke="#aeb8c7" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"';
+        const supportColor = current.topSupport === 'aluminium_profile' ? '#8a98aa' : '#aeb8c7';
+        const tubeOuter = ' fill="none" stroke="' + supportColor + '" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"';
         const tubeInner = ' fill="none" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"';
         let pipe = '';
         if (current.railRoute === 'straight') {
@@ -164,15 +179,19 @@
         const textureDefinition = decorPhoto
             ? '<pattern id="hplTexture" patternUnits="userSpaceOnUse" width="260" height="260"><rect width="260" height="260" fill="#d9dde3"/><image href="' + escapeHtml(decorPhoto) + '" width="260" height="260" preserveAspectRatio="xMidYMid slice"/></pattern>'
             : '';
-        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef0f2"/><stop offset="1" stop-color="#c8cdd3"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)"><path d="M24 0H0V24" fill="none" stroke="#d9e2ec" stroke-width="1"/></pattern></defs><polygon points="55,315 355,315 485,240 185,240" fill="url(#floorGrid)" stroke="#9aa9bc"/><polygon points="185,58 485,58 485,240 185,240" fill="#eef2f7" stroke="#9aa9bc"/>' + sideWalls + panelsSvg + frontSvg + pipe + '<text x="270" y="360" text-anchor="middle" fill="#64748b" font-size="12">изометрическая модель · схема трубы по выбранному типу</text>';
+        const hardwareSvg = selectedHardwarePhotos().map(function (item, index) {
+            const x = 82 + (index % 3) * 116;
+            const y = index < 3 ? 282 : 128;
+            const photo = String(item.photo_path || '');
+            return '<image href="' + escapeHtml(photo) + '" x="' + x + '" y="' + y + '" width="28" height="28" preserveAspectRatio="xMidYMid meet"><title>' + escapeHtml(item.material_name || 'Фурнитура') + '</title></image>';
+        }).join('');
+        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef0f2"/><stop offset="1" stop-color="#c8cdd3"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-30)"><path d="M24 0H0V24" fill="none" stroke="#d9e2ec" stroke-width="1"/></pattern></defs><polygon points="55,315 355,315 485,240 185,240" fill="url(#floorGrid)" stroke="#9aa9bc"/><polygon points="185,58 485,58 485,240 185,240" fill="#eef2f7" stroke="#9aa9bc"/>' + sideWalls + panelsSvg + frontSvg + pipe + hardwareSvg + '<text x="270" y="360" text-anchor="middle" fill="#64748b" font-size="12">изометрическая модель · верхняя связь по выбранному типу</text>';
         document.getElementById('shower-scheme-label').textContent = current.layoutLabel;
-        document.getElementById('shower_rail_route').value = current.railLabel;
         document.getElementById('shower-panel-count-hint').textContent = 'HPL-перегородок: ' + current.partitionCount;
         document.getElementById('shower-schematic-stats').innerHTML =
             '<span>Тип <b>' + escapeHtml(current.layoutLabel) + '</b></span>' +
-            '<span>Секции <b>' + current.sectionCount + ' шт.</b></span>' +
-            '<span>HPL-панели <b>' + current.partitionCount + ' шт.</b></span>' +
-            '<span>Верхняя труба <b>' + formatter.format(current.pipeLengthMm / 1000) + ' м</b></span>';
+            '<span>Кабины <b>' + current.sectionCount + ' шт.</b></span>' +
+            '<span>HPL-панели <b>' + current.partitionCount + ' шт.</b></span>';
         syncModalModel();
     }
 
@@ -225,7 +244,7 @@
             return '<div class="hardware-role"><div class="hardware-role__name">' + escapeHtml(requirement.label) + '<small>' + escapeHtml(requirement.note) + '</small></div><select data-shower-role="' + escapeHtml(requirement.role) + '"><option value="">— Подобрать вручную —</option>' + options + '</select><div class="hardware-role__qty">' + formatter.format(requirement.quantity) + ' ' + escapeHtml(requirement.unit) + '</div></div>';
         }).join('');
         node.querySelectorAll('[data-shower-role]').forEach(function (select) {
-            select.addEventListener('change', function () { roleSelections[select.dataset.showerRole] = select.value; });
+            select.addEventListener('change', function () { roleSelections[select.dataset.showerRole] = select.value; renderSchematic(config()); });
         });
     }
 
@@ -247,12 +266,12 @@
         ['shower-door-count-fields', 'shower-door-width-fields', 'shower-door-height-fields'].forEach(function (id) {
             document.getElementById(id).classList.toggle('field-hidden', variant !== 'doors');
         });
-        document.getElementById('shower-ceiling-fields').classList.toggle('field-hidden', !current.fullHeight);
-        const angles = current.floorMount === 'angle' || current.wallMount === 'angle' || (current.fullHeight && current.ceilingMount === 'angle');
+        document.getElementById('shower-top-support-fields').classList.toggle('field-hidden', current.ceilingMount !== 'none');
+        const angles = current.floorMount === 'angle' || current.wallMount === 'angle' || current.ceilingMount === 'angle';
         document.getElementById('shower-angle-fields').classList.toggle('field-hidden', !angles);
         const requirements = ShowerPartitionCalculator.buildRequirements(current);
-        renderSchematic(current);
         renderRoles(requirements);
+        renderSchematic(current);
     }
 
     function resolvePanelSelection(current) {
@@ -388,10 +407,6 @@
     typeSelect.addEventListener('change', refresh);
     document.getElementById('supplier_id').addEventListener('change', function () { renderCollections(); refresh(); });
     document.getElementById('collection_id').addEventListener('change', refresh);
-    document.getElementById('shower_height').addEventListener('input', function () {
-        if (!fasciaHeightTouched) document.getElementById('shower_fascia_height').value = document.getElementById('shower_height').value;
-    });
-    document.getElementById('shower_fascia_height').addEventListener('input', function () { fasciaHeightTouched = true; });
     showerNode.addEventListener('input', refresh);
     showerNode.addEventListener('change', refresh);
     calculateBtn.addEventListener('click', function (event) {
