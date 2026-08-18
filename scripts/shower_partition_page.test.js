@@ -52,7 +52,9 @@ assert.doesNotMatch(page, /id="shower_full_height"/, 'Параметра пан�
 assert.doesNotMatch(page, />Верхняя труба</, 'Отдельного раздела верхней трубы быть не должно');
 assert.match(page, /id="shower_top_support"[\s\S]*Труба[\s\S]*Профиль алюминиевый/, 'Без крепления к потолку должен выбираться тип верхней связи');
 assert.match(integration, /partitionVariant/, 'Вариант фасада должен определяться типом перегородки');
-assert.match(integration, /item\.photo_path/, 'В 3D-модели должны использоваться фотографии выбранной фурнитуры');
+assert.match(integration, /class=\"model-fitting\"/, 'Фурнитура должна отображаться аккуратными векторными деталями без битых фотографий');
+assert.match(integration, /current\.roomWidth \+ current\.depth/, 'Масштаб модели должен учитывать реальные габариты помещения');
+assert.match(integration, /Math\.round\(current\.roomWidth\).*Math\.round\(current\.depth\).*Math\.round\(current\.height\)/s, 'Модель должна показывать введённые габариты');
 
 new Function(integration);
 console.log('shower_partition_page.test.js: OK');
