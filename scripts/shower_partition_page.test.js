@@ -56,8 +56,10 @@ assert.match(integration, /class=\"model-fitting\"/, 'Фурнитура дол�
 assert.match(integration, /const legHeight = current\.floorMount === 'leg' \? 150 : 0/, 'Панель на ножке должна быть поднята над полом на 150 мм');
 assert.match(integration, /const wallHeight = panelTop \+ 200/, 'Стены модели должны быть немного выше перегородки');
 assert.match(integration, /const pipeHeight = panelTop \+ 50/, 'Труба должна проходить на 50 мм выше перегородки');
-assert.match(integration, /point\(x, current\.depth, pipeHeight\)/, 'Крепление панели должно доходить до трубы над пристенной кромкой');
-assert.match(integration, /const backLeft = point\(0, current\.depth, pipeHeight\)/, 'Продольная труба должна проходить вдоль стены, как на реальной кабине');
+assert.match(integration, /const pipeClamp = point\(x, 0, pipeHeight\)/, 'Крепление панели должно доходить до трубы над открытой кромкой');
+assert.match(integration, /const frontLeft = point\(0, 0, pipeHeight\)/, 'Продольная труба должна проходить над перегородками, а не вдоль задней стены');
+assert.match(integration, /model-panel-holder/, 'Труба должна крепиться к каждой перегородке отдельным держателем');
+assert.match(integration, /model-wall-flange/, 'Концы трубы должны крепиться к стенам круглыми фланцами');
 assert.match(integration, /current\.depth \* 0\.12/, 'На каждой панели должна отображаться одна ножка у открытого края');
 assert.doesNotMatch(integration, /current\.depth \* 0\.88/, 'Вторая ножка не должна отображаться на панели');
 assert.match(integration, /current\.roomWidth \+ current\.depth/, 'Масштаб модели должен учитывать реальные габариты помещения');
