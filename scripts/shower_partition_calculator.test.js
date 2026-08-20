@@ -29,11 +29,18 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
     const rows = shower.buildRequirements({layoutType: 'built_in', sectionCount: 3, depth: 900, height: 2000, roomWidth: 3000, floorMount: 'leg', wallMount: 'angle', angleSides: 2});
     const byRole = Object.fromEntries(rows.map(row => [row.role, row]));
     assert.equal(byRole.floor_leg.quantity, 2, 'встроенная схема на три секции содержит две HPL-перегородки');
+    assert.equal(byRole.floor_leg.note, 'По одной ножке высотой 150 мм на перегородку');
     assert.equal(byRole.wall_angle.quantity, 20);
     assert.equal(byRole.top_pipe.quantity, 3);
     assert.equal(byRole.panel_pipe_holder.quantity, 2);
     assert.equal(byRole.wall_pipe_holder.quantity, 2);
     assert.equal(byRole.elbow_90, undefined);
+}
+
+{
+    const rows = shower.buildRequirements({layoutType: 'corner', sectionCount: 2, partitionCount: 3, depth: 1800, floorMount: 'leg'});
+    const leg = rows.find(row => row.role === 'floor_leg');
+    assert.equal(leg.quantity, 3, 'на каждую перегородку нужна ровно одна ножка независимо от глубины панели');
 }
 
 {
