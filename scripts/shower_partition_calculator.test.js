@@ -84,9 +84,22 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
     const requirement = shower.buildRequirements({layoutType: 'corner', sectionCount: 1, floorMount: 'leg', wallMount: 'profile', ceilingMount: 'profile'})[0];
     const matches = shower.matchingFurniture(requirement, [
         {id: 1, material_name: 'Опора для панели', category_name: 'Ножки', unit: 'шт.', supplier_id: 1, collection_id: 2},
-        {id: 2, material_name: 'Профиль алюминиевый', category_name: 'Профили', unit: 'м.п.', supplier_id: 1, collection_id: 2}
+        {id: 2, material_name: 'Профиль алюминиевый', category_name: 'Профили', unit: 'м.п.', supplier_id: 1, collection_id: 2},
+        {id: 3, material_name: 'Ножка с похожим названием', category_name: 'Прочая фурнитура', unit: 'шт.', supplier_id: 1, collection_id: 2}
     ], {supplierId: 1, collectionId: 2});
+    assert.equal(requirement.label, 'Крепление к полу');
+    assert.equal(requirement.groupLabel, 'Ножка');
+    assert.deepEqual(matches.map(item => item.id), [1], 'товары из других групп не должны попадать в выбор даже при совпадении названия');
     assert.equal(matches[0].id, 1);
+}
+
+{
+    const rows = shower.buildRequirements({layoutType: 'corner', sectionCount: 1, floorMount: 'profile', wallMount: 'profile', ceilingMount: 'profile'});
+    const byRole = Object.fromEntries(rows.map(row => [row.role, row]));
+    assert.equal(byRole.floor_profile.label, 'Крепление к полу');
+    assert.equal(byRole.wall_profile.label, 'Крепление к стене');
+    assert.equal(byRole.ceiling_profile.label, 'Крепление к потолку');
+    assert.equal(byRole.wall_profile.groupLabel, 'П-профиль');
 }
 
 {

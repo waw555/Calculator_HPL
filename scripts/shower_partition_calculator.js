@@ -84,19 +84,19 @@
     }
 
     const ROLE_DEFINITIONS = {
-        floor_profile: {label: 'P-профиль к полу', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профиль']},
-        wall_profile: {label: 'P-профиль к стене', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профиль']},
-        ceiling_profile: {label: 'P-профиль к потолку', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профиль']},
-        floor_leg: {label: 'Ножка из нержавеющей стали', unit: 'шт.', unitKind: 'piece', keywords: ['ножк', 'опор']},
-        floor_angle: {label: 'Уголок к полу', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов']},
-        wall_angle: {label: 'Уголок к стене', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов']},
-        ceiling_angle: {label: 'Уголок к потолку', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов']},
-        top_aluminium_profile: {label: 'Верхний алюминиевый профиль', unit: 'м', unitKind: 'linear', keywords: ['алюмини', 'профиль', 'верхн']},
-        top_pipe: {label: 'Труба', unit: 'м', unitKind: 'linear', keywords: ['труб', 'штанг', 'ригель']},
-        panel_pipe_holder: {label: 'Крепление панели к трубе', unit: 'шт.', unitKind: 'piece', keywords: ['панел', 'труб', 'держател', 'креплен']},
-        wall_pipe_holder: {label: 'Стеновой держатель трубы', unit: 'шт.', unitKind: 'piece', keywords: ['стен', 'держател', 'фланец']},
-        elbow_90: {label: 'Фитинг трубы 90°', unit: 'шт.', unitKind: 'piece', keywords: ['90', 'угол', 'колен', 'поворот']},
-        door_set: {label: 'Комплект фурнитуры двери', unit: 'компл.', unitKind: 'piece', keywords: ['двер', 'петл', 'замок', 'защелк']}
+        floor_profile: {label: 'Крепление к полу', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профиль'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профиль']},
+        wall_profile: {label: 'Крепление к стене', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профиль'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профиль']},
+        ceiling_profile: {label: 'Крепление к потолку', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профиль'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профиль']},
+        floor_leg: {label: 'Крепление к полу', groupLabel: 'Ножка', unit: 'шт.', unitKind: 'piece', keywords: ['ножк', 'опор'], categoryKeywords: ['ножк', 'опор']},
+        floor_angle: {label: 'Крепление к полу', groupLabel: 'Уголок', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов'], categoryKeywords: ['уголок', 'углов']},
+        wall_angle: {label: 'Крепление к стене', groupLabel: 'Уголок', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов'], categoryKeywords: ['уголок', 'углов']},
+        ceiling_angle: {label: 'Крепление к потолку', groupLabel: 'Уголок', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов'], categoryKeywords: ['уголок', 'углов']},
+        top_aluminium_profile: {label: 'Верхняя связь', groupLabel: 'Профиль алюминиевый', unit: 'м', unitKind: 'linear', keywords: ['алюмини', 'профиль', 'верхн'], categoryKeywords: ['алюмини', 'профиль']},
+        top_pipe: {label: 'Верхняя связь', groupLabel: 'Труба', unit: 'м', unitKind: 'linear', keywords: ['труб', 'штанг', 'ригель'], categoryKeywords: ['труб', 'штанг', 'ригель']},
+        panel_pipe_holder: {label: 'Крепление панели к трубе', groupLabel: 'Крепление панели к трубе', unit: 'шт.', unitKind: 'piece', keywords: ['панел', 'труб', 'держател', 'креплен'], categoryKeywords: ['панел', 'труб']},
+        wall_pipe_holder: {label: 'Крепление трубы к стене', groupLabel: 'Стеновой держатель трубы', unit: 'шт.', unitKind: 'piece', keywords: ['стен', 'держател', 'фланец'], categoryKeywords: ['стен', 'держател', 'фланец']},
+        elbow_90: {label: 'Соединение трубы', groupLabel: 'Фитинг трубы 90°', unit: 'шт.', unitKind: 'piece', keywords: ['90', 'угол', 'колен', 'поворот'], categoryKeywords: ['фитинг', 'угол', 'колен', 'поворот']},
+        door_set: {label: 'Фурнитура двери', groupLabel: 'Комплект фурнитуры двери', unit: 'компл.', unitKind: 'piece', keywords: ['двер', 'петл', 'замок', 'защелк'], categoryKeywords: ['двер', 'петл', 'замок', 'защелк']}
     };
 
     function requirement(role, quantity, note = '') {
@@ -184,6 +184,10 @@
         return (items || [])
             .filter(item => !supplierId || Number(item.supplier_id || 0) === supplierId)
             .filter(item => !collectionId || Number(item.collection_id || 0) === collectionId)
+            .filter(item => {
+                const category = normalizeText(item.category_name);
+                return (requirementRow.categoryKeywords || []).some(keyword => category.includes(normalizeText(keyword)));
+            })
             .map(item => ({...item, matchScore: itemScore(requirementRow, item)}))
             .sort((a, b) => b.matchScore - a.matchScore || String(a.material_name).localeCompare(String(b.material_name), 'ru'));
     }

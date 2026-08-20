@@ -27,6 +27,8 @@ assert.match(page, /fetch\('calculator_septic\.php'/, 'Сохранение до
 assert.match(integration, /calculateShower/, 'Должен быть отдельный расчёт душевой перегородки');
 assert.match(integration, /estimatePanelLayout/, 'Расчёт должен использовать раскладку по листам');
 assert.match(integration, /buildRequirements/, 'Расчёт должен формировать спецификацию фурнитуры');
+assert.match(integration, /Группа: '[\s\S]*requirement\.groupLabel/, 'В строке роли должна отображаться выбранная группа товаров');
+assert.match(page, /доступны только товары из группы, выбранной выше/, 'Подсказка должна объяснять ограничение списка группой');
 assert.match(integration, /__auto__/, 'Должен поддерживаться автоматический выбор формата');
 assert.match(integration, /__custom__/, 'Должен поддерживаться собственный формат');
 assert.match(integration, /chooseBestPanelFormat/, 'Автоматический режим должен сравнивать существующие форматы');
