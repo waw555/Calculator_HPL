@@ -13,11 +13,11 @@ assert.match(page, /id="custom_sheet_height"/, 'Должен быть ввод �
 assert.match(page, /id="shower_fascia_width"/, 'Должна быть ширина перемычки');
 assert.match(page, /id="shower_fascia_height"/, 'Должна быть высота перемычки');
 assert.match(page, /id="collection-field" class="hidden"/, 'Серия должна быть скрыта до выбора поставщика');
-assert.match(page, /3D-модель перегородки/, 'Вместо плана должна отображаться 3D-модель');
-assert.match(page, /id="shower-model-modal"/, 'Должно быть модальное окно увеличенной модели');
-assert.match(page, /id="shower-model-trigger"/, 'Модель должна быть доступна для открытия');
+assert.doesNotMatch(page, /3D-модель|трёхмерная модель/i, 'На странице не должно быть упоминаний 3D-модели');
+assert.doesNotMatch(page, /id="shower-model-(?:trigger|modal)/, 'На странице не должно быть элементов 3D-модели');
+assert.doesNotMatch(integration, /renderSchematic|openModelModal|shower-schematic-svg/, 'Интеграция не должна создавать 3D-модель');
 assert.match(page, /scripts\/cutting_optimizer\.js/, 'Оптимизатор раскроя должен загружаться');
-assert.match(page, /scripts\/shower_partition_calculator\.js/, 'Расчётная модель должна загружаться');
+assert.match(page, /scripts\/shower_partition_calculator\.js/, 'Расчётный модуль должен загружаться');
 assert.match(page, /scripts\/shower_partition_page\.js/, 'Интеграция страницы должна загружаться');
 assert.match(page, /FROM price_list pl/, 'Каталог фурнитуры должен загружаться из базы');
 assert.match(page, /fetch\('calculator_septic\.php'/, 'Сохранение должно отправляться в текущий обработчик');
@@ -28,19 +28,11 @@ assert.match(integration, /__auto__/, 'Должен поддерживаться
 assert.match(integration, /__custom__/, 'Должен поддерживаться собственный формат');
 assert.match(integration, /chooseBestPanelFormat/, 'Автоматический режим должен сравнивать существующие форматы');
 assert.match(integration, /renderCollections/, 'Серии должны зависеть от поставщика');
-assert.match(integration, /polygon points/, '3D-модель должна строиться из объёмных граней');
-assert.match(integration, /decor\?\.decor_photo_path/, 'Текстура модели должна браться из фотографии выбранного декора');
-assert.match(integration, /id="hplTexture"/, 'Фотография декора должна использоваться как SVG-текстура');
-assert.match(integration, /#d9dde3|#eef0f2/, 'При отсутствии фотографии должна использоваться светло-серая поверхность');
-assert.match(integration, /openModelModal/, 'Должно поддерживаться увеличение модели');
-assert.match(integration, /event\.key === 'Escape'/, 'Модальное окно должно закрываться по Escape');
 
 assert.match(page, /id="shower_layout_type"/, 'Должен быть выбор прямой, угловой и П-образной схемы');
 assert.match(page, /value="built_in">Прямая</, 'Должна быть прямая схема');
 assert.match(page, /value="corner">Угловая</, 'Должна быть угловая схема');
 assert.match(page, /value="freestanding">П-образная</, 'Должна быть П-образная схема');
-assert.match(integration, /current\.layoutType === 'built_in'/, '3D-модель должна учитывать боковые стены встроенной схемы');
-assert.match(integration, /current\.railRoute === 'u_shape'/, '3D-модель должна отображать П-образную верхнюю связь');
 
 assert.match(page, /Количество кабин/, 'Поле должно называться «Количество кабин»');
 assert.match(page, /id="shower_panel_count"/, 'Должно быть поле количества перегородок');
@@ -52,28 +44,6 @@ assert.doesNotMatch(page, /id="shower_full_height"/, 'Параметра пан�
 assert.doesNotMatch(page, />Верхняя труба</, 'Отдельного раздела верхней трубы быть не должно');
 assert.match(page, /id="shower_top_support"[\s\S]*Труба[\s\S]*Профиль алюминиевый/, 'Без крепления к потолку должен выбираться тип верхней связи');
 assert.match(integration, /partitionVariant/, 'Вариант фасада должен определяться типом перегородки');
-assert.match(integration, /class=\"model-fitting\"/, 'Фурнитура должна отображаться аккуратными векторными деталями без битых фотографий');
-assert.match(integration, /const legHeight = current\.floorMount === 'leg' \? 150 : 0/, 'Панель на ножке должна быть поднята над полом на 150 мм');
-assert.match(integration, /const wallHeight = panelTop \+ 200/, 'Стены модели должны быть немного выше перегородки');
-assert.match(integration, /const pipeHeight = panelTop \+ 50/, 'Труба должна проходить на 50 мм выше перегородки');
-assert.match(integration, /const pipeClamp = point\(x, 0, pipeHeight\)/, 'Крепление панели должно доходить до трубы над открытой кромкой');
-assert.match(integration, /const frontLeft = point\(0, 0, pipeHeight\)/, 'Продольная труба должна проходить над перегородками, а не вдоль задней стены');
-assert.match(integration, /model-panel-holder/, 'Труба должна крепиться к каждой перегородке отдельным держателем');
-assert.match(integration, /model-wall-flange/, 'Концы трубы должны крепиться к стенам круглыми фланцами');
-assert.match(integration, /const flange = current\.railRoute/, 'В модели должно отображаться только одно видимое стеновое крепление трубы');
-assert.doesNotMatch(integration, /ножка 150 мм/, 'Размер от пола до панели не должен называться ножкой');
-assert.match(integration, /model-clearance-dimension/, 'Зазор 150 мм от пола до панели должен быть показан размерной линией');
-assert.match(integration, /model-panel-holder__stem/, 'Держатель трубы должен иметь скруглённую стойку к панели');
-assert.match(integration, /model-rail-highlight/, 'Труба должна иметь металлический блик');
-assert.match(integration, /model-panel__edge/, 'У HPL-панелей должен отображаться объёмный торец');
-assert.match(integration, /model-wall-bracket/, 'На стеновой кромке панелей должны отображаться кронштейны');
-assert.match(integration, /\[0\.12, 0\.37, 0\.63, 0\.88\]/, 'На каждой панели должны отображаться четыре стеновых кронштейна');
-assert.match(integration, /model-foot__clamp/, 'Опорная ножка должна иметь отдельный зажим панели');
-assert.match(integration, /linearGradient id="metalFace"/, 'Фурнитура должна иметь металлический градиент');
-assert.match(integration, /current\.depth \* 0\.12/, 'На каждой панели должна отображаться одна ножка у открытого края');
-assert.doesNotMatch(integration, /current\.depth \* 0\.88/, 'Вторая ножка не должна отображаться на панели');
-assert.match(integration, /current\.roomWidth \+ current\.depth/, 'Масштаб модели должен учитывать реальные габариты помещения');
-assert.match(integration, /Math\.round\(current\.roomWidth\).*Math\.round\(current\.depth\).*Math\.round\(current\.height\)/s, 'Модель должна показывать введённые габариты');
 
 new Function(integration);
 console.log('shower_partition_page.test.js: OK');
