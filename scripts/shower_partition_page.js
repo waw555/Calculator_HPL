@@ -95,14 +95,12 @@
         const supplierId = Number(document.getElementById('supplier_id').value || 0);
         const select = document.getElementById('collection_id');
         const field = document.getElementById('collection-field');
-        let available = 0;
         Array.from(select.options).forEach(function (option) {
             if (!option.value || option.value === '0') return;
             const matches = supplierId > 0 && Number(option.dataset.supplier || 0) === supplierId;
             option.hidden = !matches;
-            if (matches) available += 1;
         });
-        if (!supplierId || !available) {
+        if (!supplierId) {
             select.value = '0';
             field.classList.add('hidden');
         } else {
@@ -275,6 +273,11 @@
 
     document.getElementById('decor_input').addEventListener('change', function () { renderFormats(); refresh(); });
     formatSelect.addEventListener('change', toggleCustomFormat);
+    document.getElementById('supplier_id').addEventListener('change', function () {
+        renderCollections();
+        refresh();
+    });
+    document.getElementById('collection_id').addEventListener('change', refresh);
     renderCollections();
     refresh();
 })();

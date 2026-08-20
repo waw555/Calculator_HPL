@@ -94,6 +94,11 @@ table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 12
 th, td { padding: 10px 11px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; font-size: 13px; }
 th { background: #edf6ff; color: #0f172a; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
 .hint { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.label-with-help { display: flex; align-items: center; gap: 6px; width: max-content; max-width: 100%; }
+.format-help { position: relative; display: inline-grid; place-items: center; width: 17px; height: 17px; border: 1px solid #94a3b8; border-radius: 50%; color: #475569; font-size: 11px; font-weight: 850; line-height: 1; cursor: help; }
+.format-help__tooltip { position: absolute; z-index: 20; bottom: calc(100% + 8px); left: 50%; width: min(310px, 80vw); padding: 9px 11px; border-radius: 8px; background: #111827; color: #fff; font-size: 11px; font-weight: 500; line-height: 1.45; opacity: 0; pointer-events: none; transform: translate(-50%, 4px); transition: opacity .16s, transform .16s; box-shadow: 0 8px 24px rgba(15,23,42,.2); }
+.format-help:hover .format-help__tooltip, .format-help:focus .format-help__tooltip, .format-help:focus-visible .format-help__tooltip { opacity: 1; transform: translate(-50%, 0); }
+.format-help:focus-visible { outline: 3px solid rgba(79,70,229,.22); outline-offset: 2px; }
 .total { font-size: 22px; font-weight: 900; }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .hidden { display: none !important; }
@@ -246,10 +251,10 @@ tbody tr:hover td { background:#fbfcfe; }
         <div class="grid">
             <div><label for="manufacturer_id">Производитель</label><select id="manufacturer_id"><option value="0">Любой производитель</option><?php foreach ($manufacturers as $manufacturer): ?><option value="<?php echo e((string)$manufacturer['id']); ?>"><?php echo e($manufacturer['full_name']); ?></option><?php endforeach; ?></select></div>
             <div><label for="decor_input">Декор</label><select id="decor_input"><option value="">— Выберите декор —</option><?php foreach ($panels as $panel): ?><option value="<?php echo e((string)$panel['id']); ?>" data-mfr="<?php echo e((string)($panel['manufacturer_id'] ?? 0)); ?>" data-stock="1"><?php echo e(trim(($panel['decor_number'] ?? '') . ' ' . ($panel['decor_name'] ?? ''))); ?></option><?php endforeach; ?></select></div>
-            <div><label for="panel_format_id">Формат листа</label><select id="panel_format_id"><option value="">— Сначала выберите декор —</option></select><div class="hint">«Любой» подберёт формат с наименьшим отходом; «Свой» откроет ручной ввод.</div></div>
+            <div><label for="panel_format_id" class="label-with-help">Формат листа <span class="format-help" tabindex="0" aria-label="Подсказка о выборе формата">?<span class="format-help__tooltip" role="tooltip">«Любой» подберёт формат с наименьшим отходом; «Свой» откроет ручной ввод.</span></span></label><select id="panel_format_id"><option value="">— Сначала выберите декор —</option></select></div>
             <div id="custom-format-fields" class="custom-format field-hidden"><div><label for="custom_sheet_width">Ширина своего листа, мм</label><input id="custom_sheet_width" type="number" min="1" step="1" value="1830"></div><div><label for="custom_sheet_height">Длина своего листа, мм</label><input id="custom_sheet_height" type="number" min="1" step="1" value="4320"></div></div>
             <div><label for="partition_type_id">Тип перегородки</label><select id="partition_type_id"><option value="0">Выберите тип</option><?php foreach ($partitionTypes as $type): ?><option value="<?php echo e((string)$type['id']); ?>"><?php echo e($type['name']); ?></option><?php endforeach; ?></select></div>
-            <div><label for="supplier_id">Производитель фурнитуры</label><select id="supplier_id"><option value="0">Все поставщики</option><?php foreach ($suppliersList as $sup): ?><option value="<?php echo e((string)$sup['id']); ?>"><?php echo e($sup['company_name']); ?></option><?php endforeach; ?></select><div class="hint">Выберите поставщика для фильтрации.</div></div>
+            <div><label for="supplier_id">Производитель фурнитуры</label><select id="supplier_id"><option value="0">Все поставщики</option><?php foreach ($suppliersList as $sup): ?><option value="<?php echo e((string)$sup['id']); ?>"><?php echo e($sup['company_name']); ?></option><?php endforeach; ?></select></div>
             <div id="collection-field" class="hidden"><label for="collection_id">Серия</label><select id="collection_id"><option value="0">Все серии</option><?php foreach ($collections as $col): ?><option value="<?php echo e((string)$col['id']); ?>" data-supplier="<?php echo e((string)($col['supplier_id'] ?? 0)); ?>"><?php echo e($col['name']); ?><?php if (!empty($col['supplier_name'])): ?> (<?php echo e($col['supplier_name']); ?>)<?php endif; ?></option><?php endforeach; ?></select><div class="hint">Фильтр по серии.</div></div>
         </div>
         <div id="dynamic-parameters" class="grid" style="margin-top:14px"></div>
@@ -460,20 +465,6 @@ function filterDecors() {
 }
 document.getElementById('manufacturer_id').addEventListener('change', filterDecors);
 filterDecors();
-
-/* Фильтрация: Поставщик → Серия */
-function filterCollections() {
-    const supId = Number(document.getElementById('supplier_id').value || 0);
-    const sel = document.getElementById('collection_id');
-    Array.from(sel.options).forEach(opt => {
-        if (!opt.value) return;
-        const optSup = Number(opt.dataset.supplier || 0);
-        opt.hidden = supId > 0 && optSup > 0 && optSup !== supId;
-    });
-    if (sel.selectedOptions[0]?.hidden) sel.value = '';
-}
-document.getElementById('supplier_id').addEventListener('change', filterCollections);
-filterCollections();
 
 function renderParameters() {
     const typeId = typeSelect.value;
