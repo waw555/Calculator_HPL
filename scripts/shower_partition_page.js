@@ -129,7 +129,8 @@
                 const isSelected = String(item.id) === String(roleSelections[requirement.role] || '') ? ' selected' : '';
                 return '<option value="' + escapeHtml(item.id) + '"' + isSelected + '>' + escapeHtml(item.material_name) + (meta ? ' — ' + escapeHtml(meta) : '') + '</option>';
             }).join('');
-            return '<div class="hardware-role"><div class="hardware-role__name">' + escapeHtml(requirement.label) + '<small>' + escapeHtml(requirement.note) + '</small></div><select data-shower-role="' + escapeHtml(requirement.role) + '"><option value="">— Подобрать вручную —</option>' + options + '</select><div class="hardware-role__qty">' + formatter.format(requirement.quantity) + ' ' + escapeHtml(requirement.unit) + '</div></div>';
+            const emptyLabel = matches.length ? '— Выберите товар —' : '— Нет товаров в группе «' + escapeHtml(requirement.groupLabel) + '» —';
+            return '<div class="hardware-role"><div class="hardware-role__name">' + escapeHtml(requirement.label) + '<small>Группа: ' + escapeHtml(requirement.groupLabel) + ' · ' + escapeHtml(requirement.note) + '</small></div><select data-shower-role="' + escapeHtml(requirement.role) + '"><option value="">' + emptyLabel + '</option>' + options + '</select><div class="hardware-role__qty">' + formatter.format(requirement.quantity) + ' ' + escapeHtml(requirement.unit) + '</div></div>';
         }).join('');
         node.querySelectorAll('[data-shower-role]').forEach(function (select) {
             select.addEventListener('change', function () { roleSelections[select.dataset.showerRole] = select.value; });

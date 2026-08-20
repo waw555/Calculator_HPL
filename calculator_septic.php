@@ -301,7 +301,7 @@ tbody tr:hover td { background:#fbfcfe; }
                     <div class="shower-step">
                         <div class="shower-step__title"><span class="shower-step__number">04</span>Фурнитура из выбранной серии</div>
                         <div id="hardware-role-list" class="hardware-picker"></div>
-                        <div class="shower-note">Подбор выполняется по категориям и названиям товаров. Перед расчётом проверьте выбранный артикул для каждой роли. Количество можно скорректировать в готовом расчёте.</div>
+                        <div class="shower-note">Для каждого крепления доступны только товары из группы, выбранной выше. Перед расчётом проверьте выбранный артикул для каждой роли. Количество можно скорректировать в готовом расчёте.</div>
                     </div>
                 </div>
             </div>
