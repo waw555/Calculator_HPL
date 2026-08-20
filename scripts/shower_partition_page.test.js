@@ -60,6 +60,11 @@ assert.match(integration, /const pipeClamp = point\(x, 0, pipeHeight\)/, 'Кре
 assert.match(integration, /const frontLeft = point\(0, 0, pipeHeight\)/, 'Продольная труба должна проходить над перегородками, а не вдоль задней стены');
 assert.match(integration, /model-panel-holder/, 'Труба должна крепиться к каждой перегородке отдельным держателем');
 assert.match(integration, /model-wall-flange/, 'Концы трубы должны крепиться к стенам круглыми фланцами');
+assert.match(integration, /const flange = current\.railRoute/, 'В модели должно отображаться только одно видимое стеновое крепление трубы');
+assert.doesNotMatch(integration, /ножка 150 мм/, 'Размер от пола до панели не должен называться ножкой');
+assert.match(integration, /model-clearance-dimension/, 'Зазор 150 мм от пола до панели должен быть показан размерной линией');
+assert.match(integration, /model-panel-holder__stem/, 'Держатель трубы должен иметь скруглённую стойку к панели');
+assert.match(integration, /model-rail-highlight/, 'Труба должна иметь металлический блик');
 assert.match(integration, /current\.depth \* 0\.12/, 'На каждой панели должна отображаться одна ножка у открытого края');
 assert.doesNotMatch(integration, /current\.depth \* 0\.88/, 'Вторая ножка не должна отображаться на панели');
 assert.match(integration, /current\.roomWidth \+ current\.depth/, 'Масштаб модели должен учитывать реальные габариты помещения');
