@@ -55,6 +55,8 @@ assert.match(integration, /partitionVariant/, 'Вариант фасада до�
 assert.match(integration, /class=\"model-fitting\"/, 'Фурнитура должна отображаться аккуратными векторными деталями без битых фотографий');
 assert.match(integration, /const legHeight = current\.floorMount === 'leg' \? 150 : 0/, 'Панель на ножке должна быть поднята над полом на 150 мм');
 assert.match(integration, /const wallHeight = panelTop \+ 200/, 'Стены модели должны быть немного выше перегородки');
+assert.match(integration, /const pipeHeight = panelTop \+ 50/, 'Труба должна проходить на 50 мм выше перегородки');
+assert.match(integration, /point\(x, 0, pipeHeight\)/, 'Крепление панели должно доходить до поднятой трубы');
 assert.match(integration, /current\.depth \* 0\.12/, 'На каждой панели должна отображаться одна ножка у открытого края');
 assert.doesNotMatch(integration, /current\.depth \* 0\.88/, 'Вторая ножка не должна отображаться на панели');
 assert.match(integration, /current\.roomWidth \+ current\.depth/, 'Масштаб модели должен учитывать реальные габариты помещения');
