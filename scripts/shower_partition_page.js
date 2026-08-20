@@ -171,15 +171,33 @@
         let hardwareSvg = '';
         panelPositions.forEach(function (x) {
             const panel = [point(x, 0, legHeight), point(x, current.depth, legHeight), point(x, current.depth, panelTop), point(x, 0, panelTop)];
-            panelsSvg += '<g class="shower-model-shadow">' + polygon(panel, 'fill="' + panelFill + '" fill-opacity=".96" stroke="#315b8d" stroke-width="1.5"') + '</g>';
+            // Торец нужен не только для объёма: он показывает реальную толщину HPL,
+            // а не превращает перегородку в полупрозрачный лист без кромки.
+            const panelThickness = Math.min(18, Math.max(10, current.depth * 0.012));
+            const side = [point(x, 0, legHeight), point(x + panelThickness, 0, legHeight), point(x + panelThickness, 0, panelTop), point(x, 0, panelTop)];
+            const top = [point(x, 0, panelTop), point(x, current.depth, panelTop), point(x + panelThickness, current.depth, panelTop), point(x + panelThickness, 0, panelTop)];
+            panelsSvg += '<g class="shower-model-shadow model-panel">' +
+                polygon(panel, 'class="model-panel__face" fill="' + panelFill + '"') +
+                polygon(side, 'class="model-panel__edge"') + polygon(top, 'class="model-panel__top"') + '</g>';
+
+            // Четыре пристенных кронштейна повторяют монтажную схему из чертежа.
+            if (current.wallMount !== 'none') {
+                [0.12, 0.37, 0.63, 0.88].forEach(function (heightPart) {
+                    const mount = point(x, current.depth, legHeight + current.height * heightPart);
+                    hardwareSvg += '<g class="model-wall-bracket model-fitting" transform="translate(' + mount.x.toFixed(1) + ' ' + mount.y.toFixed(1) + ')">' +
+                        '<path class="model-wall-bracket__leaf" d="M-7-7h7v14h-7z"/>' +
+                        '<path class="model-wall-bracket__barrel" d="M0-5a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3z"/>' +
+                        '<circle class="model-wall-bracket__screw" cx="-4" cy="0" r="1.5"/></g>';
+                });
+            }
 
             if (current.floorMount === 'leg') {
                 const foot = point(x, current.depth * 0.12, 0);
                 const bracket = point(x, current.depth * 0.12, legHeight);
-                hardwareSvg += '<g class="model-fitting">' +
+                hardwareSvg += '<g class="model-fitting"><g class="model-foot">' +
                     '<line x1="' + foot.x.toFixed(1) + '" y1="' + foot.y.toFixed(1) + '" x2="' + bracket.x.toFixed(1) + '" y2="' + bracket.y.toFixed(1) + '" class="model-leg"/>' +
-                    '<rect x="' + (bracket.x - 4).toFixed(1) + '" y="' + (bracket.y - 5).toFixed(1) + '" width="8" height="10" rx="2"/>' +
-                    '<ellipse cx="' + foot.x.toFixed(1) + '" cy="' + foot.y.toFixed(1) + '" rx="7" ry="3"/></g>';
+                    '<rect class="model-foot__clamp" x="' + (bracket.x - 5).toFixed(1) + '" y="' + (bracket.y - 6).toFixed(1) + '" width="10" height="12" rx="2"/>' +
+                    '<path class="model-foot__base" d="M' + (foot.x - 8).toFixed(1) + ' ' + (foot.y + 3).toFixed(1) + 'h16l4 4h-24z"/></g></g>';
             } else {
                 hardwareSvg += line(panel[0], panel[1], 'class="model-profile"');
             }
@@ -255,7 +273,7 @@
             ? '<pattern id="hplTexture" patternUnits="userSpaceOnUse" width="220" height="220"><rect width="220" height="220" fill="#d9dde3"/><image href="' + escapeHtml(decorPhoto) + '" width="220" height="220" preserveAspectRatio="xMidYMid slice"/></pattern>'
             : '';
         const svg = document.getElementById('shower-schematic-svg');
-        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f8fa"/><stop offset=".55" stop-color="#d9dde2"/><stop offset="1" stop-color="#b9c0c9"/></linearGradient><linearGradient id="wallFace" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#e7edf4"/></linearGradient><linearGradient id="sideWall"><stop stop-color="#edf2f7"/><stop offset="1" stop-color="#dbe4ee"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#d6e0eb" stroke-width="1"/></pattern></defs><style>.model-fitting{fill:#697788;stroke:#344256;stroke-width:1}.model-fitting__cut{fill:#eef2f7;stroke:none}.model-leg{stroke:#697788;stroke-width:5;stroke-linecap:round}.model-profile{stroke:#7a8797;stroke-width:6;stroke-linecap:round}.model-panel-holder{fill:#778697;stroke:#344256;stroke-width:1.2}.model-panel-holder__stem{fill:none;stroke:#657486;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}.model-panel-holder__plate{fill:#778697}.model-panel-holder__collar{fill:#778697;stroke:#344256;stroke-width:1.5}.model-panel-holder__collar-cut{fill:#657486;stroke:#d9e0e7;stroke-width:1}.model-wall-flange{fill:#a7b1bc;stroke:#344256;stroke-width:1.5}.model-wall-flange__hub{fill:#697788}.model-rail{stroke:#657486;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 3px 2px rgba(15,23,42,.25))}.model-rail--profile{stroke:#9ba8b7;stroke-width:10}.model-rail-highlight{stroke:rgba(255,255,255,.48);stroke-width:2;stroke-linecap:round;transform:translateY(-1px);pointer-events:none}.model-handle{fill:#606f80;stroke:#f8fafc;stroke-width:1}.model-dimension{fill:#52637a;font:600 10px sans-serif;text-anchor:middle}.model-dimension--vertical{writing-mode:vertical-rl}.model-clearance-dimension,.model-clearance-tick{stroke:#64748b;stroke-width:1}</style>' + roomSvg + panelsSvg + frontSvg + pipe + hardwareSvg + dimensions;
+        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f8fa"/><stop offset=".55" stop-color="#d9dde2"/><stop offset="1" stop-color="#b9c0c9"/></linearGradient><linearGradient id="metalFace" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eef2f5"/><stop offset=".38" stop-color="#7e8b98"/><stop offset=".62" stop-color="#dce2e7"/><stop offset="1" stop-color="#596674"/></linearGradient><linearGradient id="wallFace" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#e7edf4"/></linearGradient><linearGradient id="sideWall"><stop stop-color="#edf2f7"/><stop offset="1" stop-color="#dbe4ee"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#d6e0eb" stroke-width="1"/></pattern></defs><style>.model-panel__face{fill-opacity:.98;stroke:#273c55;stroke-width:1.25}.model-panel__edge{fill:#667487;stroke:#273c55;stroke-width:1}.model-panel__top{fill:#e9edf1;stroke:#273c55;stroke-width:1}.model-fitting{fill:url(#metalFace);stroke:#344256;stroke-width:1}.model-fitting__cut{fill:#eef2f7;stroke:none}.model-wall-bracket{filter:drop-shadow(0 1px 1px rgba(15,23,42,.35))}.model-wall-bracket__leaf{fill:url(#metalFace)}.model-wall-bracket__barrel{fill:#536170}.model-wall-bracket__screw{fill:#e8edf2;stroke:#344256;stroke-width:.5}.model-leg{stroke:#697788;stroke-width:5;stroke-linecap:round}.model-foot__clamp{fill:url(#metalFace)}.model-foot__base{fill:url(#metalFace);stroke:#344256}.model-profile{stroke:#7a8797;stroke-width:6;stroke-linecap:round}.model-panel-holder{fill:#778697;stroke:#344256;stroke-width:1.2}.model-panel-holder__stem{fill:none;stroke:#657486;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}.model-panel-holder__plate{fill:url(#metalFace)}.model-panel-holder__collar{fill:url(#metalFace);stroke:#344256;stroke-width:1.5}.model-panel-holder__collar-cut{fill:#657486;stroke:#d9e0e7;stroke-width:1}.model-wall-flange{fill:url(#metalFace);stroke:#344256;stroke-width:1.5}.model-wall-flange__hub{fill:#697788}.model-rail{stroke:#657486;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 3px 2px rgba(15,23,42,.25))}.model-rail--profile{stroke:#9ba8b7;stroke-width:10}.model-rail-highlight{stroke:rgba(255,255,255,.62);stroke-width:2;stroke-linecap:round;transform:translateY(-1px);pointer-events:none}.model-handle{fill:#606f80;stroke:#f8fafc;stroke-width:1}.model-dimension{fill:#52637a;font:600 10px sans-serif;text-anchor:middle}.model-dimension--vertical{writing-mode:vertical-rl}.model-clearance-dimension,.model-clearance-tick{stroke:#64748b;stroke-width:1}</style>' + roomSvg + panelsSvg + frontSvg + pipe + hardwareSvg + dimensions;
         document.getElementById('shower-scheme-label').textContent = current.layoutLabel;
         document.getElementById('shower-schematic-stats').innerHTML =
             '<span>Тип <b>' + escapeHtml(current.layoutLabel) + '</b></span>' +

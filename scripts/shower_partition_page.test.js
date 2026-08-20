@@ -65,6 +65,11 @@ assert.doesNotMatch(integration, /ножка 150 мм/, 'Размер от по�
 assert.match(integration, /model-clearance-dimension/, 'Зазор 150 мм от пола до панели должен быть показан размерной линией');
 assert.match(integration, /model-panel-holder__stem/, 'Держатель трубы должен иметь скруглённую стойку к панели');
 assert.match(integration, /model-rail-highlight/, 'Труба должна иметь металлический блик');
+assert.match(integration, /model-panel__edge/, 'У HPL-панелей должен отображаться объёмный торец');
+assert.match(integration, /model-wall-bracket/, 'На стеновой кромке панелей должны отображаться кронштейны');
+assert.match(integration, /\[0\.12, 0\.37, 0\.63, 0\.88\]/, 'На каждой панели должны отображаться четыре стеновых кронштейна');
+assert.match(integration, /model-foot__clamp/, 'Опорная ножка должна иметь отдельный зажим панели');
+assert.match(integration, /linearGradient id="metalFace"/, 'Фурнитура должна иметь металлический градиент');
 assert.match(integration, /current\.depth \* 0\.12/, 'На каждой панели должна отображаться одна ножка у открытого края');
 assert.doesNotMatch(integration, /current\.depth \* 0\.88/, 'Вторая ножка не должна отображаться на панели');
 assert.match(integration, /current\.roomWidth \+ current\.depth/, 'Масштаб модели должен учитывать реальные габариты помещения');
