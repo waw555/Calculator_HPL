@@ -125,6 +125,7 @@
         const panelFill = decorPhoto ? 'url(#hplTexture)' : 'url(#hplFace)';
         const legHeight = current.floorMount === 'leg' ? 150 : 0;
         const panelTop = legHeight + current.height;
+        const pipeHeight = panelTop + 50;
         const wallHeight = panelTop + 200;
 
         // Все три оси используют один масштаб. Изометрическое сокращение глубины
@@ -183,7 +184,10 @@
                 hardwareSvg += line(panel[0], panel[1], 'class="model-profile"');
             }
             if (current.railRoute !== 'none') {
-                const clamp = point(x, 0, panelTop);
+                const panelClamp = point(x, 0, panelTop);
+                const pipeClamp = point(x, 0, pipeHeight);
+                hardwareSvg += line(panelClamp, pipeClamp, 'class="model-pipe-holder"');
+                const clamp = pipeClamp;
                 hardwareSvg += '<g class="model-fitting"><circle cx="' + clamp.x.toFixed(1) + '" cy="' + clamp.y.toFixed(1) + '" r="6"/><circle class="model-fitting__cut" cx="' + clamp.x.toFixed(1) + '" cy="' + clamp.y.toFixed(1) + '" r="2.5"/></g>';
             }
         });
@@ -209,11 +213,11 @@
 
         const railStyle = current.topSupport === 'aluminium_profile' ? 'model-rail model-rail--profile' : 'model-rail';
         let pipe = '';
-        const frontLeft = point(0, 0, panelTop);
-        const frontRight = point(current.roomWidth, 0, panelTop);
+        const frontLeft = point(0, 0, pipeHeight);
+        const frontRight = point(current.roomWidth, 0, pipeHeight);
         if (current.railRoute === 'straight') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"');
-        if (current.railRoute === 'elbow') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, panelTop), 'class="' + railStyle + '"');
-        if (current.railRoute === 'u_shape') pipe = line(point(0, current.depth, panelTop), frontLeft, 'class="' + railStyle + '"') + line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, panelTop), 'class="' + railStyle + '"');
+        if (current.railRoute === 'elbow') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, pipeHeight), 'class="' + railStyle + '"');
+        if (current.railRoute === 'u_shape') pipe = line(point(0, current.depth, pipeHeight), frontLeft, 'class="' + railStyle + '"') + line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, pipeHeight), 'class="' + railStyle + '"');
 
         const dimensionStyle = 'stroke="#64748b" stroke-width="1"';
         const widthA = point(0, 0, 0); const widthB = point(current.roomWidth, 0, 0);
@@ -232,7 +236,7 @@
             ? '<pattern id="hplTexture" patternUnits="userSpaceOnUse" width="220" height="220"><rect width="220" height="220" fill="#d9dde3"/><image href="' + escapeHtml(decorPhoto) + '" width="220" height="220" preserveAspectRatio="xMidYMid slice"/></pattern>'
             : '';
         const svg = document.getElementById('shower-schematic-svg');
-        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f8fa"/><stop offset=".55" stop-color="#d9dde2"/><stop offset="1" stop-color="#b9c0c9"/></linearGradient><linearGradient id="wallFace" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#e7edf4"/></linearGradient><linearGradient id="sideWall"><stop stop-color="#edf2f7"/><stop offset="1" stop-color="#dbe4ee"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#d6e0eb" stroke-width="1"/></pattern></defs><style>.model-fitting{fill:#697788;stroke:#344256;stroke-width:1}.model-fitting__cut{fill:#eef2f7;stroke:none}.model-leg{stroke:#697788;stroke-width:5;stroke-linecap:round}.model-profile{stroke:#7a8797;stroke-width:6;stroke-linecap:round}.model-rail{stroke:#657486;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 3px 2px rgba(15,23,42,.25))}.model-rail--profile{stroke:#9ba8b7;stroke-width:10}.model-handle{fill:#606f80;stroke:#f8fafc;stroke-width:1}.model-dimension{fill:#52637a;font:600 10px sans-serif;text-anchor:middle}.model-dimension--vertical{writing-mode:vertical-rl}</style>' + roomSvg + panelsSvg + frontSvg + pipe + hardwareSvg + dimensions;
+        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f8fa"/><stop offset=".55" stop-color="#d9dde2"/><stop offset="1" stop-color="#b9c0c9"/></linearGradient><linearGradient id="wallFace" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#e7edf4"/></linearGradient><linearGradient id="sideWall"><stop stop-color="#edf2f7"/><stop offset="1" stop-color="#dbe4ee"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#d6e0eb" stroke-width="1"/></pattern></defs><style>.model-fitting{fill:#697788;stroke:#344256;stroke-width:1}.model-fitting__cut{fill:#eef2f7;stroke:none}.model-leg{stroke:#697788;stroke-width:5;stroke-linecap:round}.model-profile{stroke:#7a8797;stroke-width:6;stroke-linecap:round}.model-pipe-holder{stroke:#697788;stroke-width:4;stroke-linecap:round}.model-rail{stroke:#657486;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 3px 2px rgba(15,23,42,.25))}.model-rail--profile{stroke:#9ba8b7;stroke-width:10}.model-handle{fill:#606f80;stroke:#f8fafc;stroke-width:1}.model-dimension{fill:#52637a;font:600 10px sans-serif;text-anchor:middle}.model-dimension--vertical{writing-mode:vertical-rl}</style>' + roomSvg + panelsSvg + frontSvg + pipe + hardwareSvg + dimensions;
         document.getElementById('shower-scheme-label').textContent = current.layoutLabel;
         document.getElementById('shower-schematic-stats').innerHTML =
             '<span>Тип <b>' + escapeHtml(current.layoutLabel) + '</b></span>' +
