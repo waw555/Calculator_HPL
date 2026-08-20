@@ -10,7 +10,6 @@
     const formatSelect = document.getElementById('panel_format_id');
     const roleSelections = {};
     let availableFormats = [];
-    let modelTriggerBeforeOpen = null;
 
     function value(id) {
         return parseFloat(document.getElementById(id)?.value || '0') || 0;
@@ -21,13 +20,6 @@
         if (code === 'RUB') return Number(amount || 0);
         const row = currencyRates.find(function (rate) { return String(rate.code).toUpperCase() === code; });
         return row ? Number(amount || 0) * Number(row.rate_to_rub || 0) / Math.max(1, Number(row.nominal || 1)) : Number(amount || 0);
-    }
-
-    function selectedDecorPhoto() {
-        const decorId = document.getElementById('decor_input').value;
-        const decor = panels.find(function (panel) { return String(panel.id) === String(decorId); });
-        const photoPath = String(decor?.decor_photo_path || '').trim();
-        return /^(javascript|data):/i.test(photoPath) ? '' : photoPath;
     }
 
     function showerSelected() {
@@ -119,196 +111,6 @@
         }
     }
 
-    function renderSchematic(current) {
-        const shownPartitions = Math.min(12, Math.max(1, Math.round(current.partitionCount)));
-        const decorPhoto = selectedDecorPhoto();
-        const panelFill = decorPhoto ? 'url(#hplTexture)' : 'url(#hplFace)';
-        const legHeight = current.floorMount === 'leg' ? 150 : 0;
-        const panelTop = legHeight + current.height;
-        const pipeHeight = panelTop + 50;
-        const wallHeight = panelTop + 200;
-
-        // Все три оси используют один масштаб. Изометрическое сокращение глубины
-        // задаётся только проекцией, поэтому пропорции введённых размеров сохраняются.
-        const projection = {x: 0.72, y: -0.42};
-        const available = {width: 390, height: 235};
-        const scale = Math.min(
-            available.width / Math.max(1, current.roomWidth + current.depth * projection.x),
-            available.height / Math.max(1, wallHeight + current.depth * Math.abs(projection.y))
-        );
-        const widthPx = current.roomWidth * scale;
-        const depthX = current.depth * scale * projection.x;
-        const depthY = current.depth * scale * projection.y;
-        const origin = {x: (520 - widthPx - depthX) / 2, y: 305};
-        const point = function (x, depth, height) {
-            return {
-                x: origin.x + x * scale + depth * scale * projection.x,
-                y: origin.y + depth * scale * projection.y - height * scale
-            };
-        };
-        const xy = function (item) { return item.x.toFixed(1) + ',' + item.y.toFixed(1); };
-        const line = function (a, b, attrs) { return '<line x1="' + a.x.toFixed(1) + '" y1="' + a.y.toFixed(1) + '" x2="' + b.x.toFixed(1) + '" y2="' + b.y.toFixed(1) + '" ' + attrs + '/>'; };
-        const polygon = function (items, attrs) { return '<polygon points="' + items.map(xy).join(' ') + '" ' + attrs + '/>'; };
-
-        const floor = [point(0, 0, 0), point(current.roomWidth, 0, 0), point(current.roomWidth, current.depth, 0), point(0, current.depth, 0)];
-        const backWall = [point(0, current.depth, 0), point(current.roomWidth, current.depth, 0), point(current.roomWidth, current.depth, wallHeight), point(0, current.depth, wallHeight)];
-        let roomSvg = polygon(floor, 'fill="url(#floorGrid)" stroke="#b7c4d4"') + polygon(backWall, 'fill="url(#wallFace)" stroke="#b7c4d4"');
-        if (current.layoutType === 'built_in' || current.layoutType === 'corner') {
-            roomSvg += polygon([point(0, 0, 0), point(0, current.depth, 0), point(0, current.depth, wallHeight), point(0, 0, wallHeight)], 'fill="url(#sideWall)" stroke="#a9b8cb"');
-        }
-        if (current.layoutType === 'built_in') {
-            roomSvg += polygon([point(current.roomWidth, 0, 0), point(current.roomWidth, current.depth, 0), point(current.roomWidth, current.depth, wallHeight), point(current.roomWidth, 0, wallHeight)], 'fill="url(#sideWall)" stroke="#a9b8cb"');
-        }
-
-        const panelPositions = [];
-        for (let index = 0; index < shownPartitions; index += 1) {
-            const fraction = current.layoutType === 'built_in'
-                ? (index + 1) / (shownPartitions + 1)
-                : (shownPartitions === 1 ? 0.5 : index / (shownPartitions - 1));
-            panelPositions.push(current.roomWidth * fraction);
-        }
-        let panelsSvg = '';
-        let hardwareSvg = '';
-        panelPositions.forEach(function (x) {
-            const panel = [point(x, 0, legHeight), point(x, current.depth, legHeight), point(x, current.depth, panelTop), point(x, 0, panelTop)];
-            // Торец нужен не только для объёма: он показывает реальную толщину HPL,
-            // а не превращает перегородку в полупрозрачный лист без кромки.
-            const panelThickness = Math.min(18, Math.max(10, current.depth * 0.012));
-            const side = [point(x, 0, legHeight), point(x + panelThickness, 0, legHeight), point(x + panelThickness, 0, panelTop), point(x, 0, panelTop)];
-            const top = [point(x, 0, panelTop), point(x, current.depth, panelTop), point(x + panelThickness, current.depth, panelTop), point(x + panelThickness, 0, panelTop)];
-            panelsSvg += '<g class="shower-model-shadow model-panel">' +
-                polygon(panel, 'class="model-panel__face" fill="' + panelFill + '"') +
-                polygon(side, 'class="model-panel__edge"') + polygon(top, 'class="model-panel__top"') + '</g>';
-
-            // Четыре пристенных кронштейна повторяют монтажную схему из чертежа.
-            if (current.wallMount !== 'none') {
-                [0.12, 0.37, 0.63, 0.88].forEach(function (heightPart) {
-                    const mount = point(x, current.depth, legHeight + current.height * heightPart);
-                    hardwareSvg += '<g class="model-wall-bracket model-fitting" transform="translate(' + mount.x.toFixed(1) + ' ' + mount.y.toFixed(1) + ')">' +
-                        '<path class="model-wall-bracket__leaf" d="M-7-7h7v14h-7z"/>' +
-                        '<path class="model-wall-bracket__barrel" d="M0-5a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3z"/>' +
-                        '<circle class="model-wall-bracket__screw" cx="-4" cy="0" r="1.5"/></g>';
-                });
-            }
-
-            if (current.floorMount === 'leg') {
-                const foot = point(x, current.depth * 0.12, 0);
-                const bracket = point(x, current.depth * 0.12, legHeight);
-                hardwareSvg += '<g class="model-fitting"><g class="model-foot">' +
-                    '<line x1="' + foot.x.toFixed(1) + '" y1="' + foot.y.toFixed(1) + '" x2="' + bracket.x.toFixed(1) + '" y2="' + bracket.y.toFixed(1) + '" class="model-leg"/>' +
-                    '<rect class="model-foot__clamp" x="' + (bracket.x - 5).toFixed(1) + '" y="' + (bracket.y - 6).toFixed(1) + '" width="10" height="12" rx="2"/>' +
-                    '<path class="model-foot__base" d="M' + (foot.x - 8).toFixed(1) + ' ' + (foot.y + 3).toFixed(1) + 'h16l4 4h-24z"/></g></g>';
-            } else {
-                hardwareSvg += line(panel[0], panel[1], 'class="model-profile"');
-            }
-            if (current.railRoute !== 'none') {
-                // Как у реального держателя: хомут охватывает трубу, а одна
-                // скруглённая стойка спускается к монтажной площадке на панели.
-                const panelClamp = point(x, 0, panelTop);
-                const pipeClamp = point(x, 0, pipeHeight);
-                hardwareSvg += '<g class="model-panel-holder">' +
-                    '<path class="model-panel-holder__stem" d="M' + pipeClamp.x.toFixed(1) + ' ' + (pipeClamp.y + 3).toFixed(1) + ' V' + (panelClamp.y - 8).toFixed(1) + ' Q' + pipeClamp.x.toFixed(1) + ' ' + panelClamp.y.toFixed(1) + ' ' + (panelClamp.x - 7).toFixed(1) + ' ' + panelClamp.y.toFixed(1) + '"/>' +
-                    '<rect class="model-panel-holder__plate" x="' + (panelClamp.x - 10).toFixed(1) + '" y="' + (panelClamp.y - 5).toFixed(1) + '" width="7" height="12" rx="2"/>' +
-                    '<circle class="model-panel-holder__collar" cx="' + pipeClamp.x.toFixed(1) + '" cy="' + pipeClamp.y.toFixed(1) + '" r="6"/>' +
-                    '<circle class="model-panel-holder__collar-cut" cx="' + pipeClamp.x.toFixed(1) + '" cy="' + pipeClamp.y.toFixed(1) + '" r="3.2"/></g>';
-            }
-        });
-
-        let frontSvg = '';
-        if (current.variant === 'fascia') {
-            const fasciaWidth = Math.min(current.roomWidth, current.fasciaWidth);
-            const start = (current.roomWidth - fasciaWidth) / 2;
-            frontSvg = polygon([point(start, 0, legHeight), point(start + fasciaWidth, 0, legHeight), point(start + fasciaWidth, 0, legHeight + current.fasciaHeight), point(start, 0, legHeight + current.fasciaHeight)], 'fill="' + panelFill + '" stroke="#315b8d" stroke-width="1.5"');
-        } else if (current.variant === 'doors') {
-            const count = Math.min(6, Math.max(1, Math.round(current.doorCount)));
-            const totalWidth = Math.min(current.roomWidth * 0.94, current.doorWidth * count);
-            const start = (current.roomWidth - totalWidth) / 2;
-            for (let door = 0; door < count; door += 1) {
-                const left = start + totalWidth * door / count;
-                const right = start + totalWidth * (door + 1) / count;
-                const doorHeight = Math.min(current.height, current.doorHeight);
-                frontSvg += polygon([point(left, 0, legHeight), point(right, 0, legHeight), point(right, 0, legHeight + doorHeight), point(left, 0, legHeight + doorHeight)], 'fill="' + panelFill + '" stroke="#315b8d" stroke-width="1.4"');
-                const handle = point(right - (right - left) * 0.16, 0, legHeight + doorHeight * 0.48);
-                hardwareSvg += '<circle class="model-handle" cx="' + handle.x.toFixed(1) + '" cy="' + handle.y.toFixed(1) + '" r="3.5"/>';
-            }
-        }
-
-        const railStyle = current.topSupport === 'aluminium_profile' ? 'model-rail model-rail--profile' : 'model-rail';
-        let pipe = '';
-        const frontLeft = point(0, 0, pipeHeight);
-        const frontRight = point(current.roomWidth, 0, pipeHeight);
-        const backLeft = point(0, current.depth, pipeHeight);
-        const backRight = point(current.roomWidth, current.depth, pipeHeight);
-        const railSegment = function (from, to) {
-            return line(from, to, 'class="' + railStyle + '"') + line(from, to, 'class="model-rail-highlight"');
-        };
-        if (current.railRoute === 'straight') pipe = railSegment(frontLeft, frontRight);
-        if (current.railRoute === 'elbow') pipe = railSegment(frontLeft, frontRight) + railSegment(frontRight, backRight);
-        if (current.railRoute === 'u_shape') pipe = railSegment(backLeft, frontLeft) + railSegment(frontLeft, frontRight) + railSegment(frontRight, backRight);
-
-        // Показываем только видимое крепление трубы к стене. Второй фланец
-        // находится за трубой/панелью и в этой проекции не читается.
-        if (current.topSupport === 'pipe' && current.railRoute !== 'none') {
-            const flange = current.railRoute === 'u_shape' ? backLeft : frontLeft;
-            hardwareSvg += '<g class="model-wall-flange"><circle cx="' + flange.x.toFixed(1) + '" cy="' + flange.y.toFixed(1) + '" r="9"/><circle class="model-wall-flange__hub" cx="' + flange.x.toFixed(1) + '" cy="' + flange.y.toFixed(1) + '" r="5"/><circle class="model-fitting__cut" cx="' + flange.x.toFixed(1) + '" cy="' + flange.y.toFixed(1) + '" r="2.5"/></g>';
-        }
-
-        const dimensionStyle = 'stroke="#64748b" stroke-width="1"';
-        const widthA = point(0, 0, 0); const widthB = point(current.roomWidth, 0, 0);
-        const depthB = point(current.roomWidth, current.depth, 0);
-        const heightA = point(current.roomWidth, 0, legHeight);
-        const heightB = point(current.roomWidth, 0, panelTop);
-        const dimensions = line({x: widthA.x, y: widthA.y + 18}, {x: widthB.x, y: widthB.y + 18}, dimensionStyle) +
-            '<text x="' + ((widthA.x + widthB.x) / 2).toFixed(1) + '" y="' + (widthA.y + 34).toFixed(1) + '" class="model-dimension">' + Math.round(current.roomWidth) + ' мм</text>' +
-            line({x: widthB.x + 12, y: widthB.y + 9}, {x: depthB.x + 12, y: depthB.y + 9}, dimensionStyle) +
-            '<text x="' + ((widthB.x + depthB.x) / 2 + 18).toFixed(1) + '" y="' + ((widthB.y + depthB.y) / 2 + 10).toFixed(1) + '" class="model-dimension">' + Math.round(current.depth) + ' мм</text>' +
-            line({x: heightA.x + 13, y: heightA.y}, {x: heightB.x + 13, y: heightB.y}, dimensionStyle) +
-            '<text x="' + (heightB.x + 21).toFixed(1) + '" y="' + ((heightA.y + heightB.y) / 2).toFixed(1) + '" class="model-dimension model-dimension--vertical">' + Math.round(current.height) + ' мм</text>' +
-            (legHeight ? line({x: heightA.x + 13, y: widthB.y}, {x: heightA.x + 13, y: heightA.y}, 'class="model-clearance-dimension"') +
-                line({x: heightA.x + 9, y: widthB.y}, {x: heightA.x + 17, y: widthB.y}, 'class="model-clearance-tick"') +
-                line({x: heightA.x + 9, y: heightA.y}, {x: heightA.x + 17, y: heightA.y}, 'class="model-clearance-tick"') +
-                '<text x="' + (heightA.x + 27).toFixed(1) + '" y="' + ((widthB.y + heightA.y) / 2 + 3).toFixed(1) + '" class="model-dimension">150 мм</text>' : '');
-
-        const textureDefinition = decorPhoto
-            ? '<pattern id="hplTexture" patternUnits="userSpaceOnUse" width="220" height="220"><rect width="220" height="220" fill="#d9dde3"/><image href="' + escapeHtml(decorPhoto) + '" width="220" height="220" preserveAspectRatio="xMidYMid slice"/></pattern>'
-            : '';
-        const svg = document.getElementById('shower-schematic-svg');
-        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f8fa"/><stop offset=".55" stop-color="#d9dde2"/><stop offset="1" stop-color="#b9c0c9"/></linearGradient><linearGradient id="metalFace" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eef2f5"/><stop offset=".38" stop-color="#7e8b98"/><stop offset=".62" stop-color="#dce2e7"/><stop offset="1" stop-color="#596674"/></linearGradient><linearGradient id="wallFace" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#e7edf4"/></linearGradient><linearGradient id="sideWall"><stop stop-color="#edf2f7"/><stop offset="1" stop-color="#dbe4ee"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#d6e0eb" stroke-width="1"/></pattern></defs><style>.model-panel__face{fill-opacity:.98;stroke:#273c55;stroke-width:1.25}.model-panel__edge{fill:#667487;stroke:#273c55;stroke-width:1}.model-panel__top{fill:#e9edf1;stroke:#273c55;stroke-width:1}.model-fitting{fill:url(#metalFace);stroke:#344256;stroke-width:1}.model-fitting__cut{fill:#eef2f7;stroke:none}.model-wall-bracket{filter:drop-shadow(0 1px 1px rgba(15,23,42,.35))}.model-wall-bracket__leaf{fill:url(#metalFace)}.model-wall-bracket__barrel{fill:#536170}.model-wall-bracket__screw{fill:#e8edf2;stroke:#344256;stroke-width:.5}.model-leg{stroke:#697788;stroke-width:5;stroke-linecap:round}.model-foot__clamp{fill:url(#metalFace)}.model-foot__base{fill:url(#metalFace);stroke:#344256}.model-profile{stroke:#7a8797;stroke-width:6;stroke-linecap:round}.model-panel-holder{fill:#778697;stroke:#344256;stroke-width:1.2}.model-panel-holder__stem{fill:none;stroke:#657486;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}.model-panel-holder__plate{fill:url(#metalFace)}.model-panel-holder__collar{fill:url(#metalFace);stroke:#344256;stroke-width:1.5}.model-panel-holder__collar-cut{fill:#657486;stroke:#d9e0e7;stroke-width:1}.model-wall-flange{fill:url(#metalFace);stroke:#344256;stroke-width:1.5}.model-wall-flange__hub{fill:#697788}.model-rail{stroke:#657486;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 3px 2px rgba(15,23,42,.25))}.model-rail--profile{stroke:#9ba8b7;stroke-width:10}.model-rail-highlight{stroke:rgba(255,255,255,.62);stroke-width:2;stroke-linecap:round;transform:translateY(-1px);pointer-events:none}.model-handle{fill:#606f80;stroke:#f8fafc;stroke-width:1}.model-dimension{fill:#52637a;font:600 10px sans-serif;text-anchor:middle}.model-dimension--vertical{writing-mode:vertical-rl}.model-clearance-dimension,.model-clearance-tick{stroke:#64748b;stroke-width:1}</style>' + roomSvg + panelsSvg + frontSvg + pipe + hardwareSvg + dimensions;
-        document.getElementById('shower-scheme-label').textContent = current.layoutLabel;
-        document.getElementById('shower-schematic-stats').innerHTML =
-            '<span>Тип <b>' + escapeHtml(current.layoutLabel) + '</b></span>' +
-            '<span>Габариты <b>' + Math.round(current.roomWidth) + '×' + Math.round(current.depth) + '×' + Math.round(current.height) + ' мм</b></span>' +
-            '<span>Кабины <b>' + current.sectionCount + ' шт.</b></span>' +
-            '<span>HPL-панели <b>' + current.partitionCount + ' шт.</b></span>';
-        syncModalModel();
-    }
-
-    function syncModalModel() {
-        const source = document.getElementById('shower-schematic-svg');
-        const target = document.getElementById('shower-model-modal-svg');
-        if (!source || !target) return;
-        target.setAttribute('viewBox', source.getAttribute('viewBox') || '0 0 520 390');
-        target.innerHTML = source.innerHTML;
-    }
-
-    function openModelModal() {
-        const modal = document.getElementById('shower-model-modal');
-        modelTriggerBeforeOpen = document.activeElement;
-        syncModalModel();
-        modal.classList.remove('hidden');
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-        document.getElementById('shower-model-modal-close').focus();
-    }
-
-    function closeModelModal() {
-        const modal = document.getElementById('shower-model-modal');
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
-        if (modelTriggerBeforeOpen?.focus) modelTriggerBeforeOpen.focus();
-    }
-
     function renderRoles(requirements) {
         const node = document.getElementById('hardware-role-list');
         const filters = {
@@ -332,7 +134,7 @@
             return '<div class="hardware-role"><div class="hardware-role__name">' + escapeHtml(requirement.label) + '<small>' + escapeHtml(requirement.note) + '</small></div><select data-shower-role="' + escapeHtml(requirement.role) + '"><option value="">— Подобрать вручную —</option>' + options + '</select><div class="hardware-role__qty">' + formatter.format(requirement.quantity) + ' ' + escapeHtml(requirement.unit) + '</div></div>';
         }).join('');
         node.querySelectorAll('[data-shower-role]').forEach(function (select) {
-            select.addEventListener('change', function () { roleSelections[select.dataset.showerRole] = select.value; renderSchematic(config()); });
+            select.addEventListener('change', function () { roleSelections[select.dataset.showerRole] = select.value; });
         });
     }
 
@@ -359,7 +161,6 @@
         document.getElementById('shower-angle-fields').classList.toggle('field-hidden', !angles);
         const requirements = ShowerPartitionCalculator.buildRequirements(current);
         renderRoles(requirements);
-        renderSchematic(current);
     }
 
     function resolvePanelSelection(current) {
@@ -474,37 +275,6 @@
 
     document.getElementById('decor_input').addEventListener('change', function () { renderFormats(); refresh(); });
     formatSelect.addEventListener('change', toggleCustomFormat);
-    const modelTrigger = document.getElementById('shower-model-trigger');
-    const modelModal = document.getElementById('shower-model-modal');
-    modelTrigger.addEventListener('click', openModelModal);
-    modelTrigger.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            openModelModal();
-        }
-    });
-    document.getElementById('shower-model-modal-close').addEventListener('click', closeModelModal);
-    modelModal.addEventListener('click', function (event) {
-        if (event.target === modelModal) closeModelModal();
-    });
-    document.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape' && !modelModal.classList.contains('hidden')) closeModelModal();
-    });
-
-    document.getElementById('manufacturer_id').addEventListener('change', function () { renderFormats(); refresh(); });
-    typeSelect.addEventListener('change', refresh);
-    document.getElementById('supplier_id').addEventListener('change', function () { renderCollections(); refresh(); });
-    document.getElementById('collection_id').addEventListener('change', refresh);
-    showerNode.addEventListener('input', refresh);
-    showerNode.addEventListener('change', refresh);
-    calculateBtn.addEventListener('click', function (event) {
-        if (!showerSelected()) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        calculateShower();
-    }, true);
-
-    renderFormats();
     renderCollections();
     refresh();
 })();
