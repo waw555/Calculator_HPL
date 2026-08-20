@@ -184,16 +184,15 @@
                 hardwareSvg += line(panel[0], panel[1], 'class="model-profile"');
             }
             if (current.railRoute !== 'none') {
-                // Труба проходит над открытой кромкой перегородки. Короткая
-                // вертикальная скоба охватывает трубу и прикручена к панели.
+                // Как у реального держателя: хомут охватывает трубу, а одна
+                // скруглённая стойка спускается к монтажной площадке на панели.
                 const panelClamp = point(x, 0, panelTop);
                 const pipeClamp = point(x, 0, pipeHeight);
                 hardwareSvg += '<g class="model-panel-holder">' +
-                    line({x: panelClamp.x - 4, y: panelClamp.y}, {x: pipeClamp.x - 4, y: pipeClamp.y + 2}, '') +
-                    line({x: panelClamp.x + 4, y: panelClamp.y}, {x: pipeClamp.x + 4, y: pipeClamp.y + 2}, '') +
-                    '<rect x="' + (panelClamp.x - 6).toFixed(1) + '" y="' + (panelClamp.y - 3).toFixed(1) + '" width="12" height="6" rx="2"/>' +
+                    '<path class="model-panel-holder__stem" d="M' + pipeClamp.x.toFixed(1) + ' ' + (pipeClamp.y + 3).toFixed(1) + ' V' + (panelClamp.y - 8).toFixed(1) + ' Q' + pipeClamp.x.toFixed(1) + ' ' + panelClamp.y.toFixed(1) + ' ' + (panelClamp.x - 7).toFixed(1) + ' ' + panelClamp.y.toFixed(1) + '"/>' +
+                    '<rect class="model-panel-holder__plate" x="' + (panelClamp.x - 10).toFixed(1) + '" y="' + (panelClamp.y - 5).toFixed(1) + '" width="7" height="12" rx="2"/>' +
                     '<circle class="model-panel-holder__collar" cx="' + pipeClamp.x.toFixed(1) + '" cy="' + pipeClamp.y.toFixed(1) + '" r="6"/>' +
-                    '<circle class="model-fitting__cut" cx="' + pipeClamp.x.toFixed(1) + '" cy="' + pipeClamp.y.toFixed(1) + '" r="2.5"/></g>';
+                    '<circle class="model-panel-holder__collar-cut" cx="' + pipeClamp.x.toFixed(1) + '" cy="' + pipeClamp.y.toFixed(1) + '" r="3.2"/></g>';
             }
         });
 
@@ -222,20 +221,18 @@
         const frontRight = point(current.roomWidth, 0, pipeHeight);
         const backLeft = point(0, current.depth, pipeHeight);
         const backRight = point(current.roomWidth, current.depth, pipeHeight);
-        if (current.railRoute === 'straight') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"');
-        if (current.railRoute === 'elbow') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, backRight, 'class="' + railStyle + '"');
-        if (current.railRoute === 'u_shape') pipe = line(backLeft, frontLeft, 'class="' + railStyle + '"') + line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, backRight, 'class="' + railStyle + '"');
+        const railSegment = function (from, to) {
+            return line(from, to, 'class="' + railStyle + '"') + line(from, to, 'class="model-rail-highlight"');
+        };
+        if (current.railRoute === 'straight') pipe = railSegment(frontLeft, frontRight);
+        if (current.railRoute === 'elbow') pipe = railSegment(frontLeft, frontRight) + railSegment(frontRight, backRight);
+        if (current.railRoute === 'u_shape') pipe = railSegment(backLeft, frontLeft) + railSegment(frontLeft, frontRight) + railSegment(frontRight, backRight);
 
-        // На концах трубы показываем круглые стеновые фланцы. Для прямой схемы
-        // они стоят на боковых стенах, для угловой и П-образной — в конечных
-        // точках соответствующего маршрута.
+        // Показываем только видимое крепление трубы к стене. Второй фланец
+        // находится за трубой/панелью и в этой проекции не читается.
         if (current.topSupport === 'pipe' && current.railRoute !== 'none') {
-            const flangePoints = current.railRoute === 'straight'
-                ? [frontLeft, frontRight]
-                : (current.railRoute === 'elbow' ? [frontLeft, backRight] : [backLeft, backRight]);
-            flangePoints.forEach(function (flange) {
-                hardwareSvg += '<g class="model-wall-flange"><circle cx="' + flange.x.toFixed(1) + '" cy="' + flange.y.toFixed(1) + '" r="9"/><circle class="model-wall-flange__hub" cx="' + flange.x.toFixed(1) + '" cy="' + flange.y.toFixed(1) + '" r="5"/><circle class="model-fitting__cut" cx="' + flange.x.toFixed(1) + '" cy="' + flange.y.toFixed(1) + '" r="2.5"/></g>';
-            });
+            const flange = current.railRoute === 'u_shape' ? backLeft : frontLeft;
+            hardwareSvg += '<g class="model-wall-flange"><circle cx="' + flange.x.toFixed(1) + '" cy="' + flange.y.toFixed(1) + '" r="9"/><circle class="model-wall-flange__hub" cx="' + flange.x.toFixed(1) + '" cy="' + flange.y.toFixed(1) + '" r="5"/><circle class="model-fitting__cut" cx="' + flange.x.toFixed(1) + '" cy="' + flange.y.toFixed(1) + '" r="2.5"/></g>';
         }
 
         const dimensionStyle = 'stroke="#64748b" stroke-width="1"';
@@ -249,13 +246,16 @@
             '<text x="' + ((widthB.x + depthB.x) / 2 + 18).toFixed(1) + '" y="' + ((widthB.y + depthB.y) / 2 + 10).toFixed(1) + '" class="model-dimension">' + Math.round(current.depth) + ' мм</text>' +
             line({x: heightA.x + 13, y: heightA.y}, {x: heightB.x + 13, y: heightB.y}, dimensionStyle) +
             '<text x="' + (heightB.x + 21).toFixed(1) + '" y="' + ((heightA.y + heightB.y) / 2).toFixed(1) + '" class="model-dimension model-dimension--vertical">' + Math.round(current.height) + ' мм</text>' +
-            (legHeight ? '<text x="' + (heightA.x + 20).toFixed(1) + '" y="' + ((widthB.y + heightA.y) / 2).toFixed(1) + '" class="model-dimension">ножка 150 мм</text>' : '');
+            (legHeight ? line({x: heightA.x + 13, y: widthB.y}, {x: heightA.x + 13, y: heightA.y}, 'class="model-clearance-dimension"') +
+                line({x: heightA.x + 9, y: widthB.y}, {x: heightA.x + 17, y: widthB.y}, 'class="model-clearance-tick"') +
+                line({x: heightA.x + 9, y: heightA.y}, {x: heightA.x + 17, y: heightA.y}, 'class="model-clearance-tick"') +
+                '<text x="' + (heightA.x + 27).toFixed(1) + '" y="' + ((widthB.y + heightA.y) / 2 + 3).toFixed(1) + '" class="model-dimension">150 мм</text>' : '');
 
         const textureDefinition = decorPhoto
             ? '<pattern id="hplTexture" patternUnits="userSpaceOnUse" width="220" height="220"><rect width="220" height="220" fill="#d9dde3"/><image href="' + escapeHtml(decorPhoto) + '" width="220" height="220" preserveAspectRatio="xMidYMid slice"/></pattern>'
             : '';
         const svg = document.getElementById('shower-schematic-svg');
-        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f8fa"/><stop offset=".55" stop-color="#d9dde2"/><stop offset="1" stop-color="#b9c0c9"/></linearGradient><linearGradient id="wallFace" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#e7edf4"/></linearGradient><linearGradient id="sideWall"><stop stop-color="#edf2f7"/><stop offset="1" stop-color="#dbe4ee"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#d6e0eb" stroke-width="1"/></pattern></defs><style>.model-fitting{fill:#697788;stroke:#344256;stroke-width:1}.model-fitting__cut{fill:#eef2f7;stroke:none}.model-leg{stroke:#697788;stroke-width:5;stroke-linecap:round}.model-profile{stroke:#7a8797;stroke-width:6;stroke-linecap:round}.model-panel-holder{fill:#778697;stroke:#344256;stroke-width:2;stroke-linecap:round}.model-panel-holder__collar{fill:#778697;stroke:#344256;stroke-width:1.5}.model-wall-flange{fill:#a7b1bc;stroke:#344256;stroke-width:1.5}.model-wall-flange__hub{fill:#697788}.model-rail{stroke:#657486;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 3px 2px rgba(15,23,42,.25))}.model-rail--profile{stroke:#9ba8b7;stroke-width:10}.model-handle{fill:#606f80;stroke:#f8fafc;stroke-width:1}.model-dimension{fill:#52637a;font:600 10px sans-serif;text-anchor:middle}.model-dimension--vertical{writing-mode:vertical-rl}</style>' + roomSvg + panelsSvg + frontSvg + pipe + hardwareSvg + dimensions;
+        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f8fa"/><stop offset=".55" stop-color="#d9dde2"/><stop offset="1" stop-color="#b9c0c9"/></linearGradient><linearGradient id="wallFace" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#e7edf4"/></linearGradient><linearGradient id="sideWall"><stop stop-color="#edf2f7"/><stop offset="1" stop-color="#dbe4ee"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#d6e0eb" stroke-width="1"/></pattern></defs><style>.model-fitting{fill:#697788;stroke:#344256;stroke-width:1}.model-fitting__cut{fill:#eef2f7;stroke:none}.model-leg{stroke:#697788;stroke-width:5;stroke-linecap:round}.model-profile{stroke:#7a8797;stroke-width:6;stroke-linecap:round}.model-panel-holder{fill:#778697;stroke:#344256;stroke-width:1.2}.model-panel-holder__stem{fill:none;stroke:#657486;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}.model-panel-holder__plate{fill:#778697}.model-panel-holder__collar{fill:#778697;stroke:#344256;stroke-width:1.5}.model-panel-holder__collar-cut{fill:#657486;stroke:#d9e0e7;stroke-width:1}.model-wall-flange{fill:#a7b1bc;stroke:#344256;stroke-width:1.5}.model-wall-flange__hub{fill:#697788}.model-rail{stroke:#657486;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 3px 2px rgba(15,23,42,.25))}.model-rail--profile{stroke:#9ba8b7;stroke-width:10}.model-rail-highlight{stroke:rgba(255,255,255,.48);stroke-width:2;stroke-linecap:round;transform:translateY(-1px);pointer-events:none}.model-handle{fill:#606f80;stroke:#f8fafc;stroke-width:1}.model-dimension{fill:#52637a;font:600 10px sans-serif;text-anchor:middle}.model-dimension--vertical{writing-mode:vertical-rl}.model-clearance-dimension,.model-clearance-tick{stroke:#64748b;stroke-width:1}</style>' + roomSvg + panelsSvg + frontSvg + pipe + hardwareSvg + dimensions;
         document.getElementById('shower-scheme-label').textContent = current.layoutLabel;
         document.getElementById('shower-schematic-stats').innerHTML =
             '<span>Тип <b>' + escapeHtml(current.layoutLabel) + '</b></span>' +
