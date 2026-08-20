@@ -111,8 +111,7 @@
 
         if (config.floorMount === 'profile') rows.push(requirement('floor_profile', config.depth * config.partitionCount / 1000, 'Суммарная длина нижних кромок'));
         else if (config.floorMount === 'leg') {
-            const legsPerPanel = Math.max(1, Math.ceil(config.depth / 1000));
-            rows.push(requirement('floor_leg', legsPerPanel * config.partitionCount, `${legsPerPanel} на перегородку`));
+            rows.push(requirement('floor_leg', config.partitionCount, 'По одной ножке высотой 150 мм на перегородку'));
         } else rows.push(requirement('floor_angle', anglePointCount(config.depth) * config.partitionCount * sideMultiplier, sideMultiplier === 2 ? 'С двух сторон' : 'С одной стороны'));
 
         if (config.wallMount === 'profile') rows.push(requirement('wall_profile', config.height * config.partitionCount / 1000, 'Суммарная высота стеновых кромок'));

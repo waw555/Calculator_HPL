@@ -53,6 +53,10 @@ assert.doesNotMatch(page, />Верхняя труба</, 'Отдельного �
 assert.match(page, /id="shower_top_support"[\s\S]*Труба[\s\S]*Профиль алюминиевый/, 'Без крепления к потолку должен выбираться тип верхней связи');
 assert.match(integration, /partitionVariant/, 'Вариант фасада должен определяться типом перегородки');
 assert.match(integration, /class=\"model-fitting\"/, 'Фурнитура должна отображаться аккуратными векторными деталями без битых фотографий');
+assert.match(integration, /const legHeight = current\.floorMount === 'leg' \? 150 : 0/, 'Панель на ножке должна быть поднята над полом на 150 мм');
+assert.match(integration, /const wallHeight = panelTop \+ 200/, 'Стены модели должны быть немного выше перегородки');
+assert.match(integration, /current\.depth \* 0\.12/, 'На каждой панели должна отображаться одна ножка у открытого края');
+assert.doesNotMatch(integration, /current\.depth \* 0\.88/, 'Вторая ножка не должна отображаться на панели');
 assert.match(integration, /current\.roomWidth \+ current\.depth/, 'Масштаб модели должен учитывать реальные габариты помещения');
 assert.match(integration, /Math\.round\(current\.roomWidth\).*Math\.round\(current\.depth\).*Math\.round\(current\.height\)/s, 'Модель должна показывать введённые габариты');
 

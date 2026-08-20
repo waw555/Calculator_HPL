@@ -123,6 +123,9 @@
         const shownPartitions = Math.min(12, Math.max(1, Math.round(current.partitionCount)));
         const decorPhoto = selectedDecorPhoto();
         const panelFill = decorPhoto ? 'url(#hplTexture)' : 'url(#hplFace)';
+        const legHeight = current.floorMount === 'leg' ? 150 : 0;
+        const panelTop = legHeight + current.height;
+        const wallHeight = panelTop + 200;
 
         // Все три оси используют один масштаб. Изометрическое сокращение глубины
         // задаётся только проекцией, поэтому пропорции введённых размеров сохраняются.
@@ -130,7 +133,7 @@
         const available = {width: 390, height: 235};
         const scale = Math.min(
             available.width / Math.max(1, current.roomWidth + current.depth * projection.x),
-            available.height / Math.max(1, current.height + current.depth * Math.abs(projection.y))
+            available.height / Math.max(1, wallHeight + current.depth * Math.abs(projection.y))
         );
         const widthPx = current.roomWidth * scale;
         const depthX = current.depth * scale * projection.x;
@@ -147,13 +150,13 @@
         const polygon = function (items, attrs) { return '<polygon points="' + items.map(xy).join(' ') + '" ' + attrs + '/>'; };
 
         const floor = [point(0, 0, 0), point(current.roomWidth, 0, 0), point(current.roomWidth, current.depth, 0), point(0, current.depth, 0)];
-        const backWall = [point(0, current.depth, 0), point(current.roomWidth, current.depth, 0), point(current.roomWidth, current.depth, current.height), point(0, current.depth, current.height)];
+        const backWall = [point(0, current.depth, 0), point(current.roomWidth, current.depth, 0), point(current.roomWidth, current.depth, wallHeight), point(0, current.depth, wallHeight)];
         let roomSvg = polygon(floor, 'fill="url(#floorGrid)" stroke="#b7c4d4"') + polygon(backWall, 'fill="url(#wallFace)" stroke="#b7c4d4"');
         if (current.layoutType === 'built_in' || current.layoutType === 'corner') {
-            roomSvg += polygon([point(0, 0, 0), point(0, current.depth, 0), point(0, current.depth, current.height), point(0, 0, current.height)], 'fill="url(#sideWall)" stroke="#a9b8cb"');
+            roomSvg += polygon([point(0, 0, 0), point(0, current.depth, 0), point(0, current.depth, wallHeight), point(0, 0, wallHeight)], 'fill="url(#sideWall)" stroke="#a9b8cb"');
         }
         if (current.layoutType === 'built_in') {
-            roomSvg += polygon([point(current.roomWidth, 0, 0), point(current.roomWidth, current.depth, 0), point(current.roomWidth, current.depth, current.height), point(current.roomWidth, 0, current.height)], 'fill="url(#sideWall)" stroke="#a9b8cb"');
+            roomSvg += polygon([point(current.roomWidth, 0, 0), point(current.roomWidth, current.depth, 0), point(current.roomWidth, current.depth, wallHeight), point(current.roomWidth, 0, wallHeight)], 'fill="url(#sideWall)" stroke="#a9b8cb"');
         }
 
         const panelPositions = [];
@@ -166,19 +169,21 @@
         let panelsSvg = '';
         let hardwareSvg = '';
         panelPositions.forEach(function (x) {
-            const panel = [point(x, 0, 0), point(x, current.depth, 0), point(x, current.depth, current.height), point(x, 0, current.height)];
+            const panel = [point(x, 0, legHeight), point(x, current.depth, legHeight), point(x, current.depth, panelTop), point(x, 0, panelTop)];
             panelsSvg += '<g class="shower-model-shadow">' + polygon(panel, 'fill="' + panelFill + '" fill-opacity=".96" stroke="#315b8d" stroke-width="1.5"') + '</g>';
 
             if (current.floorMount === 'leg') {
-                [current.depth * 0.12, current.depth * 0.88].forEach(function (depth) {
-                    const foot = point(x, depth, 0);
-                    hardwareSvg += '<g class="model-fitting"><rect x="' + (foot.x - 3).toFixed(1) + '" y="' + (foot.y - 9).toFixed(1) + '" width="6" height="9" rx="2"/><ellipse cx="' + foot.x.toFixed(1) + '" cy="' + foot.y.toFixed(1) + '" rx="7" ry="3"/></g>';
-                });
+                const foot = point(x, current.depth * 0.12, 0);
+                const bracket = point(x, current.depth * 0.12, legHeight);
+                hardwareSvg += '<g class="model-fitting">' +
+                    '<line x1="' + foot.x.toFixed(1) + '" y1="' + foot.y.toFixed(1) + '" x2="' + bracket.x.toFixed(1) + '" y2="' + bracket.y.toFixed(1) + '" class="model-leg"/>' +
+                    '<rect x="' + (bracket.x - 4).toFixed(1) + '" y="' + (bracket.y - 5).toFixed(1) + '" width="8" height="10" rx="2"/>' +
+                    '<ellipse cx="' + foot.x.toFixed(1) + '" cy="' + foot.y.toFixed(1) + '" rx="7" ry="3"/></g>';
             } else {
                 hardwareSvg += line(panel[0], panel[1], 'class="model-profile"');
             }
             if (current.railRoute !== 'none') {
-                const clamp = point(x, 0, current.height);
+                const clamp = point(x, 0, panelTop);
                 hardwareSvg += '<g class="model-fitting"><circle cx="' + clamp.x.toFixed(1) + '" cy="' + clamp.y.toFixed(1) + '" r="6"/><circle class="model-fitting__cut" cx="' + clamp.x.toFixed(1) + '" cy="' + clamp.y.toFixed(1) + '" r="2.5"/></g>';
             }
         });
@@ -187,7 +192,7 @@
         if (current.variant === 'fascia') {
             const fasciaWidth = Math.min(current.roomWidth, current.fasciaWidth);
             const start = (current.roomWidth - fasciaWidth) / 2;
-            frontSvg = polygon([point(start, 0, 0), point(start + fasciaWidth, 0, 0), point(start + fasciaWidth, 0, current.fasciaHeight), point(start, 0, current.fasciaHeight)], 'fill="' + panelFill + '" stroke="#315b8d" stroke-width="1.5"');
+            frontSvg = polygon([point(start, 0, legHeight), point(start + fasciaWidth, 0, legHeight), point(start + fasciaWidth, 0, legHeight + current.fasciaHeight), point(start, 0, legHeight + current.fasciaHeight)], 'fill="' + panelFill + '" stroke="#315b8d" stroke-width="1.5"');
         } else if (current.variant === 'doors') {
             const count = Math.min(6, Math.max(1, Math.round(current.doorCount)));
             const totalWidth = Math.min(current.roomWidth * 0.94, current.doorWidth * count);
@@ -196,36 +201,38 @@
                 const left = start + totalWidth * door / count;
                 const right = start + totalWidth * (door + 1) / count;
                 const doorHeight = Math.min(current.height, current.doorHeight);
-                frontSvg += polygon([point(left, 0, 0), point(right, 0, 0), point(right, 0, doorHeight), point(left, 0, doorHeight)], 'fill="' + panelFill + '" stroke="#315b8d" stroke-width="1.4"');
-                const handle = point(right - (right - left) * 0.16, 0, doorHeight * 0.48);
+                frontSvg += polygon([point(left, 0, legHeight), point(right, 0, legHeight), point(right, 0, legHeight + doorHeight), point(left, 0, legHeight + doorHeight)], 'fill="' + panelFill + '" stroke="#315b8d" stroke-width="1.4"');
+                const handle = point(right - (right - left) * 0.16, 0, legHeight + doorHeight * 0.48);
                 hardwareSvg += '<circle class="model-handle" cx="' + handle.x.toFixed(1) + '" cy="' + handle.y.toFixed(1) + '" r="3.5"/>';
             }
         }
 
         const railStyle = current.topSupport === 'aluminium_profile' ? 'model-rail model-rail--profile' : 'model-rail';
         let pipe = '';
-        const frontLeft = point(0, 0, current.height);
-        const frontRight = point(current.roomWidth, 0, current.height);
+        const frontLeft = point(0, 0, panelTop);
+        const frontRight = point(current.roomWidth, 0, panelTop);
         if (current.railRoute === 'straight') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"');
-        if (current.railRoute === 'elbow') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, current.height), 'class="' + railStyle + '"');
-        if (current.railRoute === 'u_shape') pipe = line(point(0, current.depth, current.height), frontLeft, 'class="' + railStyle + '"') + line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, current.height), 'class="' + railStyle + '"');
+        if (current.railRoute === 'elbow') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, panelTop), 'class="' + railStyle + '"');
+        if (current.railRoute === 'u_shape') pipe = line(point(0, current.depth, panelTop), frontLeft, 'class="' + railStyle + '"') + line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, panelTop), 'class="' + railStyle + '"');
 
         const dimensionStyle = 'stroke="#64748b" stroke-width="1"';
         const widthA = point(0, 0, 0); const widthB = point(current.roomWidth, 0, 0);
         const depthB = point(current.roomWidth, current.depth, 0);
-        const heightB = point(current.roomWidth, 0, current.height);
+        const heightA = point(current.roomWidth, 0, legHeight);
+        const heightB = point(current.roomWidth, 0, panelTop);
         const dimensions = line({x: widthA.x, y: widthA.y + 18}, {x: widthB.x, y: widthB.y + 18}, dimensionStyle) +
             '<text x="' + ((widthA.x + widthB.x) / 2).toFixed(1) + '" y="' + (widthA.y + 34).toFixed(1) + '" class="model-dimension">' + Math.round(current.roomWidth) + ' мм</text>' +
             line({x: widthB.x + 12, y: widthB.y + 9}, {x: depthB.x + 12, y: depthB.y + 9}, dimensionStyle) +
             '<text x="' + ((widthB.x + depthB.x) / 2 + 18).toFixed(1) + '" y="' + ((widthB.y + depthB.y) / 2 + 10).toFixed(1) + '" class="model-dimension">' + Math.round(current.depth) + ' мм</text>' +
-            line({x: widthB.x + 13, y: widthB.y}, {x: heightB.x + 13, y: heightB.y}, dimensionStyle) +
-            '<text x="' + (widthB.x + 21).toFixed(1) + '" y="' + ((widthB.y + heightB.y) / 2).toFixed(1) + '" class="model-dimension model-dimension--vertical">' + Math.round(current.height) + ' мм</text>';
+            line({x: heightA.x + 13, y: heightA.y}, {x: heightB.x + 13, y: heightB.y}, dimensionStyle) +
+            '<text x="' + (heightB.x + 21).toFixed(1) + '" y="' + ((heightA.y + heightB.y) / 2).toFixed(1) + '" class="model-dimension model-dimension--vertical">' + Math.round(current.height) + ' мм</text>' +
+            (legHeight ? '<text x="' + (heightA.x + 20).toFixed(1) + '" y="' + ((widthB.y + heightA.y) / 2).toFixed(1) + '" class="model-dimension">ножка 150 мм</text>' : '');
 
         const textureDefinition = decorPhoto
             ? '<pattern id="hplTexture" patternUnits="userSpaceOnUse" width="220" height="220"><rect width="220" height="220" fill="#d9dde3"/><image href="' + escapeHtml(decorPhoto) + '" width="220" height="220" preserveAspectRatio="xMidYMid slice"/></pattern>'
             : '';
         const svg = document.getElementById('shower-schematic-svg');
-        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f8fa"/><stop offset=".55" stop-color="#d9dde2"/><stop offset="1" stop-color="#b9c0c9"/></linearGradient><linearGradient id="wallFace" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#e7edf4"/></linearGradient><linearGradient id="sideWall"><stop stop-color="#edf2f7"/><stop offset="1" stop-color="#dbe4ee"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#d6e0eb" stroke-width="1"/></pattern></defs><style>.model-fitting{fill:#697788;stroke:#344256;stroke-width:1}.model-fitting__cut{fill:#eef2f7;stroke:none}.model-profile{stroke:#7a8797;stroke-width:6;stroke-linecap:round}.model-rail{stroke:#657486;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 3px 2px rgba(15,23,42,.25))}.model-rail--profile{stroke:#9ba8b7;stroke-width:10}.model-handle{fill:#606f80;stroke:#f8fafc;stroke-width:1}.model-dimension{fill:#52637a;font:600 10px sans-serif;text-anchor:middle}.model-dimension--vertical{writing-mode:vertical-rl}</style>' + roomSvg + panelsSvg + frontSvg + pipe + hardwareSvg + dimensions;
+        svg.innerHTML = '<defs><linearGradient id="hplFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f8fa"/><stop offset=".55" stop-color="#d9dde2"/><stop offset="1" stop-color="#b9c0c9"/></linearGradient><linearGradient id="wallFace" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#e7edf4"/></linearGradient><linearGradient id="sideWall"><stop stop-color="#edf2f7"/><stop offset="1" stop-color="#dbe4ee"/></linearGradient>' + textureDefinition + '<pattern id="floorGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#d6e0eb" stroke-width="1"/></pattern></defs><style>.model-fitting{fill:#697788;stroke:#344256;stroke-width:1}.model-fitting__cut{fill:#eef2f7;stroke:none}.model-leg{stroke:#697788;stroke-width:5;stroke-linecap:round}.model-profile{stroke:#7a8797;stroke-width:6;stroke-linecap:round}.model-rail{stroke:#657486;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 3px 2px rgba(15,23,42,.25))}.model-rail--profile{stroke:#9ba8b7;stroke-width:10}.model-handle{fill:#606f80;stroke:#f8fafc;stroke-width:1}.model-dimension{fill:#52637a;font:600 10px sans-serif;text-anchor:middle}.model-dimension--vertical{writing-mode:vertical-rl}</style>' + roomSvg + panelsSvg + frontSvg + pipe + hardwareSvg + dimensions;
         document.getElementById('shower-scheme-label').textContent = current.layoutLabel;
         document.getElementById('shower-schematic-stats').innerHTML =
             '<span>Тип <b>' + escapeHtml(current.layoutLabel) + '</b></span>' +
