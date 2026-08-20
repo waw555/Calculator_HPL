@@ -13,6 +13,9 @@ assert.match(page, /id="custom_sheet_height"/, 'Должен быть ввод �
 assert.match(page, /id="shower_fascia_width"/, 'Должна быть ширина перемычки');
 assert.match(page, /id="shower_fascia_height"/, 'Должна быть высота перемычки');
 assert.match(page, /id="collection-field" class="hidden"/, 'Серия должна быть скрыта до выбора поставщика');
+assert.match(page, /class="format-help"[\s\S]*role="tooltip"/, 'Подсказка формата должна открываться по иконке вопроса');
+assert.match(page, /«Любой» подберёт формат с наименьшим отходом; «Свой» откроет ручной ввод\./, 'Подсказка должна объяснять автоматический и ручной форматы');
+assert.doesNotMatch(page, /Выберите поставщика для фильтрации\./, 'Лишняя подсказка поставщика должна быть удалена');
 assert.doesNotMatch(page, /3D-модель|трёхмерная модель/i, 'На странице не должно быть упоминаний 3D-модели');
 assert.doesNotMatch(page, /id="shower-model-(?:trigger|modal)/, 'На странице не должно быть элементов 3D-модели');
 assert.doesNotMatch(integration, /renderSchematic|openModelModal|shower-schematic-svg/, 'Интеграция не должна создавать 3D-модель');
@@ -28,6 +31,7 @@ assert.match(integration, /__auto__/, 'Должен поддерживаться
 assert.match(integration, /__custom__/, 'Должен поддерживаться собственный формат');
 assert.match(integration, /chooseBestPanelFormat/, 'Автоматический режим должен сравнивать существующие форматы');
 assert.match(integration, /renderCollections/, 'Серии должны зависеть от поставщика');
+assert.match(integration, /supplier_id'[\s\S]*addEventListener\('change'[\s\S]*renderCollections\(\)/, 'После выбора производителя должна появляться форма серии');
 
 assert.match(page, /id="shower_layout_type"/, 'Должен быть выбор прямой, угловой и П-образной схемы');
 assert.match(page, /value="built_in">Прямая</, 'Должна быть прямая схема');
