@@ -184,8 +184,11 @@
                 hardwareSvg += line(panel[0], panel[1], 'class="model-profile"');
             }
             if (current.railRoute !== 'none') {
-                const panelClamp = point(x, 0, panelTop);
-                const pipeClamp = point(x, 0, pipeHeight);
+                // Продольная труба проходит над пристенной кромкой панелей, как у
+                // реальных кабин: панели выступают от стены, а не висят под
+                // трубой, вынесенной к фасаду.
+                const panelClamp = point(x, current.depth, panelTop);
+                const pipeClamp = point(x, current.depth, pipeHeight);
                 hardwareSvg += line(panelClamp, pipeClamp, 'class="model-pipe-holder"');
                 const clamp = pipeClamp;
                 hardwareSvg += '<g class="model-fitting"><circle cx="' + clamp.x.toFixed(1) + '" cy="' + clamp.y.toFixed(1) + '" r="6"/><circle class="model-fitting__cut" cx="' + clamp.x.toFixed(1) + '" cy="' + clamp.y.toFixed(1) + '" r="2.5"/></g>';
@@ -213,11 +216,11 @@
 
         const railStyle = current.topSupport === 'aluminium_profile' ? 'model-rail model-rail--profile' : 'model-rail';
         let pipe = '';
-        const frontLeft = point(0, 0, pipeHeight);
-        const frontRight = point(current.roomWidth, 0, pipeHeight);
-        if (current.railRoute === 'straight') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"');
-        if (current.railRoute === 'elbow') pipe = line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, pipeHeight), 'class="' + railStyle + '"');
-        if (current.railRoute === 'u_shape') pipe = line(point(0, current.depth, pipeHeight), frontLeft, 'class="' + railStyle + '"') + line(frontLeft, frontRight, 'class="' + railStyle + '"') + line(frontRight, point(current.roomWidth, current.depth, pipeHeight), 'class="' + railStyle + '"');
+        const backLeft = point(0, current.depth, pipeHeight);
+        const backRight = point(current.roomWidth, current.depth, pipeHeight);
+        if (current.railRoute === 'straight') pipe = line(backLeft, backRight, 'class="' + railStyle + '"');
+        if (current.railRoute === 'elbow') pipe = line(backLeft, backRight, 'class="' + railStyle + '"') + line(backRight, point(current.roomWidth, 0, pipeHeight), 'class="' + railStyle + '"');
+        if (current.railRoute === 'u_shape') pipe = line(point(0, 0, pipeHeight), backLeft, 'class="' + railStyle + '"') + line(backLeft, backRight, 'class="' + railStyle + '"') + line(backRight, point(current.roomWidth, 0, pipeHeight), 'class="' + railStyle + '"');
 
         const dimensionStyle = 'stroke="#64748b" stroke-width="1"';
         const widthA = point(0, 0, 0); const widthB = point(current.roomWidth, 0, 0);
