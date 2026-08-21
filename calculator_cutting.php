@@ -1027,6 +1027,26 @@ document.getElementById('margin').addEventListener('change', event => {
 window.addEventListener('beforeunload', saveDraft);
 restoreDraft();
 
+/* Импорт деталей и листов из расчёта сантехнических перегородок. */
+function importSepticCalculation() {
+    if (!new URLSearchParams(window.location.search).has('import')) return;
+    let imported;
+    try { imported = JSON.parse(localStorage.getItem('calculator-cutting-import') || 'null'); } catch (_) { imported = null; }
+    if (!imported || imported.source !== 'calculator_septic' || !Array.isArray(imported.parts)) return;
+    parts = imported.parts.map((part, index) => ({...part, id:index + 1}));
+    nextPartId = parts.length + 1;
+    sourceMaterials = (imported.sourceMaterials || []).map((material,index)=>({...material,materialId:index+1}));
+    nextMaterialId = sourceMaterials.length + 1;
+    if (imported.settings) {
+        ['kerf','margin','method'].forEach(key=>{ const input=document.getElementById(key); if(input && imported.settings[key] != null) input.value=imported.settings[key]; });
+    }
+    renderParts();
+    renderSourceMaterials();
+    localStorage.removeItem('calculator-cutting-import');
+    if (parts.length && sourceMaterials.length) runCutting();
+}
+importSepticCalculation();
+
 /* ═══════════ ЭКСПОРТ ═══════════ */
 document.getElementById('export-excel-btn').addEventListener('click', () => {
     if (!lastResult) { alert('Сначала выполните раскрой.'); return; }

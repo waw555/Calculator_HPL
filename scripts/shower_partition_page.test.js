@@ -24,6 +24,14 @@ assert.doesNotMatch(integration, /renderSchematic|openModelModal|shower-schemati
 assert.match(page, /scripts\/cutting_optimizer\.js/, 'Оптимизатор раскроя должен загружаться');
 assert.match(page, /scripts\/shower_partition_calculator\.js/, 'Расчётный модуль должен загружаться');
 assert.match(page, /scripts\/shower_partition_page\.js/, 'Интеграция страницы должна загружаться');
+assert.match(page, /id="tab-btn-calculation"[\s\S]*Расчёт/, 'Должна быть отдельная вкладка сводного расчёта');
+assert.match(page, /id="add-calculation-btn"[^>]*>Добавить в расчёт</, 'В результате должна быть кнопка добавления перегородки в расчёт');
+assert.match(page, /id="create-offer-btn"[^>]*>Создать коммерческое предложение</, 'Кнопка создания КП должна находиться в сводном расчёте');
+assert.strictEqual((page.match(/Создать коммерческое предложение/g) || []).length, 1, 'Кнопка создания КП должна быть только одна');
+assert.match(page, /id="calculation-list"/, 'Во вкладке расчёта должен быть список перегородок');
+assert.match(page, /id="cutting-map-btn"[^>]*>Карта раскроя</, 'Во вкладке расчёта должна быть кнопка карты раскроя');
+assert.match(page, /calculator-cutting-import/, 'Детали и листы должны передаваться калькулятору раскроя');
+assert.match(page, /<details class="cutting-map">/, 'Карты раскроя должны отображаться свёрнутыми');
 assert.match(page, /FROM price_list pl/, 'Каталог фурнитуры должен загружаться из базы');
 assert.match(page, /fetch\('calculator_septic\.php'/, 'Сохранение должно отправляться в текущий обработчик');
 assert.match(integration, /calculateShower/, 'Должен быть отдельный расчёт душевой перегородки');
