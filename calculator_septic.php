@@ -196,10 +196,11 @@ tbody tr:hover td { background:#fbfcfe; }
 .calc-title { margin-bottom:18px; }
 .pill { flex:none; padding:7px 11px; border:1px solid #fecdd3; background:#fff6f8; color:#be123c; font-size:11px; }
 .data-card { overflow:auto; border:1px solid var(--line); border-radius:11px; box-shadow:none; }
-.data-card h3 { padding:11px 13px; background:var(--dark); font-size:13px; text-align:left; }
+.data-card h3 { padding:11px 13px; background:var(--dark); color:#fff; font-size:13px; text-align:left; }
 .data-card h3:before { content:'✦'; margin-right:8px; color:#ff4f78; }
 .data-card table { min-width:520px; }
 .data-card td,.data-card th { padding:9px 10px; border:0; border-bottom:1px solid #e7edf4; }
+.value-with-unit{display:flex;align-items:center;justify-content:flex-start;gap:6px;white-space:nowrap}.value-with-unit input{width:76px;min-width:0}.cost-input{width:104px;min-width:86px;text-align:right;background:#fffbe6;border-color:#e8c95b;font-variant-numeric:tabular-nums}.cost-input:focus{background:#fff;border-color:#e9164d;box-shadow:0 0 0 2px rgba(233,22,77,.12)}
 .yellow-cell { background:#fff6f8; color:#9f1239; }
 .cost-stack { overflow:hidden; border:0; border-radius:11px; background:var(--dark); color:#fff; }
 .cost-line { gap:18px; padding:12px 14px; border-bottom:1px solid #263148; font-size:12px; }
@@ -551,14 +552,18 @@ function renderCalculation(calc) {
     document.getElementById('hardware-body').innerHTML = calc.hardware.length ? calc.hardware.map((item, index) => {
         const options = (item.options || []).map(option => `<option value="${escapeHtml(option.id)}" ${String(option.id) === String(item.id) ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
         const selector = options ? `<select data-hardware-item="${index}" aria-label="Выбрать фурнитуру для ${escapeHtml(item.roleLabel || item.name)}">${item.id ? '' : '<option value="">— Выберите фурнитуру —</option>'}${options}</select>` : escapeHtml(item.name);
-        return `<tr><td>${selector}<div class="hint">${escapeHtml(item.category)}</div></td><td><input data-hardware-index="${index}" type="number" step="0.001" value="${item.quantity}"> ${escapeHtml(item.unit)}</td><td>${money(item.price, item.currency)}</td><td>${money(item.sum, item.currency)}</td></tr>`;
+        return `<tr><td>${selector}<div class="hint">${escapeHtml(item.category)}</div></td><td><span class="value-with-unit"><input data-hardware-index="${index}" type="number" min="0" step="0.001" value="${item.quantity}"><span>${escapeHtml(item.unit)}</span></span></td><td><input class="cost-input" data-hardware-price="${index}" aria-label="Цена за единицу" type="number" min="0" step="0.01" value="${Number(item.price || 0).toFixed(2)}"></td><td><input class="cost-input" data-hardware-sum="${index}" aria-label="Сумма" type="number" min="0" step="0.01" value="${Number(item.sum || 0).toFixed(2)}"></td></tr>`;
     }).join('') : '<tr><td colspan="4">Выбран вариант «Без фурнитуры» или комплект пуст.</td></tr>';
     document.querySelectorAll('[data-hardware-item]').forEach(select => select.addEventListener('change', () => updateHardwareItem(Number(select.dataset.hardwareItem), select.value)));
     document.querySelectorAll('[data-hardware-index]').forEach(input => input.addEventListener('change', () => updateHardwareQty(Number(input.dataset.hardwareIndex), input.value)));
+    document.querySelectorAll('[data-hardware-price]').forEach(input => input.addEventListener('change', () => updateHardwarePrice(Number(input.dataset.hardwarePrice), input.value)));
+    document.querySelectorAll('[data-hardware-sum]').forEach(input => input.addEventListener('change', () => updateHardwareSum(Number(input.dataset.hardwareSum), input.value)));
     document.getElementById('products-body').innerHTML = calc.products.map(item => `<tr><td>${escapeHtml(item.name)}<br><span class="hint">${escapeHtml(panelTitle)}</span></td><td class="text-center">${item.quantity}</td><td class="yellow-cell">${escapeHtml(item.size)}</td><td class="text-center">${formatter.format(item.area || calc.totals.areaM2)} м²</td><td class="text-right">${money(item.sum, item.currency)}</td></tr>`).join('');
     document.getElementById('products-summary').textContent = `Материал: ${formatter.format(calc.totals.sheets)} лист(ов), полезная площадь ${formatter.format(calc.totals.areaM2)} м². Ориентировочный отход: ${formatter.format(calc.totals.wasteArea)} м².`;
-    document.getElementById('services-body').innerHTML = calc.services.length ? calc.services.map((item, index) => `<tr><td>${escapeHtml(item.name)}${item.description ? `<div class="hint">${escapeHtml(item.description)}</div>` : ''}${item.isAdditional ? `<button type="button" class="danger" data-service-remove="${index}" style="margin-top:5px;padding:4px 8px">Удалить</button>` : ''}</td><td>${item.isAdditional ? `<input data-service-volume="${index}" type="number" min="0" step="0.01" value="${item.volume}" style="max-width:110px">` : formatter.format(item.volume)} ${escapeHtml(item.unit)}</td><td>${money(item.price, item.currency)}</td><td>${money(item.sum, item.currency)}</td></tr>`).join('') : '<tr><td colspan="4">Для этого типа перегородки базовые услуги не выбраны.</td></tr>';
+    document.getElementById('services-body').innerHTML = calc.services.length ? calc.services.map((item, index) => `<tr><td>${escapeHtml(item.name)}${item.description ? `<div class="hint">${escapeHtml(item.description)}</div>` : ''}${item.isAdditional ? `<button type="button" class="danger" data-service-remove="${index}" style="margin-top:5px;padding:4px 8px">Удалить</button>` : ''}</td><td><span class="value-with-unit"><input data-service-volume="${index}" type="number" min="0" step="0.01" value="${item.volume}"><span>${escapeHtml(item.unit)}</span></span></td><td><input class="cost-input" data-service-price="${index}" aria-label="Цена за единицу" type="number" min="0" step="0.01" value="${Number(item.price || 0).toFixed(2)}"></td><td><input class="cost-input" data-service-sum="${index}" aria-label="Сумма" type="number" min="0" step="0.01" value="${Number(item.sum || 0).toFixed(2)}"></td></tr>`).join('') : '<tr><td colspan="4">Для этого типа перегородки базовые услуги не выбраны.</td></tr>';
     document.querySelectorAll('[data-service-volume]').forEach(input => input.addEventListener('change', () => updateServiceVolume(Number(input.dataset.serviceVolume), input.value)));
+    document.querySelectorAll('[data-service-price]').forEach(input => input.addEventListener('change', () => updateServicePrice(Number(input.dataset.servicePrice), input.value)));
+    document.querySelectorAll('[data-service-sum]').forEach(input => input.addEventListener('change', () => updateServiceSum(Number(input.dataset.serviceSum), input.value)));
     document.querySelectorAll('[data-service-remove]').forEach(button => button.addEventListener('click', () => removeService(Number(button.dataset.serviceRemove))));
     document.getElementById('totals-body').innerHTML = `<tr><td>Стоимость отхода/остатка материала</td><td class="text-right">${money(calc.totals.wasteCost)}</td></tr><tr><td>Всего за изделие</td><td class="text-right"><strong>${money(calc.totals.total)}</strong></td></tr>`;
     document.getElementById('hardware-total-card').textContent = money(calc.totals.hardwareTotal);
@@ -579,6 +584,20 @@ function updateHardwareQty(index, value) {
     currentCalculation.total_amount = currentCalculation.totals.total;
     renderCalculation(currentCalculation);
 }
+function updateHardwarePrice(index, value) {
+    const item = currentCalculation?.hardware[index];
+    if (!item) return;
+    item.price = Math.max(0, parseFloat(value || '0') || 0);
+    item.sum = item.quantity * item.price;
+    updateHardwareQty(index, item.quantity);
+}
+function updateHardwareSum(index, value) {
+    const item = currentCalculation?.hardware[index];
+    if (!item) return;
+    item.sum = Math.max(0, parseFloat(value || '0') || 0);
+    item.price = item.quantity > 0 ? item.sum / item.quantity : 0;
+    updateHardwareQty(index, item.quantity);
+}
 function updateHardwareItem(index, id) {
     if (!currentCalculation) return;
     const item = currentCalculation.hardware[index];
@@ -598,10 +617,24 @@ function recalculateServices() {
     renderCalculation(currentCalculation);
 }
 function updateServiceVolume(index, value) {
-    if (!currentCalculation?.services[index]?.isAdditional) return;
+    if (!currentCalculation?.services[index]) return;
     const item = currentCalculation.services[index];
     item.volume = Math.max(0, parseFloat(value || '0') || 0);
     item.sum = item.volume * item.price;
+    recalculateServices();
+}
+function updateServicePrice(index, value) {
+    const item = currentCalculation?.services[index];
+    if (!item) return;
+    item.price = Math.max(0, parseFloat(value || '0') || 0);
+    item.sum = item.volume * item.price;
+    recalculateServices();
+}
+function updateServiceSum(index, value) {
+    const item = currentCalculation?.services[index];
+    if (!item) return;
+    item.sum = Math.max(0, parseFloat(value || '0') || 0);
+    item.price = item.volume > 0 ? item.sum / item.volume : 0;
     recalculateServices();
 }
 function removeService(index) {
