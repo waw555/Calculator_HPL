@@ -48,7 +48,7 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS partition_formulas (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 $activeTab = $_GET['tab'] ?? 'types';
-$validTabs = ['types', 'params', 'constructor', 'formulas'];
+$validTabs = ['types', 'services', 'params', 'constructor', 'formulas'];
 if (!in_array($activeTab, $validTabs, true)) $activeTab = 'types';
 
 $errors = [];
@@ -130,10 +130,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $typeId = (int)$pdo->lastInsertId();
             }
             save_partition_type_parameters($pdo, $typeId);
-            save_partition_type_services($pdo, $typeId);
             header('Location: admin_partitions.php?tab=types'); exit;
         }
         $activeTab = 'types';
+    }
+
+    // ── БАЗОВЫЕ УСЛУГИ ──
+    if ($action === 'save_type_services') {
+        $typeId = (int)($_POST['partition_type_id'] ?? 0);
+        if ($typeId <= 0) {
+            $errors[] = 'Выберите тип перегородки.';
+        } else {
+            $stmt = $pdo->prepare('SELECT COUNT(*) FROM partition_types WHERE id = :id');
+            $stmt->execute(['id' => $typeId]);
+            if (!(int)$stmt->fetchColumn()) $errors[] = 'Выбранный тип перегородки не найден.';
+        }
+        if (!$errors) {
+            save_partition_type_services($pdo, $typeId);
+            header('Location: admin_partitions.php?tab=services&type_id=' . $typeId . '&saved=1'); exit;
+        }
+        $activeTab = 'services';
     }
 
     // ── ПАРАМЕТРЫ ──
@@ -333,13 +349,17 @@ $formulas = $pdo->query('SELECT f.*, pt.name AS type_name FROM partition_formula
 $services = $pdo->query('SELECT s.id, s.nomenclature, s.name, s.unit, s.price, s.currency, s.h_size, s.d_size, s.step_mm, pt.thickness FROM services s LEFT JOIN panel_thicknesses pt ON pt.id = s.thickness_id WHERE s.is_active = 1 ORDER BY s.name ASC, pt.thickness ASC, s.h_size ASC, s.d_size ASC, s.step_mm ASC, s.id ASC')->fetchAll();
 
 $assignedParameters = [];
+$serviceTypeId = (int)($_GET['type_id'] ?? $_POST['partition_type_id'] ?? 0);
+if ($serviceTypeId <= 0 && $allTypes) $serviceTypeId = (int)$allTypes[0]['id'];
 $assignedServiceIds = [];
 if ($editingType) {
     $stmt = $pdo->prepare('SELECT ptp.*, cp.name, cp.default_value, mu.short_name AS unit_short_name FROM partition_type_parameters ptp JOIN calculation_parameters cp ON cp.id = ptp.parameter_id LEFT JOIN measurement_units mu ON mu.id = cp.unit_id WHERE ptp.partition_type_id = :id ORDER BY ptp.sort_order ASC, cp.name ASC');
     $stmt->execute(['id' => $editingType['id']]);
     $assignedParameters = $stmt->fetchAll();
+}
+if ($serviceTypeId > 0) {
     $stmt = $pdo->prepare('SELECT service_id FROM partition_type_services WHERE partition_type_id = :id ORDER BY sort_order, id');
-    $stmt->execute(['id' => $editingType['id']]);
+    $stmt->execute(['id' => $serviceTypeId]);
     $assignedServiceIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
 }
 
@@ -391,6 +411,7 @@ table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;ove
 th,td{padding:12px;text-align:left;vertical-align:middle}
 th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
 .errors{background:#fee2e2;color:#991b1b;padding:12px;border-radius:12px;margin-bottom:16px}
+.success-message{margin:14px 0;padding:12px;border-radius:12px;background:#dcfce7;color:#166534;font-weight:700}
 .actions{display:flex;gap:6px;align-items:center}
 .btn-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:12px;border:none;padding:0;margin:0;cursor:pointer;text-decoration:none;box-sizing:border-box;-webkit-appearance:none;transition:all .15s}
 .btn-edit{background:#eff6ff;color:#2563eb}.btn-edit:hover{background:#2563eb;color:#fff}
@@ -423,6 +444,9 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
 .part-tag::before{content:"→ ";opacity:.5}
 .part-tag:first-child::before{content:""}
 .service-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:8px;max-height:280px;overflow:auto;padding:12px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc}.service-option{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:8px;margin:0;padding:9px;border-radius:8px;background:#fff}.service-option input{margin-top:3px}.service-option__content{min-width:0}.service-option__name{display:block}.service-option__details{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:5px;color:#64748b;font-size:12px;font-weight:400}.service-option__details span{white-space:nowrap}.service-option__code{color:#475569;font-weight:700}
+.service-type-picker{max-width:520px;margin:20px 0}
+#tab-services .service-options{max-height:520px}
+@media(max-width:600px){.service-options{grid-template-columns:1fr}}
 </style>
 <?php echo app_header_styles(); ?>
 </head>
@@ -431,6 +455,7 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
 <main class="container">
     <div class="quick-links">
         <a class="quick-link <?php echo $activeTab==='types'?'active':'';?>" href="admin_partitions.php?tab=types">🧱 Типы перегородок</a>
+        <a class="quick-link <?php echo $activeTab==='services'?'active':'';?>" href="admin_partitions.php?tab=services">🧰 Базовые услуги</a>
         <a class="quick-link <?php echo $activeTab==='params'?'active':'';?>" href="admin_partitions.php?tab=params">⚙️ Параметры</a>
         <a class="quick-link <?php echo $activeTab==='constructor'?'active':'';?>" href="admin_partitions.php?tab=constructor">🔧 Конструктор</a>
         <a class="quick-link <?php echo $activeTab==='formulas'?'active':'';?>" href="admin_partitions.php?tab=formulas">📐 Формулы</a>
@@ -468,32 +493,6 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
                 <?php endif; ?>
             </div>
             <p><button class="button secondary" type="button" id="add-parameter">+ Добавить параметр</button></p>
-            <div class="section-title">Базовые услуги калькулятора</div>
-            <p class="hint">Выбранные услуги автоматически попадут в расчёт для этого типа перегородки. Дополнительные услуги можно добавить уже после расчёта в разделе «Услуги».</p>
-            <div class="service-options">
-                <?php
-                $serviceHLabels = ['no'=>'Нет','le_2_5'=>'≤ 2.5','2_5_to_5'=>'2.5–5','le_3'=>'≤ 3','3_to_6'=>'3–6'];
-                $serviceDLabels = ['no'=>'Нет','le_4'=>'≤ 4','4_to_12'=>'4–12','gt_12'=>'> 12'];
-                $serviceStepLabels = ['no'=>'Нет','16'=>'16','32'=>'32','64'=>'64'];
-                ?>
-                <?php foreach ($services as $service): ?>
-                    <label class="service-option">
-                        <input type="checkbox" name="service_id[]" value="<?php echo e((string)$service['id']); ?>" <?php echo in_array((int)$service['id'], $assignedServiceIds, true) ? 'checked' : ''; ?>>
-                        <span class="service-option__content">
-                            <span class="service-option__name"><?php echo e($service['name']); ?></span>
-                            <span class="service-option__details">
-                                <span class="service-option__code">Код: <?php echo e((string)($service['nomenclature'] ?: '—')); ?></span>
-                                <span>Толщ.: <?php echo !empty($service['thickness']) ? e(rtrim(rtrim((string)$service['thickness'], '0'), '.') . ' мм') : '—'; ?></span>
-                                <span>h: <?php echo e($serviceHLabels[$service['h_size'] ?? 'no'] ?? 'Нет'); ?></span>
-                                <span>d: <?php echo e($serviceDLabels[$service['d_size'] ?? 'no'] ?? 'Нет'); ?></span>
-                                <span>Шаг: <?php echo e($serviceStepLabels[$service['step_mm'] ?? 'no'] ?? 'Нет'); ?></span>
-                                <span>Цена: <?php echo e(number_format((float)$service['price'], 2, ',', ' ')); ?> <?php echo e(app_currency_symbol((string)$service['currency'])); ?> / <?php echo e($service['unit']); ?></span>
-                            </span>
-                        </span>
-                    </label>
-                <?php endforeach; ?>
-                <?php if (!$services): ?><div class="hint">Нет активных услуг. Сначала добавьте их в разделе «Услуги».</div><?php endif; ?>
-            </div>
             <div class="form-actions"><button type="submit">Сохранить</button><?php if ($editingType): ?><a class="button secondary" href="admin_partitions.php?tab=types">Отмена</a><?php endif; ?></div>
         </form>
     </section>
@@ -518,6 +517,37 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
             <?php if (!$types): ?><tr><td colspan="6">Типы перегородок пока не добавлены.</td></tr><?php endif; ?>
             </tbody>
         </table>
+    </section>
+</div>
+
+<!-- ════════════ ВКЛАДКА: БАЗОВЫЕ УСЛУГИ ════════════ -->
+<div class="tab-pane <?php echo $activeTab==='services'?'active':''; ?>" id="tab-services">
+    <section class="panel">
+        <h2>Базовые услуги</h2>
+        <p class="hint">Выбранные услуги автоматически попадут в расчёт для указанного типа перегородки. Дополнительные услуги можно добавить после расчёта.</p>
+        <?php if (isset($_GET['saved'])): ?><div class="success-message">Базовые услуги сохранены.</div><?php endif; ?>
+        <?php if ($allTypes): ?>
+            <form method="get" class="service-type-picker">
+                <input type="hidden" name="tab" value="services">
+                <div><label for="service_type_id">Тип перегородки</label><select id="service_type_id" name="type_id" onchange="this.form.submit()"><?php foreach ($allTypes as $type): ?><option value="<?php echo e((string)$type['id']); ?>" <?php echo (int)$type['id'] === $serviceTypeId ? 'selected' : ''; ?>><?php echo e($type['name']); ?></option><?php endforeach; ?></select></div>
+            </form>
+            <form method="post">
+                <input type="hidden" name="action" value="save_type_services">
+                <input type="hidden" name="partition_type_id" value="<?php echo e((string)$serviceTypeId); ?>">
+                <div class="service-options">
+                    <?php
+                    $serviceHLabels = ['no'=>'Нет','le_2_5'=>'≤ 2.5','2_5_to_5'=>'2.5–5','le_3'=>'≤ 3','3_to_6'=>'3–6'];
+                    $serviceDLabels = ['no'=>'Нет','le_4'=>'≤ 4','4_to_12'=>'4–12','gt_12'=>'> 12'];
+                    $serviceStepLabels = ['no'=>'Нет','16'=>'16','32'=>'32','64'=>'64'];
+                    ?>
+                    <?php foreach ($services as $service): ?>
+                        <label class="service-option"><input type="checkbox" name="service_id[]" value="<?php echo e((string)$service['id']); ?>" <?php echo in_array((int)$service['id'], $assignedServiceIds, true) ? 'checked' : ''; ?>><span class="service-option__content"><span class="service-option__name"><?php echo e($service['name']); ?></span><span class="service-option__details"><span class="service-option__code">Код: <?php echo e((string)($service['nomenclature'] ?: '—')); ?></span><span>Толщ.: <?php echo !empty($service['thickness']) ? e(rtrim(rtrim((string)$service['thickness'], '0'), '.') . ' мм') : '—'; ?></span><span>h: <?php echo e($serviceHLabels[$service['h_size'] ?? 'no'] ?? 'Нет'); ?></span><span>d: <?php echo e($serviceDLabels[$service['d_size'] ?? 'no'] ?? 'Нет'); ?></span><span>Шаг: <?php echo e($serviceStepLabels[$service['step_mm'] ?? 'no'] ?? 'Нет'); ?></span><span>Цена: <?php echo e(number_format((float)$service['price'], 2, ',', ' ')); ?> <?php echo e(app_currency_symbol((string)$service['currency'])); ?> / <?php echo e($service['unit']); ?></span></span></span></label>
+                    <?php endforeach; ?>
+                    <?php if (!$services): ?><div class="hint">Нет активных услуг. Сначала добавьте их в разделе «Услуги».</div><?php endif; ?>
+                </div>
+                <div class="form-actions"><button type="submit">Сохранить</button></div>
+            </form>
+        <?php else: ?><p>Сначала добавьте тип перегородки.</p><?php endif; ?>
     </section>
 </div>
 
