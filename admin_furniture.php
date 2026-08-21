@@ -94,7 +94,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($unit === '') $errors[] = 'Выберите единицу измерения.';
         if ($priceRaw === '' || !is_numeric($priceRaw) || (float)$priceRaw < 0) $errors[] = 'Цена за ед. изм. должна быть неотрицательным числом.';
         if ($currency === '') $errors[] = 'Выберите валюту.';
-        $photoPath = upload_image('photo', 'furniture', $errors, $currentPhotoPath);
+        $supplierName = '';
+        if ($supplierId > 0) {
+            $stmt = $pdo->prepare('SELECT company_name FROM suppliers WHERE id = :id');
+            $stmt->execute(['id' => $supplierId]);
+            $supplierName = trim((string)($stmt->fetchColumn() ?: ''));
+        }
+        $collectionName = '';
+        if ($collectionId > 0) {
+            $stmt = $pdo->prepare('SELECT name FROM furniture_collections WHERE id = :id');
+            $stmt->execute(['id' => $collectionId]);
+            $collectionName = trim((string)($stmt->fetchColumn() ?: ''));
+        }
+        $photoName = implode('_', [$article, $supplierName, $materialName, $collectionName]);
+        $photoPath = upload_image('photo', 'furniture', $errors, $currentPhotoPath, $photoName);
         if (!$errors) {
             $params = [
                 'supplier_id' => $supplierId > 0 ? $supplierId : null,
