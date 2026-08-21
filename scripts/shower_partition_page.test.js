@@ -7,6 +7,8 @@ const page = fs.readFileSync(path.join(root, 'calculator_septic.php'), 'utf8');
 const integration = fs.readFileSync(path.join(__dirname, 'shower_partition_page.js'), 'utf8');
 
 assert.match(page, /id="shower-config"/, 'Форма душевой перегородки должна присутствовать');
+assert.match(page, /<label for="object_name">Объект<\/label><input id="object_name"[^>]*>/, 'Поле объекта должно быть необязательным');
+assert.doesNotMatch(page.match(/<input id="object_name"[^>]*>/)?.[0] || '', /\brequired\b/, 'Поле объекта не должно блокировать расчёт');
 assert.match(page, /id="panel_format_id"/, 'Должен быть выбор формата листа');
 assert.match(page, /id="custom_sheet_width"/, 'Должен быть ввод ширины своего листа');
 assert.match(page, /id="custom_sheet_height"/, 'Должен быть ввод длины своего листа');
@@ -50,6 +52,9 @@ assert.doesNotMatch(page, /id="shower_full_height"/, 'Параметра пан�
 assert.doesNotMatch(page, />Верхняя труба</, 'Отдельного раздела верхней трубы быть не должно');
 assert.match(page, /id="shower_top_support"[\s\S]*Труба[\s\S]*Профиль алюминиевый/, 'Без крепления к потолку должен выбираться тип верхней связи');
 assert.match(integration, /partitionVariant/, 'Вариант фасада должен определяться типом перегородки');
+assert.doesNotMatch(integration, /object_name'\)\.value\.trim\(\)/, 'Расчёт душевой перегородки не должен требовать объект');
+assert.match(integration, /shower_ceiling_mount'\)\.addEventListener\('change', refresh\)/, 'Поле верхней связи должно обновляться при выборе крепления к потолку');
+assert.match(integration, /shower-top-support-fields'\)\.classList\.toggle\('field-hidden', current\.ceilingMount !== 'none'\)/, 'Верхняя связь должна скрываться при креплении к потолку');
 
 new Function(integration);
 console.log('shower_partition_page.test.js: OK');

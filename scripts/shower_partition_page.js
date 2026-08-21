@@ -201,11 +201,6 @@
     }
 
     function calculateShower() {
-        if (!document.getElementById('object_name').value.trim()) {
-            document.getElementById('object_name').focus();
-            document.getElementById('object_name').reportValidity();
-            return;
-        }
         const inputs = collectInputs();
         inputs.decor = document.getElementById('decor_input').selectedOptions[0]?.textContent?.trim() || '';
         inputs.panel_format_id = formatSelect.value;
@@ -279,6 +274,7 @@
         refresh();
     });
     document.getElementById('collection_id').addEventListener('change', refresh);
+    document.getElementById('shower_ceiling_mount').addEventListener('change', refresh);
     renderCollections();
     refresh();
 })();
