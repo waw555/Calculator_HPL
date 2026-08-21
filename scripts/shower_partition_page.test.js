@@ -34,6 +34,8 @@ assert.doesNotMatch(page, /shower-service-select|shower-service-add/, 'В фор
 assert.doesNotMatch(integration, /extraServices|data-extra-service-volume/, 'Интеграция не должна добавлять дополнительные услуги до расчёта');
 assert.match(page, /id="result-service-select"/, 'После расчёта должен быть выбор дополнительной услуги');
 assert.match(page, /id="result-service-add"/, 'После расчёта должна быть кнопка добавления услуги');
+assert.match(page, /LEFT JOIN panel_thicknesses pt ON pt\.id = s\.thickness_id/, 'Для списка дополнительных услуг должна загружаться толщина');
+assert.match(page, /Код:[\s\S]*Толщ\.[\s\S]*h:[\s\S]*d:[\s\S]*Шаг:/, 'Дополнительные услуги должны различаться по характеристикам');
 assert.match(integration, /estimatePanelLayout/, 'Расчёт должен использовать раскладку по листам');
 assert.match(integration, /buildRequirements/, 'Расчёт должен формировать спецификацию фурнитуры');
 assert.match(integration, /Группа: '[\s\S]*requirement\.groupLabel/, 'В строке роли должна отображаться выбранная группа товаров');

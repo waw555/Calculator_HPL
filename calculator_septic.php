@@ -59,7 +59,10 @@ $collections = $pdo->query('SELECT fcol.*, s.company_name AS supplier_name FROM 
 $furnitureCatalog = $pdo->query('SELECT pl.*, fc.name AS category_name, s.company_name AS supplier_name, fcol.name AS collection_name FROM price_list pl LEFT JOIN furniture_categories fc ON fc.id = pl.category_id LEFT JOIN suppliers s ON s.id = pl.supplier_id LEFT JOIN furniture_collections fcol ON fcol.id = pl.collection_id WHERE pl.is_active = 1 ORDER BY s.company_name ASC, fcol.name ASC, fc.name ASC, pl.material_name ASC')->fetchAll();
 $currencyRates = $pdo->query('SELECT code, nominal, rate_to_rub FROM currencies')->fetchAll();
 $services = $pdo->query('SELECT s.*, pts.partition_type_id, pts.sort_order AS type_sort_order FROM partition_type_services pts JOIN services s ON s.id = pts.service_id WHERE s.is_active = 1 ORDER BY pts.partition_type_id, pts.sort_order, s.name')->fetchAll();
-$allServices = $pdo->query('SELECT * FROM services WHERE is_active = 1 ORDER BY name')->fetchAll();
+$allServices = $pdo->query('SELECT s.*, pt.thickness FROM services s LEFT JOIN panel_thicknesses pt ON pt.id = s.thickness_id WHERE s.is_active = 1 ORDER BY s.name, pt.thickness, s.h_size, s.d_size, s.step_mm, s.id')->fetchAll();
+$serviceHLabels = ['no' => 'Нет', 'le_2_5' => '≤ 2.5', '2_5_to_5' => '2.5–5', 'le_3' => '≤ 3', '3_to_6' => '3–6'];
+$serviceDLabels = ['no' => 'Нет', 'le_4' => '≤ 4', '4_to_12' => '4–12', 'gt_12' => '> 12'];
+$serviceStepLabels = ['no' => 'Нет', '16' => '16', '32' => '32', '64' => '64'];
 $savedCalculations = $pdo->prepare('SELECT id, title, total_amount, currency, created_at FROM saved_calculations WHERE user_id = :user_id ORDER BY id DESC LIMIT 10');
 $savedCalculations->execute(['user_id' => (int)$_SESSION['user_id']]);
 $recentCalculations = $savedCalculations->fetchAll();
@@ -348,7 +351,7 @@ tbody tr:hover td { background:#fbfcfe; }
                 <div class="data-card" style="margin-top:18px">
                     <h3>Производство и услуги</h3>
                     <table class="mini-table"><thead><tr><th>Наименование</th><th>Объем</th><th>Цена из БД</th><th>Стоимость</th></tr></thead><tbody id="services-body"></tbody></table>
-                    <div class="service-adder" style="margin-top:12px"><select id="result-service-select" aria-label="Дополнительная услуга"><option value="">— Добавить услугу —</option><?php foreach ($allServices as $service): ?><option value="<?php echo e((string)$service['id']); ?>"><?php echo e($service['name']); ?> · <?php echo e($service['unit']); ?></option><?php endforeach; ?></select><button id="result-service-add" type="button">Добавить</button></div>
+                    <div class="service-adder" style="margin-top:12px"><select id="result-service-select" aria-label="Дополнительная услуга"><option value="">— Добавить услугу —</option><?php foreach ($allServices as $service): ?><option value="<?php echo e((string)$service['id']); ?>"><?php echo e($service['name']); ?> · Код: <?php echo e((string)($service['nomenclature'] ?: '—')); ?> · Толщ.: <?php echo !empty($service['thickness']) ? e(rtrim(rtrim((string)$service['thickness'], '0'), '.') . ' мм') : '—'; ?> · h: <?php echo e($serviceHLabels[$service['h_size'] ?? 'no'] ?? 'Нет'); ?> · d: <?php echo e($serviceDLabels[$service['d_size'] ?? 'no'] ?? 'Нет'); ?> · Шаг: <?php echo e($serviceStepLabels[$service['step_mm'] ?? 'no'] ?? 'Нет'); ?> · <?php echo e(number_format((float)$service['price'], 2, ',', ' ')); ?> <?php echo e(app_currency_symbol((string)$service['currency'])); ?> / <?php echo e($service['unit']); ?></option><?php endforeach; ?></select><button id="result-service-add" type="button">Добавить</button></div>
                     <p class="hint">Дополнительные услуги добавляются после основного расчёта. Количество можно изменить в таблице.</p>
                 </div>
                 <table><tbody id="totals-body"></tbody></table>
