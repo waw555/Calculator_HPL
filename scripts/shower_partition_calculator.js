@@ -84,9 +84,9 @@
     }
 
     const ROLE_DEFINITIONS = {
-        floor_profile: {label: 'Крепление к полу', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профиль'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профиль']},
-        wall_profile: {label: 'Крепление к стене', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профиль'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профиль']},
-        ceiling_profile: {label: 'Крепление к потолку', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профиль'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профиль']},
+        floor_profile: {label: 'Крепление к полу', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профил'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профил']},
+        wall_profile: {label: 'Крепление к стене', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профил'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профил']},
+        ceiling_profile: {label: 'Крепление к потолку', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профил'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профил']},
         floor_leg: {label: 'Крепление к полу', groupLabel: 'Ножка', unit: 'шт.', unitKind: 'piece', keywords: ['ножк', 'опор'], categoryKeywords: ['ножк', 'опор']},
         floor_angle: {label: 'Крепление к полу', groupLabel: 'Уголок', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов'], categoryKeywords: ['уголок', 'углов']},
         wall_angle: {label: 'Крепление к стене', groupLabel: 'Уголок', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов'], categoryKeywords: ['уголок', 'углов']},
