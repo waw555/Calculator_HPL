@@ -38,9 +38,10 @@ assert.match(page, /LEFT JOIN panel_thicknesses pt ON pt\.id = s\.thickness_id/,
 assert.match(page, /Код:[\s\S]*Толщ\.[\s\S]*h:[\s\S]*d:[\s\S]*Шаг:/, 'Дополнительные услуги должны различаться по характеристикам');
 assert.match(integration, /estimatePanelLayout/, 'Расчёт должен использовать раскладку по листам');
 assert.match(integration, /buildRequirements/, 'Расчёт должен формировать спецификацию фурнитуры');
-assert.match(integration, /Группа: '[\s\S]*requirement\.groupLabel/, 'В строке роли должна отображаться выбранная группа товаров');
-assert.match(page, /подставляется товар из выбранных производителя и серии/, 'Подсказка должна объяснять автовыбор из серии');
-assert.match(page, /заменить любым товаром из той же группы/, 'Подсказка должна объяснять выбор из всех товаров группы');
+assert.doesNotMatch(page, /Фурнитура из выбранной серии/, 'Отдельный раздел выбора фурнитуры должен быть удалён');
+assert.doesNotMatch(page, /id="hardware-role-list"/, 'В форме не должно быть прежнего списка фурнитуры');
+assert.match(page, /data-hardware-item/, 'В результате расчёта должен быть выбор фурнитуры');
+assert.match(page, /function updateHardwareItem/, 'Смена фурнитуры должна пересчитывать результат');
 assert.match(integration, /const matches = ShowerPartitionCalculator\.matchingFurniture\(requirement, furnitureCatalog\);/, 'Выпадающий список должен содержать все товары выбранной группы');
 assert.match(integration, /matchingFurniture\(requirement, furnitureCatalog, preferredFilters\)/, 'Автовыбор должен учитывать производителя и серию');
 assert.match(integration, /function resetRoleSelections\(\)[\s\S]*supplier_id'[\s\S]*resetRoleSelections\(\)[\s\S]*collection_id'[\s\S]*resetRoleSelections\(\)/, 'Смена производителя или серии должна заново выбирать товары по умолчанию');
