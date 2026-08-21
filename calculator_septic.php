@@ -55,6 +55,16 @@ $manufacturers = $pdo->query('SELECT * FROM manufacturers ORDER BY full_name ASC
 $panels = $pdo->query('SELECT pf.*, m.full_name AS manufacturer_name FROM panel_formats pf LEFT JOIN manufacturers m ON m.id = pf.manufacturer_id WHERE pf.is_active = 1 AND pf.is_stock_program = 1 ORDER BY m.full_name ASC, pf.decor_number ASC, pf.decor_name ASC, pf.name ASC')->fetchAll();
 $panelsJson = json_encode(array_values($panels), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $suppliersList = $pdo->query('SELECT * FROM suppliers ORDER BY company_name ASC')->fetchAll();
+$defaultSupplierId = null;
+foreach ($suppliersList as $supplier) {
+    if (trim((string)($supplier['company_name'] ?? '')) === 'Китай') {
+        $defaultSupplierId = (string)$supplier['id'];
+        break;
+    }
+}
+if ($defaultSupplierId === null && $suppliersList !== []) {
+    $defaultSupplierId = (string)$suppliersList[0]['id'];
+}
 $collections = $pdo->query('SELECT fcol.*, s.company_name AS supplier_name FROM furniture_collections fcol LEFT JOIN suppliers s ON s.id = fcol.supplier_id ORDER BY s.company_name ASC, fcol.name ASC')->fetchAll();
 $furnitureCatalog = $pdo->query('SELECT pl.*, fc.name AS category_name, s.company_name AS supplier_name, fcol.name AS collection_name FROM price_list pl LEFT JOIN furniture_categories fc ON fc.id = pl.category_id LEFT JOIN suppliers s ON s.id = pl.supplier_id LEFT JOIN furniture_collections fcol ON fcol.id = pl.collection_id WHERE pl.is_active = 1 ORDER BY s.company_name ASC, fcol.name ASC, fc.name ASC, pl.material_name ASC')->fetchAll();
 $currencyRates = $pdo->query('SELECT code, nominal, rate_to_rub FROM currencies')->fetchAll();
@@ -223,6 +233,7 @@ tbody tr:hover td { background:#fbfcfe; }
 
 /* Shower partition configurator */
 .shower-config{margin-top:20px;padding-top:20px;border-top:1px solid #e8edf4}.shower-config__intro{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:16px}.shower-config__intro h3{margin:0;font-size:16px}.shower-config__intro p{max-width:760px;margin:5px 0 0;color:#64748b;font-size:12px;line-height:1.5}.shower-badge{flex:none;padding:6px 10px;border-radius:999px;background:#fff1f4;color:#be123c;font-size:10px;font-weight:850;text-transform:uppercase}.shower-workspace{display:block}.shower-steps{display:grid;gap:12px}.shower-step{padding:16px;border:1px solid #dfe6ef;border-radius:12px;background:#f8fafc}.shower-step__title{display:flex;align-items:center;gap:9px;margin-bottom:13px;color:#172033;font-size:13px;font-weight:850}.shower-step__number{display:grid;place-items:center;width:24px;height:24px;border-radius:7px;background:#111a2d;color:#ff4f78;font-size:10px}.shower-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.shower-check{display:flex;align-items:center;gap:8px;min-height:38px;margin:0;padding:8px 10px;border:1px solid #d7e0eb;border-radius:8px;background:#fff}.shower-check input{width:16px;min-height:16px;margin:0;accent-color:#e9164d}.shower-check span{font-size:12px;font-weight:700}.hardware-picker{margin-top:14px;overflow:auto;border:1px solid #dfe6ef;border-radius:10px;background:#fff}.hardware-picker__head,.hardware-role{display:grid;grid-template-columns:minmax(170px,.85fr) minmax(260px,1.8fr) 90px;gap:10px;align-items:center;padding:10px 12px}.hardware-picker__head{background:#f0f4f8;color:#64748b;font-size:10px;font-weight:800;text-transform:uppercase}.hardware-role{border-top:1px solid #e8edf4}.hardware-role__name{color:#172033;font-size:12px;font-weight:750}.hardware-role__name small{display:block;margin-top:3px;color:#8a99b1;font-size:10px;font-weight:500}.hardware-role select{min-height:34px;font-size:11px}.hardware-role__qty{text-align:right;color:#172033;font-size:12px;font-weight:850}.service-adder{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:10px}.service-adder button{white-space:nowrap}.extra-service-list{display:grid;gap:8px;margin-top:10px}.extra-service{display:grid;grid-template-columns:minmax(180px,1fr) 130px auto;gap:10px;align-items:end;padding:10px;border:1px solid #dfe6ef;border-radius:9px;background:#fff}.extra-service label{margin:0}.extra-service button{min-height:38px;background:#64748b}.custom-format{grid-column:span 2;grid-template-columns:repeat(2,minmax(150px,1fr));gap:12px;padding:12px;border:1px dashed #e9164d;border-radius:10px;background:#fff8fa}.custom-format:not(.field-hidden){display:grid}#shower-fascia-fields:not(.field-hidden){display:grid;grid-template-columns:repeat(2,minmax(150px,1fr));gap:12px}.shower-note{margin-top:10px;padding:10px 12px;border-left:3px solid #e9164d;background:#fff6f8;color:#7f1d3a;font-size:11px;line-height:1.45}.field-hidden{display:none!important}@media(max-width:620px){.shower-config__intro{flex-direction:column}.hardware-picker__head{display:none}.hardware-role{grid-template-columns:1fr}.hardware-role__qty{text-align:left}.service-adder,.extra-service{grid-template-columns:1fr}}
+.hardware-filters{display:grid;grid-column:span 2;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.hardware-filters #collection-field{min-width:0}@media(max-width:620px){.hardware-filters{grid-column:span 1;grid-template-columns:1fr}}
 </style>
 <?php echo app_header_styles(); ?>
 </head>
@@ -263,8 +274,10 @@ tbody tr:hover td { background:#fbfcfe; }
             <div><label for="panel_format_id" class="label-with-help">Формат листа <span class="format-help" tabindex="0" aria-label="Подсказка о выборе формата">?<span class="format-help__tooltip" role="tooltip">«Любой» подберёт формат с наименьшим отходом; «Свой» откроет ручной ввод.</span></span></label><select id="panel_format_id"><option value="">— Сначала выберите декор —</option></select></div>
             <div id="custom-format-fields" class="custom-format field-hidden"><div><label for="custom_sheet_width">Ширина своего листа, мм</label><input id="custom_sheet_width" type="number" min="1" step="1" value="1830"></div><div><label for="custom_sheet_height">Длина своего листа, мм</label><input id="custom_sheet_height" type="number" min="1" step="1" value="4320"></div></div>
             <div><label for="partition_type_id">Тип перегородки</label><select id="partition_type_id"><option value="0">Выберите тип</option><?php foreach ($partitionTypes as $type): ?><option value="<?php echo e((string)$type['id']); ?>"><?php echo e($type['name']); ?></option><?php endforeach; ?></select></div>
-            <div><label for="supplier_id">Производитель фурнитуры</label><select id="supplier_id"><option value="0">Все поставщики</option><?php foreach ($suppliersList as $sup): ?><option value="<?php echo e((string)$sup['id']); ?>"><?php echo e($sup['company_name']); ?></option><?php endforeach; ?></select></div>
-            <div id="collection-field" class="hidden"><label for="collection_id">Серия</label><select id="collection_id"><option value="0">Все серии</option><?php foreach ($collections as $col): ?><option value="<?php echo e((string)$col['id']); ?>" data-supplier="<?php echo e((string)($col['supplier_id'] ?? 0)); ?>"><?php echo e($col['name']); ?><?php if (!empty($col['supplier_name'])): ?> (<?php echo e($col['supplier_name']); ?>)<?php endif; ?></option><?php endforeach; ?></select><div class="hint">Фильтр по серии.</div></div>
+            <div class="hardware-filters">
+                <div><label for="supplier_id">Производитель фурнитуры</label><select id="supplier_id"><?php foreach ($suppliersList as $sup): ?><option value="<?php echo e((string)$sup['id']); ?>"<?php echo (string)$sup['id'] === $defaultSupplierId ? ' selected' : ''; ?>><?php echo e($sup['company_name']); ?></option><?php endforeach; ?></select></div>
+                <div id="collection-field" class="hidden"><label for="collection_id">Серия</label><select id="collection_id"><?php foreach ($collections as $col): ?><option value="<?php echo e((string)$col['id']); ?>" data-supplier="<?php echo e((string)($col['supplier_id'] ?? 0)); ?>"><?php echo e($col['name']); ?><?php if (!empty($col['supplier_name'])): ?> (<?php echo e($col['supplier_name']); ?>)<?php endif; ?></option><?php endforeach; ?></select><div class="hint">Фильтр по серии.</div></div>
+            </div>
         </div>
         <div id="dynamic-parameters" class="grid" style="margin-top:14px"></div>
         <div id="shower-config" class="shower-config hidden">
@@ -499,6 +512,11 @@ function renderParameters() {
     const typeId = typeSelect.value;
     const params = parametersByType[typeId] || [];
     paramsNode.innerHTML = '';
+    const isShower = (typeSelect.selectedOptions[0]?.textContent || '').toLocaleLowerCase('ru-RU').includes('душ');
+    if (isShower) {
+        calculateBtn.classList.toggle('hidden', typeId === '0');
+        return;
+    }
     params.forEach(param => {
         const code = `param_${param.parameter_id}`;
         const div = document.createElement('div');
