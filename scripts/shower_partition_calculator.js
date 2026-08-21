@@ -165,6 +165,26 @@
         return ranked[0] || null;
     }
 
+    function serviceVolumes(layout, panel) {
+        const pieces = Array.isArray(layout?.pieces) ? layout.pieces : [];
+        const sheets = Math.max(0, Number(layout?.sheets) || 0);
+        const sheetWidth = positive(panel?.width_mm);
+        const sheetHeight = positive(panel?.height_mm);
+        const cutting = pieces.reduce((sum, piece) => {
+            const quantity = Math.max(0, Number(piece.quantity) || 0);
+            return sum + (positive(piece.width) + positive(piece.height)) * 2 * quantity / 1000;
+        }, 0);
+        const bevel = pieces.reduce((sum, piece) => {
+            const quantity = Math.max(0, Number(piece.quantity) || 0);
+            return sum + positive(piece.height) * 2 * quantity / 1000;
+        }, 0);
+        return {
+            edging: sheets * (sheetWidth + sheetHeight) * 2 / 1000,
+            cutting,
+            bevel
+        };
+    }
+
     function normalizeText(value) {
         return String(value || '').toLocaleLowerCase('ru-RU').replace(/ё/g, 'е');
     }
@@ -192,5 +212,5 @@
             .sort((a, b) => b.matchScore - a.matchScore || String(a.material_name).localeCompare(String(b.material_name), 'ru'));
     }
 
-    return {LAYOUT_DEFINITIONS, ROLE_DEFINITIONS, anglePointCount, normalizedConfig, buildPanelPieces, buildRequirements, estimatePanelLayout, chooseBestPanelFormat, matchingFurniture, itemScore};
+    return {LAYOUT_DEFINITIONS, ROLE_DEFINITIONS, anglePointCount, normalizedConfig, buildPanelPieces, buildRequirements, estimatePanelLayout, chooseBestPanelFormat, serviceVolumes, matchingFurniture, itemScore};
 });
