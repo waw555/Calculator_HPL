@@ -33,7 +33,11 @@ assert.match(integration, /\/торцеван\/i[\s\S]*\/раскро\/i[\s\S]*\
 assert.match(integration, /estimatePanelLayout/, 'Расчёт должен использовать раскладку по листам');
 assert.match(integration, /buildRequirements/, 'Расчёт должен формировать спецификацию фурнитуры');
 assert.match(integration, /Группа: '[\s\S]*requirement\.groupLabel/, 'В строке роли должна отображаться выбранная группа товаров');
-assert.match(page, /доступны только товары из группы, выбранной выше/, 'Подсказка должна объяснять ограничение списка группой');
+assert.match(page, /подставляется товар из выбранных производителя и серии/, 'Подсказка должна объяснять автовыбор из серии');
+assert.match(page, /заменить любым товаром из той же группы/, 'Подсказка должна объяснять выбор из всех товаров группы');
+assert.match(integration, /const matches = ShowerPartitionCalculator\.matchingFurniture\(requirement, furnitureCatalog\);/, 'Выпадающий список должен содержать все товары выбранной группы');
+assert.match(integration, /matchingFurniture\(requirement, furnitureCatalog, preferredFilters\)/, 'Автовыбор должен учитывать производителя и серию');
+assert.match(integration, /function resetRoleSelections\(\)[\s\S]*supplier_id'[\s\S]*resetRoleSelections\(\)[\s\S]*collection_id'[\s\S]*resetRoleSelections\(\)/, 'Смена производителя или серии должна заново выбирать товары по умолчанию');
 assert.match(integration, /__auto__/, 'Должен поддерживаться автоматический выбор формата');
 assert.match(integration, /__custom__/, 'Должен поддерживаться собственный формат');
 assert.match(integration, /chooseBestPanelFormat/, 'Автоматический режим должен сравнивать существующие форматы');

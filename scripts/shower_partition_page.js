@@ -111,7 +111,7 @@
 
     function renderRoles(requirements) {
         const node = document.getElementById('hardware-role-list');
-        const filters = {
+        const preferredFilters = {
             supplierId: document.getElementById('supplier_id').value,
             collectionId: document.getElementById('collection_id').value
         };
@@ -120,8 +120,10 @@
             return;
         }
         node.innerHTML = '<div class="hardware-picker__head"><span>Роль</span><span>Товар из базы</span><span>Количество</span></div>' + requirements.map(function (requirement) {
-            const matches = ShowerPartitionCalculator.matchingFurniture(requirement, furnitureCatalog, filters).slice(0, 50);
+            const matches = ShowerPartitionCalculator.matchingFurniture(requirement, furnitureCatalog);
+            const preferredMatches = ShowerPartitionCalculator.matchingFurniture(requirement, furnitureCatalog, preferredFilters);
             let selected = matches.find(function (item) { return String(item.id) === String(roleSelections[requirement.role] || ''); });
+            if (!selected) selected = preferredMatches.find(function (item) { return item.matchScore > 0; });
             if (!selected) selected = matches.find(function (item) { return item.matchScore > 0; });
             if (selected) roleSelections[requirement.role] = String(selected.id);
             const options = matches.map(function (item) {
@@ -129,7 +131,7 @@
                 const isSelected = String(item.id) === String(roleSelections[requirement.role] || '') ? ' selected' : '';
                 return '<option value="' + escapeHtml(item.id) + '"' + isSelected + '>' + escapeHtml(item.material_name) + (meta ? ' — ' + escapeHtml(meta) : '') + '</option>';
             }).join('');
-            const emptyLabel = matches.length ? '— Выберите товар —' : '— Нет товаров в группе «' + escapeHtml(requirement.groupLabel) + '» —';
+            const emptyLabel = matches.length ? '— Выберите товар из группы —' : '— Нет товаров в группе «' + escapeHtml(requirement.groupLabel) + '» —';
             return '<div class="hardware-role"><div class="hardware-role__name">' + escapeHtml(requirement.label) + '<small>Группа: ' + escapeHtml(requirement.groupLabel) + ' · ' + escapeHtml(requirement.note) + '</small></div><select data-shower-role="' + escapeHtml(requirement.role) + '"><option value="">' + emptyLabel + '</option>' + options + '</select><div class="hardware-role__qty">' + formatter.format(requirement.quantity) + ' ' + escapeHtml(requirement.unit) + '</div></div>';
         }).join('');
         node.querySelectorAll('[data-shower-role]').forEach(function (select) {
@@ -160,6 +162,10 @@
         document.getElementById('shower-angle-fields').classList.toggle('field-hidden', !angles);
         const requirements = ShowerPartitionCalculator.buildRequirements(current);
         renderRoles(requirements);
+    }
+
+    function resetRoleSelections() {
+        Object.keys(roleSelections).forEach(function (role) { delete roleSelections[role]; });
     }
 
     function resolvePanelSelection(current) {
@@ -277,10 +283,14 @@
     document.getElementById('decor_input').addEventListener('change', function () { renderFormats(); refresh(); });
     formatSelect.addEventListener('change', toggleCustomFormat);
     document.getElementById('supplier_id').addEventListener('change', function () {
+        resetRoleSelections();
         renderCollections();
         refresh();
     });
-    document.getElementById('collection_id').addEventListener('change', refresh);
+    document.getElementById('collection_id').addEventListener('change', function () {
+        resetRoleSelections();
+        refresh();
+    });
     document.getElementById('shower_ceiling_mount').addEventListener('change', refresh);
     calculateBtn.addEventListener('click', function (event) {
         if (!showerSelected()) return;
