@@ -330,7 +330,7 @@ $rules = $pdo->query('SELECT r.*, pt.name AS partition_type_name, m.full_name AS
 $typeFields = $pdo->query('SELECT f.*, pt.name AS type_name FROM partition_type_fields f LEFT JOIN partition_types pt ON pt.id = f.partition_type_id ORDER BY pt.name, f.sort_order, f.id')->fetchAll();
 $compParts = $pdo->query('SELECT partition_type_id, parts FROM partition_compositions ORDER BY sort_order, id')->fetchAll();
 $formulas = $pdo->query('SELECT f.*, pt.name AS type_name FROM partition_formulas f LEFT JOIN partition_types pt ON pt.id = f.partition_type_id ORDER BY pt.name, f.sort_order, f.id')->fetchAll();
-$services = $pdo->query('SELECT id, name, unit, price, currency FROM services WHERE is_active = 1 ORDER BY name ASC')->fetchAll();
+$services = $pdo->query('SELECT s.id, s.nomenclature, s.name, s.unit, s.price, s.currency, s.h_size, s.d_size, s.step_mm, pt.thickness FROM services s LEFT JOIN panel_thicknesses pt ON pt.id = s.thickness_id WHERE s.is_active = 1 ORDER BY s.name ASC, pt.thickness ASC, s.h_size ASC, s.d_size ASC, s.step_mm ASC, s.id ASC')->fetchAll();
 
 $assignedParameters = [];
 $assignedServiceIds = [];
@@ -422,7 +422,7 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
 .part-tag{background:#dbeafe;color:#1e40af;border-radius:20px;padding:4px 12px;font-size:13px;font-weight:600}
 .part-tag::before{content:"→ ";opacity:.5}
 .part-tag:first-child::before{content:""}
-.service-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;max-height:280px;overflow:auto;padding:12px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc}.service-options label{display:flex;align-items:center;gap:8px;margin:0;padding:9px;border-radius:8px;background:#fff}.service-options small{margin-left:auto;color:#64748b;font-weight:400}
+.service-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:8px;max-height:280px;overflow:auto;padding:12px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc}.service-option{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:8px;margin:0;padding:9px;border-radius:8px;background:#fff}.service-option input{margin-top:3px}.service-option__content{min-width:0}.service-option__name{display:block}.service-option__details{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:5px;color:#64748b;font-size:12px;font-weight:400}.service-option__details span{white-space:nowrap}.service-option__code{color:#475569;font-weight:700}
 </style>
 <?php echo app_header_styles(); ?>
 </head>
@@ -471,8 +471,26 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
             <div class="section-title">Базовые услуги калькулятора</div>
             <p class="hint">Выбранные услуги автоматически попадут в расчёт для этого типа перегородки. Дополнительные услуги можно добавить уже после расчёта в разделе «Услуги».</p>
             <div class="service-options">
+                <?php
+                $serviceHLabels = ['no'=>'Нет','le_2_5'=>'≤ 2.5','2_5_to_5'=>'2.5–5','le_3'=>'≤ 3','3_to_6'=>'3–6'];
+                $serviceDLabels = ['no'=>'Нет','le_4'=>'≤ 4','4_to_12'=>'4–12','gt_12'=>'> 12'];
+                $serviceStepLabels = ['no'=>'Нет','16'=>'16','32'=>'32','64'=>'64'];
+                ?>
                 <?php foreach ($services as $service): ?>
-                    <label><input type="checkbox" name="service_id[]" value="<?php echo e((string)$service['id']); ?>" <?php echo in_array((int)$service['id'], $assignedServiceIds, true) ? 'checked' : ''; ?>> <span><?php echo e($service['name']); ?></span><small><?php echo e($service['unit']); ?> · <?php echo e(number_format((float)$service['price'], 2, ',', ' ')); ?> <?php echo e($service['currency']); ?></small></label>
+                    <label class="service-option">
+                        <input type="checkbox" name="service_id[]" value="<?php echo e((string)$service['id']); ?>" <?php echo in_array((int)$service['id'], $assignedServiceIds, true) ? 'checked' : ''; ?>>
+                        <span class="service-option__content">
+                            <span class="service-option__name"><?php echo e($service['name']); ?></span>
+                            <span class="service-option__details">
+                                <span class="service-option__code">Код: <?php echo e((string)($service['nomenclature'] ?: '—')); ?></span>
+                                <span>Толщ.: <?php echo !empty($service['thickness']) ? e(rtrim(rtrim((string)$service['thickness'], '0'), '.') . ' мм') : '—'; ?></span>
+                                <span>h: <?php echo e($serviceHLabels[$service['h_size'] ?? 'no'] ?? 'Нет'); ?></span>
+                                <span>d: <?php echo e($serviceDLabels[$service['d_size'] ?? 'no'] ?? 'Нет'); ?></span>
+                                <span>Шаг: <?php echo e($serviceStepLabels[$service['step_mm'] ?? 'no'] ?? 'Нет'); ?></span>
+                                <span>Цена: <?php echo e(number_format((float)$service['price'], 2, ',', ' ')); ?> <?php echo e(app_currency_symbol((string)$service['currency'])); ?> / <?php echo e($service['unit']); ?></span>
+                            </span>
+                        </span>
+                    </label>
                 <?php endforeach; ?>
                 <?php if (!$services): ?><div class="hint">Нет активных услуг. Сначала добавьте их в разделе «Услуги».</div><?php endif; ?>
             </div>
