@@ -196,9 +196,12 @@ function render_app_header(string $section = 'Калькулятор'): void
       const control = field?.querySelector(':scope > input, :scope > select, :scope > textarea, :scope > .input-unit');
       if (!label || !control || !hint.textContent.trim()) return;
       label.classList.add('app-label-with-help');
-      const button = document.createElement('button');
-      button.type = 'button';
+      // Используем тот же нейтральный span, что и у подсказки «Формат листа».
+      // Так локальные стили обычных кнопок страницы не растягивают иконку.
+      const button = document.createElement('span');
       button.className = 'app-field-help';
+      button.setAttribute('role', 'button');
+      button.setAttribute('tabindex', '0');
       button.setAttribute('aria-label', `Подсказка: ${label.textContent.trim()}`);
       button.setAttribute('aria-expanded', 'false');
       const tooltip = document.createElement('span');
@@ -230,7 +233,7 @@ function render_app_header(string $section = 'Калькулятор'): void
     });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape') document.querySelectorAll('.app-field-help[aria-expanded="true"],.format-help[aria-expanded="true"]').forEach(help => help.setAttribute('aria-expanded', 'false'));
-      if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.format-help')) { event.preventDefault(); event.target.click(); }
+      if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.app-field-help,.format-help')) { event.preventDefault(); event.target.click(); }
     });
     new MutationObserver(records => records.forEach(record => {
       if (record.target.nodeType === Node.ELEMENT_NODE) enhanceFieldHints(record.target);
