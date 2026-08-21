@@ -106,10 +106,11 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
     const wallProfile = shower.buildRequirements({layoutType: 'built_in', sectionCount: 2, wallMount: 'profile'})
         .find(row => row.role === 'wall_profile');
     const matches = shower.matchingFurniture(wallProfile, [
-        {id: 10, material_name: 'П-профиль 20×20', category_name: 'Профили', unit: 'м.п.', supplier_id: 3, collection_id: 7},
-        {id: 11, material_name: 'П-профиль 20×20', category_name: 'Профили', unit: 'м.п.', supplier_id: 3, collection_id: 8}
+        {id: 10, material_name: 'П-профиль 20×20', category_name: 'Профиль', unit: 'м.п.', supplier_id: 3, collection_id: 7},
+        {id: 11, material_name: 'П-профиль 20×20', category_name: 'Профиль', unit: 'м.п.', supplier_id: 3, collection_id: 8},
+        {id: 12, material_name: 'П-профиль 20×20', category_name: 'П-профиль', unit: 'м.п.', supplier_id: 3, collection_id: 7}
     ], {supplierId: 3, collectionId: 7});
-    assert.deepEqual(matches.map(item => item.id), [10], 'стеновой П-профиль должен загружаться из выбранной серии и категории «Профили»');
+    assert.deepEqual(matches.map(item => item.id), [10], 'стеновой П-профиль должен загружаться из выбранной серии и группы «Профиль»');
 }
 
 {
