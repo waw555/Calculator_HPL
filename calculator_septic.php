@@ -241,7 +241,7 @@ tbody tr:hover td { background:#fbfcfe; }
     <section class="panel">
         <h2>Объект и идентификатор</h2>
         <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-            <div><label for="object_name">Объект *</label><input id="object_name" name="object_name" placeholder="Например: БЦ Север" required></div>
+            <div><label for="object_name">Объект</label><input id="object_name" name="object_name" placeholder="Например: БЦ Север"></div>
             <div><label for="partition_identifier">Идентификатор перегородки</label><input id="partition_identifier" name="partition_identifier" placeholder="Например: П-01"></div>
         </div>
     </section>
@@ -507,11 +507,6 @@ function findParam(inputs, names, fallback) {
     return entry ? entry[1].value : fallback;
 }
 function calculate() {
-    if (!document.getElementById('object_name').value.trim()) {
-        document.getElementById('object_name').focus();
-        document.getElementById('object_name').reportValidity();
-        return;
-    }
     const inputs = collectInputs();
     const length = findParam(inputs, ['длина', 'фасад', 'width'], 1000);
     const height = findParam(inputs, ['высота', 'height'], 2000);
