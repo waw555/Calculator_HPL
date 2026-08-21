@@ -510,11 +510,6 @@ function renderParameters() {
     const typeId = typeSelect.value;
     const params = parametersByType[typeId] || [];
     paramsNode.innerHTML = '';
-    const isShower = (typeSelect.selectedOptions[0]?.textContent || '').toLocaleLowerCase('ru-RU').includes('душ');
-    if (isShower) {
-        calculateBtn.classList.toggle('hidden', typeId === '0');
-        return;
-    }
     params.forEach(param => {
         const code = `param_${param.parameter_id}`;
         const div = document.createElement('div');

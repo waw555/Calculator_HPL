@@ -72,7 +72,8 @@ assert.match(integration, /chooseBestPanelFormat/, 'Автоматический
 assert.match(integration, /renderCollections/, 'Серии должны зависеть от поставщика');
 assert.match(integration, /firstMatchingValue/, 'После выбора производителя должна выбираться первая доступная серия');
 assert.match(integration, /supplier_id'[\s\S]*addEventListener\('change'[\s\S]*renderCollections\(\)/, 'После выбора производителя должна появляться форма серии');
-assert.match(page, /function renderParameters\(\)[\s\S]*isShower[\s\S]*return;/, 'Дублирующие динамические размеры не должны отображаться для душевой перегородки');
+assert.doesNotMatch(page, /function renderParameters\(\)[\s\S]*const isShower[\s\S]*return;/, 'Параметры выбранного типа должны отображаться и для душевой перегородки');
+assert.doesNotMatch(integration, /function refresh\(\)[\s\S]*paramsNode\.innerHTML\s*=\s*''/, 'Смена материала или фурнитуры не должна удалять параметры перегородки');
 
 assert.match(page, /id="shower_layout_type"/, 'Должен быть выбор прямой, угловой и П-образной схемы');
 assert.match(page, /value="built_in">Прямая</, 'Должна быть прямая схема');

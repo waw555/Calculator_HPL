@@ -128,7 +128,6 @@
         const active = showerSelected();
         showerNode.classList.toggle('hidden', !active);
         if (!active) return;
-        paramsNode.innerHTML = '';
         let current = config();
         const sectionInput = document.getElementById('shower_partition_count');
         const minimumSections = current.layoutType === 'built_in' ? 2 : 1;
