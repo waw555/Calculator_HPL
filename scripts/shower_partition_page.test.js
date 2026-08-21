@@ -15,6 +15,10 @@ assert.match(page, /id="custom_sheet_height"/, 'Должен быть ввод �
 assert.match(page, /id="shower_fascia_width"/, 'Должна быть ширина перемычки');
 assert.match(page, /id="shower_fascia_height"/, 'Должна быть высота перемычки');
 assert.match(page, /id="collection-field" class="hidden"/, 'Серия должна быть скрыта до выбора поставщика');
+assert.match(page, /class="hardware-filters"[\s\S]*id="supplier_id"[\s\S]*id="collection-field"/, 'Производитель фурнитуры и серия должны находиться в одной строке');
+assert.match(page, /company_name[^\n]*=== 'Китай'/, 'Производителем фурнитуры по умолчанию должен быть Китай');
+assert.doesNotMatch(page, /Все поставщики/, 'В списке производителей фурнитуры не должно быть пункта «Все поставщики»');
+assert.doesNotMatch(page, /Все серии/, 'В списке серий не должно быть пункта «Все серии»');
 assert.match(page, /class="format-help"[\s\S]*role="tooltip"/, 'Подсказка формата должна открываться по иконке вопроса');
 assert.match(page, /«Любой» подберёт формат с наименьшим отходом; «Свой» откроет ручной ввод\./, 'Подсказка должна объяснять автоматический и ручной форматы');
 assert.doesNotMatch(page, /Выберите поставщика для фильтрации\./, 'Лишняя подсказка поставщика должна быть удалена');
@@ -65,7 +69,9 @@ assert.match(integration, /__auto__/, 'Должен поддерживаться
 assert.match(integration, /__custom__/, 'Должен поддерживаться собственный формат');
 assert.match(integration, /chooseBestPanelFormat/, 'Автоматический режим должен сравнивать существующие форматы');
 assert.match(integration, /renderCollections/, 'Серии должны зависеть от поставщика');
+assert.match(integration, /firstMatchingValue/, 'После выбора производителя должна выбираться первая доступная серия');
 assert.match(integration, /supplier_id'[\s\S]*addEventListener\('change'[\s\S]*renderCollections\(\)/, 'После выбора производителя должна появляться форма серии');
+assert.match(page, /function renderParameters\(\)[\s\S]*isShower[\s\S]*return;/, 'Дублирующие динамические размеры не должны отображаться для душевой перегородки');
 
 assert.match(page, /id="shower_layout_type"/, 'Должен быть выбор прямой, угловой и П-образной схемы');
 assert.match(page, /value="built_in">Прямая</, 'Должна быть прямая схема');

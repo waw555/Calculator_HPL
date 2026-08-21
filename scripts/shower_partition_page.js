@@ -95,16 +95,17 @@
         const supplierId = Number(document.getElementById('supplier_id').value || 0);
         const select = document.getElementById('collection_id');
         const field = document.getElementById('collection-field');
+        let firstMatchingValue = '';
         Array.from(select.options).forEach(function (option) {
-            if (!option.value || option.value === '0') return;
             const matches = supplierId > 0 && Number(option.dataset.supplier || 0) === supplierId;
             option.hidden = !matches;
+            if (matches && !firstMatchingValue) firstMatchingValue = option.value;
         });
-        if (!supplierId) {
-            select.value = '0';
+        if (!supplierId || !firstMatchingValue) {
+            select.value = '';
             field.classList.add('hidden');
         } else {
-            if (select.selectedOptions[0]?.hidden) select.value = '0';
+            if (!select.value || select.selectedOptions[0]?.hidden) select.value = firstMatchingValue;
             field.classList.remove('hidden');
         }
     }
