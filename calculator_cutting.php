@@ -534,6 +534,9 @@ function fmtNum(v, d=2) { return new Intl.NumberFormat('ru-RU', {minimumFraction
 
 /* ═══════════ СПИСОК ДЕТАЛЕЙ ═══════════ */
 const partsTbody = document.getElementById('parts-tbody');
+function defaultPartRotation() {
+    return sourceMaterials.length > 0 && sourceMaterials.every(material => (material.grainDirection || 'none') === 'none');
+}
 function renderParts() {
     partsTbody.innerHTML = '';
     document.getElementById('parts-count').textContent = parts.length;
@@ -556,7 +559,7 @@ function focusPartName(partId) {
 }
 document.getElementById('add-part-btn').addEventListener('click',()=>{
     const partNumber=nextPartId++;
-    const part={id:partNumber,name:`Деталь №${partNumber}`,length:1000,width:500,grainDirection:'none',qty:1,rotate:false};
+    const part={id:partNumber,name:`Деталь №${partNumber}`,length:1000,width:500,grainDirection:'none',qty:1,rotate:defaultPartRotation()};
     parts.push(part);
     renderParts();
     scheduleDraftSave();
