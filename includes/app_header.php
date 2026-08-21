@@ -84,6 +84,8 @@ function app_header_styles(): string
 body:not(.login-page){background-color:var(--app-bg)}main.container,.container{width:min(100% - 32px,1280px)}.panel,.card{border-color:var(--app-line)!important;border-radius:var(--app-radius)!important;box-shadow:var(--app-shadow)!important}.card{transition:transform .18s ease,box-shadow .18s ease}.card:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(15,23,42,.12)!important}button,.btn,.card a{transition:background .16s ease,transform .16s ease}button:active,.btn:active{transform:translateY(1px)}input,select,textarea{border-radius:9px!important;border-color:#cbd5e1!important;font:inherit}input:focus,select:focus,textarea:focus{outline:3px solid rgba(37,99,235,.14);border-color:#60a5fa!important}table{border-radius:12px;overflow:hidden}th{color:#475569;font-size:12px;letter-spacing:.02em}a:focus-visible,button:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
 /* Сохраняем исходный вид подписей и полей, добавляя единицу внутрь поля справа. */
 .app-unit-field__control{position:relative;display:block}.app-unit-field__control>input.app-unit-field__input{width:100%;padding-right:58px!important;font-variant-numeric:tabular-nums}.app-unit-field__unit{position:absolute;z-index:1;top:50%;right:12px;max-width:42%;color:#9297a3;font-size:inherit;line-height:1;transform:translateY(-50%);white-space:nowrap;pointer-events:none}.app-unit-field--wide-unit .app-unit-field__control>input.app-unit-field__input{padding-right:94px!important}
+/* Единый вид подсказок у полей: компактный вопрос и окно, открываемое нажатием. */
+.app-label-with-help{display:flex!important;align-items:center;gap:6px;width:max-content;max-width:100%}.app-field-help,.format-help{position:relative;display:inline-grid;flex:0 0 auto;place-items:center;width:18px;height:18px;padding:0;border:1px solid #94a3b8;border-radius:50%;background:#fff;color:#475569;font:850 11px/1 inherit;cursor:pointer}.app-field-help:hover,.format-help:hover{border-color:#2563eb;color:#2563eb}.app-field-help__tooltip,.format-help__tooltip{position:absolute;z-index:10001;bottom:calc(100% + 8px);left:50%;width:max-content;max-width:min(310px,80vw);padding:9px 11px;border-radius:8px;background:#111827;color:#fff;font:500 11px/1.45 inherit;text-align:left;white-space:normal;opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,4px);transition:opacity .16s,transform .16s,visibility .16s;box-shadow:0 8px 24px rgba(15,23,42,.2)}.app-field-help[aria-expanded="true"] .app-field-help__tooltip,.format-help[aria-expanded="true"] .format-help__tooltip{opacity:1;visibility:visible;transform:translate(-50%,0)}.app-field-help:focus-visible,.format-help:focus-visible{outline:3px solid rgba(37,99,235,.22);outline-offset:2px}.app-field-help__source{display:none!important}
 @media(max-width:1100px){:root{--app-header-height:126px}.app-header__inner{flex-wrap:wrap;align-content:center}.app-header__brand{flex:1}.app-header__spacer{display:none}.app-header__rates{order:3}.app-header__currency{order:4}}
 @media(max-width:680px){:root{--app-header-height:174px}.app-header__inner{padding:8px 12px;gap:7px}.app-header__brand{flex-basis:100%}.app-header__button span{display:none}.app-header__rates{font-size:11px}.app-header__user{margin-left:auto}main.container,.container{width:min(100% - 20px,1280px);padding-left:0!important;padding-right:0!important}}
 @media print{body{padding-top:0!important}.app-header{display:none!important}.panel,.card{box-shadow:none!important}}
@@ -185,6 +187,56 @@ function render_app_header(string $section = 'Калькулятор'): void
       input.setAttribute('aria-label', field.caption + ', ' + field.unit);
     });
   }
+  function enhanceFieldHints(root = document) {
+    const hints = root.matches?.('.hint') ? [root] : root.querySelectorAll?.('.hint') || [];
+    hints.forEach(hint => {
+      if (hint.dataset.fieldHelpReady === '1' || hint.closest('table,.actions') || hint.getAttribute('role') === 'status') return;
+      const field = hint.parentElement;
+      const label = field?.querySelector(':scope > label');
+      const control = field?.querySelector(':scope > input, :scope > select, :scope > textarea, :scope > .input-unit');
+      if (!label || !control || !hint.textContent.trim()) return;
+      label.classList.add('app-label-with-help');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'app-field-help';
+      button.setAttribute('aria-label', `Подсказка: ${label.textContent.trim()}`);
+      button.setAttribute('aria-expanded', 'false');
+      const tooltip = document.createElement('span');
+      tooltip.className = 'app-field-help__tooltip';
+      tooltip.setAttribute('role', 'tooltip');
+      tooltip.textContent = hint.textContent.trim();
+      button.append('?', tooltip);
+      label.append(button);
+      hint.classList.add('app-field-help__source');
+      hint.dataset.fieldHelpReady = '1';
+      new MutationObserver(() => { tooltip.textContent = hint.textContent.trim(); }).observe(hint, {childList:true,characterData:true,subtree:true});
+    });
+  }
+  function startFieldHints() {
+    enhanceFieldHints(document);
+    document.querySelectorAll('.format-help').forEach(help => {
+      help.setAttribute('role', 'button');
+      help.setAttribute('aria-expanded', 'false');
+    });
+    document.addEventListener('click', event => {
+      const selected = event.target.closest('.app-field-help,.format-help');
+      document.querySelectorAll('.app-field-help[aria-expanded="true"],.format-help[aria-expanded="true"]').forEach(help => {
+        if (help !== selected) help.setAttribute('aria-expanded', 'false');
+      });
+      if (selected) {
+        event.preventDefault();
+        selected.setAttribute('aria-expanded', String(selected.getAttribute('aria-expanded') !== 'true'));
+      }
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') document.querySelectorAll('.app-field-help[aria-expanded="true"],.format-help[aria-expanded="true"]').forEach(help => help.setAttribute('aria-expanded', 'false'));
+      if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.format-help')) { event.preventDefault(); event.target.click(); }
+    });
+    new MutationObserver(records => records.forEach(record => {
+      if (record.target.nodeType === Node.ELEMENT_NODE) enhanceFieldHints(record.target);
+      record.addedNodes.forEach(node => { if (node.nodeType === Node.ELEMENT_NODE) enhanceFieldHints(node); });
+    })).observe(document.body, {childList:true,characterData:true,subtree:true});
+  }
   window.AppUnitFields = {enhance:enhanceMeasurementFields};
   const startUnitFields = () => {
     enhanceMeasurementFields(document);
@@ -192,7 +244,7 @@ function render_app_header(string $section = 'Калькулятор'): void
       if (node.nodeType === Node.ELEMENT_NODE) enhanceMeasurementFields(node);
     }))).observe(document.body, {childList:true, subtree:true});
   };
-  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', startUnitFields, {once:true}) : startUnitFields();
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', () => { startUnitFields(); startFieldHints(); }, {once:true}) : (startUnitFields(), startFieldHints());
   const originalText = new WeakMap();
   const renderTagged = root => {
     const nodes = root.matches?.('[data-currency-value]') ? [root] : root.querySelectorAll?.('[data-currency-value]') || [];
