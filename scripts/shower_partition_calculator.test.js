@@ -46,8 +46,8 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
 {
     const rows = shower.buildRequirements({layoutType: 'corner', sectionCount: 2, depth: 1200, roomWidth: 3200, floorMount: 'profile', wallMount: 'profile'});
     const byRole = Object.fromEntries(rows.map(row => [row.role, row]));
-    assert.equal(byRole.floor_profile.quantity, 2.4);
-    assert.equal(byRole.top_pipe.quantity, 4.4, 'угловая труба учитывает ширину помещения и одну глубину');
+    assert.equal(byRole.floor_profile.quantity, 3, 'П-профиль у пола округляется до целого погонного метра');
+    assert.equal(byRole.top_pipe.quantity, 5, 'угловая труба учитывает ширину, глубину и округляется до погонного метра');
     assert.equal(byRole.elbow_90.quantity, 1);
     assert.equal(byRole.panel_pipe_holder.quantity, 2);
 }
@@ -55,7 +55,7 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
 {
     const rows = shower.buildRequirements({layoutType: 'freestanding', sectionCount: 2, depth: 1200, roomWidth: 3200});
     const byRole = Object.fromEntries(rows.map(row => [row.role, row]));
-    assert.equal(byRole.top_pipe.quantity, 5.6, 'П-образная труба учитывает ширину и две глубины');
+    assert.equal(byRole.top_pipe.quantity, 6, 'П-образная труба учитывает ширину, две глубины и округляется до погонного метра');
     assert.equal(byRole.elbow_90.quantity, 2);
     assert.equal(byRole.panel_pipe_holder.quantity, 3);
 }
@@ -65,6 +65,14 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
     const byRole = Object.fromEntries(rows.map(row => [row.role, row]));
     assert.equal(byRole.top_pipe, undefined, 'при креплении к потолку труба не нужна');
     assert.equal(byRole.ceiling_profile.quantity, 2);
+}
+
+{
+    const rows = shower.buildRequirements({layoutType: 'corner', sectionCount: 2, partitionCount: 2, depth: 1200, height: 2050, floorMount: 'profile', wallMount: 'profile', ceilingMount: 'profile'});
+    const byRole = Object.fromEntries(rows.map(row => [row.role, row]));
+    assert.equal(byRole.floor_profile.quantity, 3, 'нижний П-профиль идёт на всю глубину каждой перегородки и округляется вверх');
+    assert.equal(byRole.ceiling_profile.quantity, 3, 'верхний П-профиль идёт на всю глубину каждой перегородки и округляется вверх');
+    assert.equal(byRole.wall_profile.quantity, 5, 'стеновой П-профиль также округляется вверх');
 }
 
 {
