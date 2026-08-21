@@ -15,8 +15,8 @@ assert.match(page, /id="custom_sheet_height"/, 'Должен быть ввод �
 assert.match(page, /id="shower_fascia_width"/, 'Должна быть ширина перемычки');
 assert.match(page, /id="shower_fascia_height"/, 'Должна быть высота перемычки');
 assert.match(page, /id="collection-field" class="hidden"/, 'Серия должна быть скрыта до выбора поставщика');
-assert.match(page, /class="grid calculation-filters"[\s\S]*id="manufacturer_id"[\s\S]*id="decor_input"[\s\S]*id="panel_format_id"[\s\S]*id="supplier_id"[\s\S]*id="collection-field"/, 'Производители панели и фурнитуры, декор, формат листа и серия должны находиться в одной строке');
-assert.match(page, /\.calculation-filters\{grid-template-columns:repeat\(5,minmax\(0,1fr\)\)\}/, 'Строка основных фильтров должна состоять из пяти колонок');
+assert.match(page, /class="grid calculation-filters"[\s\S]*id="manufacturer_id"[\s\S]*id="decor_input"[\s\S]*id="panel_format_id"[\s\S]*id="partition_type_id"[\s\S]*id="supplier_id"[\s\S]*id="collection-field"/, 'Тип перегородки должен находиться после формата листа в одной строке с остальными фильтрами');
+assert.match(page, /\.calculation-filters\{grid-template-columns:repeat\(6,minmax\(0,1fr\)\)\}/, 'Строка основных фильтров должна состоять из шести колонок');
 assert.match(page, /company_name[^\n]*=== 'Китай'/, 'Производителем фурнитуры по умолчанию должен быть Китай');
 assert.doesNotMatch(page, /Все поставщики/, 'В списке производителей фурнитуры не должно быть пункта «Все поставщики»');
 assert.doesNotMatch(page, /Все серии/, 'В списке серий не должно быть пункта «Все серии»');
