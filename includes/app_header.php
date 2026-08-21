@@ -82,6 +82,9 @@ function app_header_styles(): string
 .app-header__pill{min-height:22px;padding:0 8px;color:#bfdbfe;background:#173256}.app-header__spacer{flex:1}.app-header__rates strong{color:#fff}.app-header__refresh{width:28px;height:28px;padding:0;justify-content:center;border:0;background:transparent;color:#94a3b8;border-radius:7px;cursor:pointer;font-size:16px}.app-header__refresh:hover{color:#fff;background:#334155}.app-header__refresh:disabled{cursor:wait;opacity:.6}.app-header__refresh--loading{animation:app-header-spin .8s linear infinite}@keyframes app-header-spin{to{transform:rotate(360deg)}}.app-header__currency{padding:3px}.app-header__currency-label{padding-left:7px;color:#94a3b8}.app-header__currency-option{border:0;background:transparent;color:#cbd5e1;padding:7px 8px;border-radius:7px;font:800 11px inherit;cursor:pointer}.app-header__currency-option:hover{background:#334155}.app-header__currency-option--active{color:#fff;background:#2563eb!important}.app-header__button{cursor:pointer}.app-header__button:hover{background:#334155}.app-header__user{color:#fff}.app-header__mode,.app-header__logout{color:#94a3b8;text-decoration:none;font-size:18px;display:inline-flex;align-items:center;justify-content:center}.app-header__mode:hover,.app-header__logout:hover{color:#fff}
 /* A common finish for legacy pages; local layouts stay intact. */
 body:not(.login-page){background-color:var(--app-bg)}main.container,.container{width:min(100% - 32px,1280px)}.panel,.card{border-color:var(--app-line)!important;border-radius:var(--app-radius)!important;box-shadow:var(--app-shadow)!important}.card{transition:transform .18s ease,box-shadow .18s ease}.card:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(15,23,42,.12)!important}button,.btn,.card a{transition:background .16s ease,transform .16s ease}button:active,.btn:active{transform:translateY(1px)}input,select,textarea{border-radius:9px!important;border-color:#cbd5e1!important;font:inherit}input:focus,select:focus,textarea:focus{outline:3px solid rgba(37,99,235,.14);border-color:#60a5fa!important}table{border-radius:12px;overflow:hidden}th{color:#475569;font-size:12px;letter-spacing:.02em}a:focus-visible,button:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
+/* Поля с единицами измерения в стиле макета: подпись в разрыве рамки,
+   единица всегда видна внутри поля справа. */
+.app-unit-field{position:relative;display:block;padding:0;margin-top:7px}.app-unit-field>label.app-unit-field__label{position:absolute;z-index:2;top:0;left:16px;max-width:calc(100% - 32px);margin:0;padding:0 6px;background:#fff;color:#3154d9;font-size:13px;font-weight:500;line-height:18px;transform:translateY(-50%);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}.app-unit-field>input.app-unit-field__input{height:58px;min-height:58px;padding:15px 76px 11px 18px!important;border:1px solid #3154d9!important;border-radius:7px!important;background:#fff;font-size:18px;line-height:1.25;font-variant-numeric:tabular-nums}.app-unit-field>input.app-unit-field__input:focus{border-color:#2447da!important;outline:0;box-shadow:0 0 0 3px rgba(49,84,217,.14)}.app-unit-field__unit{position:absolute;z-index:1;top:50%;right:18px;max-width:42%;color:#9297a3;font-size:16px;line-height:1;transform:translateY(-50%);white-space:nowrap;pointer-events:none}.app-unit-field--wide-unit>input.app-unit-field__input{padding-right:112px!important}
 @media(max-width:1100px){:root{--app-header-height:126px}.app-header__inner{flex-wrap:wrap;align-content:center}.app-header__brand{flex:1}.app-header__spacer{display:none}.app-header__rates{order:3}.app-header__currency{order:4}}
 @media(max-width:680px){:root{--app-header-height:174px}.app-header__inner{padding:8px 12px;gap:7px}.app-header__brand{flex-basis:100%}.app-header__button span{display:none}.app-header__rates{font-size:11px}.app-header__user{margin-left:auto}main.container,.container{width:min(100% - 20px,1280px);padding-left:0!important;padding-right:0!important}}
 @media print{body{padding-top:0!important}.app-header{display:none!important}.panel,.card{box-shadow:none!important}}
@@ -144,6 +147,50 @@ function render_app_header(string $section = 'Калькулятор'): void
   const convert = (value, from = 'RUB', to = selected) => Number(value) * rate(from) / rate(to);
   const format = (value, code = selected) => new Intl.NumberFormat('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2}).format(Number(value) || 0) + ' ' + (symbols[code] || code);
   const api = window.AppCurrency = {rates, get code(){return selected}, convert, format, fromRub:(v,to=selected)=>convert(v,'RUB',to)};
+  const unitFieldPattern = /^(.*?)(?:,\s*|\s+)(мм|см|м|м²|м2|м³|м3|м\.\s*п\.|мп|шт\.|кг|г|л|%|₽|руб\.?|€|\$)$/iu;
+  const parenthesizedUnitPattern = /^(.*?)(?:,?\s*)(?:за\s+ед\.\s*)?\(([₽€$]|(?:₽|руб\.?)\s*\/\s*[^)]+)\)$/iu;
+  const pricePerUnitPattern = /^(Цена)\s+за\s+(м²|м2|м³|м3|м\.\s*п\.|мп|шт\.)$/iu;
+  function measurementCaption(label) {
+    const source = label.textContent.replace(/\s+/g, ' ').trim();
+    let match = source.match(parenthesizedUnitPattern);
+    if (match) return {caption:match[1].replace(/,\s*$/, '').trim(), unit:match[2].replace(/\s+/g, '')};
+    match = source.match(pricePerUnitPattern);
+    if (match) return {caption:match[1], unit:'₽/' + match[2]};
+    match = source.match(unitFieldPattern);
+    return match ? {caption:match[1].trim(), unit:match[2].replace(/^м2$/iu, 'м²').replace(/^м3$/iu, 'м³')} : null;
+  }
+  function enhanceMeasurementFields(root = document) {
+    const labels = root.matches?.('label') ? [root] : root.querySelectorAll?.('label') || [];
+    labels.forEach(label => {
+      if (label.dataset.unitFieldReady === '1' || label.closest('.app-header,.input-unit,.value-with-unit,table')) return;
+      const input = label.htmlFor ? document.getElementById(label.htmlFor) : label.parentElement?.querySelector(':scope > input');
+      if (!(input instanceof HTMLInputElement) || !['number','text'].includes(input.type) || input.classList.contains('app-unit-field__input')) return;
+      const field = measurementCaption(label);
+      if (!field || !field.caption) return;
+      const parent = input.parentElement;
+      if (!parent || label.parentElement !== parent) return;
+      parent.classList.add('app-unit-field');
+      if (field.unit.length > 5) parent.classList.add('app-unit-field--wide-unit');
+      label.dataset.unitFieldReady = '1';
+      label.classList.add('app-unit-field__label');
+      label.textContent = field.caption;
+      input.classList.add('app-unit-field__input');
+      const unit = document.createElement('span');
+      unit.className = 'app-unit-field__unit';
+      unit.setAttribute('aria-hidden', 'true');
+      unit.textContent = field.unit;
+      input.insertAdjacentElement('afterend', unit);
+      input.setAttribute('aria-label', field.caption + ', ' + field.unit);
+    });
+  }
+  window.AppUnitFields = {enhance:enhanceMeasurementFields};
+  const startUnitFields = () => {
+    enhanceMeasurementFields(document);
+    new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(node => {
+      if (node.nodeType === Node.ELEMENT_NODE) enhanceMeasurementFields(node);
+    }))).observe(document.body, {childList:true, subtree:true});
+  };
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', startUnitFields, {once:true}) : startUnitFields();
   const originalText = new WeakMap();
   const renderTagged = root => {
     const nodes = root.matches?.('[data-currency-value]') ? [root] : root.querySelectorAll?.('[data-currency-value]') || [];
