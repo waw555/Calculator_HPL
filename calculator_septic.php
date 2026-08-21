@@ -58,7 +58,8 @@ $suppliersList = $pdo->query('SELECT * FROM suppliers ORDER BY company_name ASC'
 $collections = $pdo->query('SELECT fcol.*, s.company_name AS supplier_name FROM furniture_collections fcol LEFT JOIN suppliers s ON s.id = fcol.supplier_id ORDER BY s.company_name ASC, fcol.name ASC')->fetchAll();
 $furnitureCatalog = $pdo->query('SELECT pl.*, fc.name AS category_name, s.company_name AS supplier_name, fcol.name AS collection_name FROM price_list pl LEFT JOIN furniture_categories fc ON fc.id = pl.category_id LEFT JOIN suppliers s ON s.id = pl.supplier_id LEFT JOIN furniture_collections fcol ON fcol.id = pl.collection_id WHERE pl.is_active = 1 ORDER BY s.company_name ASC, fcol.name ASC, fc.name ASC, pl.material_name ASC')->fetchAll();
 $currencyRates = $pdo->query('SELECT code, nominal, rate_to_rub FROM currencies')->fetchAll();
-$services = $pdo->query('SELECT * FROM services WHERE is_active = 1 ORDER BY name ASC')->fetchAll();
+$services = $pdo->query('SELECT s.*, pts.partition_type_id, pts.sort_order AS type_sort_order FROM partition_type_services pts JOIN services s ON s.id = pts.service_id WHERE s.is_active = 1 ORDER BY pts.partition_type_id, pts.sort_order, s.name')->fetchAll();
+$allServices = $pdo->query('SELECT * FROM services WHERE is_active = 1 ORDER BY name')->fetchAll();
 $savedCalculations = $pdo->prepare('SELECT id, title, total_amount, currency, created_at FROM saved_calculations WHERE user_id = :user_id ORDER BY id DESC LIMIT 10');
 $savedCalculations->execute(['user_id' => (int)$_SESSION['user_id']]);
 $recentCalculations = $savedCalculations->fetchAll();
@@ -303,12 +304,6 @@ tbody tr:hover td { background:#fbfcfe; }
                         <div id="hardware-role-list" class="hardware-picker"></div>
                         <div class="shower-note">По умолчанию подставляется товар из выбранных производителя и серии. Его можно заменить любым товаром из той же группы: ножкой, П-профилем или уголком. Перед расчётом проверьте выбранный артикул для каждой роли.</div>
                     </div>
-                    <div class="shower-step">
-                        <div class="shower-step__title"><span class="shower-step__number">05</span>Дополнительные услуги</div>
-                        <div class="service-adder"><select id="shower-service-select" aria-label="Услуга из базы"></select><button id="shower-service-add" type="button">Добавить услугу</button></div>
-                        <div id="shower-extra-services" class="extra-service-list"></div>
-                        <div class="shower-note">Торцевание, раскрой и фаска рассчитываются автоматически. Здесь можно добавить другие активные услуги из базы и указать их объём.</div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -353,6 +348,8 @@ tbody tr:hover td { background:#fbfcfe; }
                 <div class="data-card" style="margin-top:18px">
                     <h3>Производство и услуги</h3>
                     <table class="mini-table"><thead><tr><th>Наименование</th><th>Объем</th><th>Цена из БД</th><th>Стоимость</th></tr></thead><tbody id="services-body"></tbody></table>
+                    <div class="service-adder" style="margin-top:12px"><select id="result-service-select" aria-label="Дополнительная услуга"><option value="">— Добавить услугу —</option><?php foreach ($allServices as $service): ?><option value="<?php echo e((string)$service['id']); ?>"><?php echo e($service['name']); ?> · <?php echo e($service['unit']); ?></option><?php endforeach; ?></select><button id="result-service-add" type="button">Добавить</button></div>
+                    <p class="hint">Дополнительные услуги добавляются после основного расчёта. Количество можно изменить в таблице.</p>
                 </div>
                 <table><tbody id="totals-body"></tbody></table>
             </div>
@@ -436,6 +433,7 @@ const panels = <?php echo json_encode($panels, JSON_UNESCAPED_UNICODE | JSON_UNE
 const furnitureCatalog = <?php echo json_encode(array_values($furnitureCatalog), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const currencyRates = <?php echo json_encode(array_values($currencyRates), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const services = <?php echo json_encode($services, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const allServices = <?php echo json_encode($allServices, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const formatter = new Intl.NumberFormat('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const typeSelect = document.getElementById('partition_type_id');
 const paramsNode = document.getElementById('dynamic-parameters');
@@ -447,6 +445,13 @@ let partitionCounter = 0;
 function money(value, currency = 'RUB') {
     const symbol = ({RUR: '₽', RUB: '₽', EUR: '€', USD: '$'})[currency] || currency;
     return `${formatter.format(Number(value) || 0)} ${symbol}`;
+}
+function servicePriceRub(service) {
+    const code = String(service.currency || 'RUB').toUpperCase();
+    const price = Number(service.price || 0);
+    if (code === 'RUB') return price;
+    const rate = currencyRates.find(row => String(row.code).toUpperCase() === code);
+    return rate ? price * Number(rate.rate_to_rub || 0) / Math.max(1, Number(rate.nominal || 1)) : price;
 }
 function numberValue(id) { return parseFloat(document.getElementById(id)?.value || '0') || 0; }
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[ch])); }
@@ -529,10 +534,11 @@ function calculate() {
     const hardware = [];
     const hardwareTotal = hardware.reduce((sum, item) => sum + item.sum, 0);
     const products = [{name: inputs.partition_type_name || 'Перегородка', quantity: doors, length, height, depth, area: areaM2, size: `${Math.round(length / doors)}×${Math.round(height)} мм`, price: materialPrice, currency: panel?.currency || 'RUB', sum: materialTotal}];
-    const serviceRows = services.slice(0, 4).map(service => {
+    const serviceRows = services.filter(service => String(service.partition_type_id) === String(inputs.partition_type_id)).map(service => {
         const volume = String(service.unit || '').includes('м') ? areaM2 : doors;
-        const sum = volume * Number(service.price || 0);
-        return {name: service.name, volume, unit: service.unit, price: Number(service.price || 0), currency: service.currency || 'RUB', sum};
+        const price = servicePriceRub(service);
+        const sum = volume * price;
+        return {name: service.name, volume, unit: service.unit, price, currency: 'RUB', sum};
     });
     const servicesTotal = serviceRows.reduce((sum, item) => sum + item.sum, 0);
     const wasteCost = panel && sheetArea > 0 ? wasteArea * (materialTotal / sheetArea) : 0;
@@ -548,7 +554,9 @@ function renderCalculation(calc) {
     document.querySelectorAll('[data-hardware-index]').forEach(input => input.addEventListener('change', () => updateHardwareQty(Number(input.dataset.hardwareIndex), input.value)));
     document.getElementById('products-body').innerHTML = calc.products.map(item => `<tr><td>${escapeHtml(item.name)}<br><span class="hint">${escapeHtml(panelTitle)}</span></td><td class="text-center">${item.quantity}</td><td class="yellow-cell">${escapeHtml(item.size)}</td><td class="text-center">${formatter.format(item.area || calc.totals.areaM2)} м²</td><td class="text-right">${money(item.sum, item.currency)}</td></tr>`).join('');
     document.getElementById('products-summary').textContent = `Материал: ${formatter.format(calc.totals.sheets)} лист(ов), полезная площадь ${formatter.format(calc.totals.areaM2)} м². Ориентировочный отход: ${formatter.format(calc.totals.wasteArea)} м².`;
-    document.getElementById('services-body').innerHTML = calc.services.length ? calc.services.map(item => `<tr><td>${escapeHtml(item.name)}${item.description ? `<div class="hint">${escapeHtml(item.description)}</div>` : ''}</td><td>${formatter.format(item.volume)} ${escapeHtml(item.unit)}</td><td>${money(item.price, item.currency)}</td><td>${money(item.sum, item.currency)}</td></tr>`).join('') : '<tr><td colspan="4">Добавьте в БД активные услуги «Торцевание», «Раскрой» и «Фаска».</td></tr>';
+    document.getElementById('services-body').innerHTML = calc.services.length ? calc.services.map((item, index) => `<tr><td>${escapeHtml(item.name)}${item.description ? `<div class="hint">${escapeHtml(item.description)}</div>` : ''}${item.isAdditional ? `<button type="button" class="danger" data-service-remove="${index}" style="margin-top:5px;padding:4px 8px">Удалить</button>` : ''}</td><td>${item.isAdditional ? `<input data-service-volume="${index}" type="number" min="0" step="0.01" value="${item.volume}" style="max-width:110px">` : formatter.format(item.volume)} ${escapeHtml(item.unit)}</td><td>${money(item.price, item.currency)}</td><td>${money(item.sum, item.currency)}</td></tr>`).join('') : '<tr><td colspan="4">Для этого типа перегородки базовые услуги не выбраны.</td></tr>';
+    document.querySelectorAll('[data-service-volume]').forEach(input => input.addEventListener('change', () => updateServiceVolume(Number(input.dataset.serviceVolume), input.value)));
+    document.querySelectorAll('[data-service-remove]').forEach(button => button.addEventListener('click', () => removeService(Number(button.dataset.serviceRemove))));
     document.getElementById('totals-body').innerHTML = `<tr><td>Стоимость отхода/остатка материала</td><td class="text-right">${money(calc.totals.wasteCost)}</td></tr><tr><td>Всего за изделие</td><td class="text-right"><strong>${money(calc.totals.total)}</strong></td></tr>`;
     document.getElementById('hardware-total-card').textContent = money(calc.totals.hardwareTotal);
     document.getElementById('material-total-card').textContent = money(calc.totals.materialTotal);
@@ -567,6 +575,34 @@ function updateHardwareQty(index, value) {
     currentCalculation.totals.total = currentCalculation.totals.hardwareTotal + currentCalculation.totals.materialTotal + currentCalculation.totals.servicesTotal;
     currentCalculation.total_amount = currentCalculation.totals.total;
     renderCalculation(currentCalculation);
+}
+function recalculateServices() {
+    currentCalculation.totals.servicesTotal = currentCalculation.services.reduce((sum, row) => sum + row.sum, 0);
+    currentCalculation.totals.total = currentCalculation.totals.hardwareTotal + currentCalculation.totals.materialTotal + currentCalculation.totals.servicesTotal;
+    currentCalculation.total_amount = currentCalculation.totals.total;
+    renderCalculation(currentCalculation);
+}
+function updateServiceVolume(index, value) {
+    if (!currentCalculation?.services[index]?.isAdditional) return;
+    const item = currentCalculation.services[index];
+    item.volume = Math.max(0, parseFloat(value || '0') || 0);
+    item.sum = item.volume * item.price;
+    recalculateServices();
+}
+function removeService(index) {
+    if (!currentCalculation?.services[index]?.isAdditional) return;
+    currentCalculation.services.splice(index, 1);
+    recalculateServices();
+}
+function addResultService() {
+    if (!currentCalculation) return;
+    const select = document.getElementById('result-service-select');
+    const service = allServices.find(row => String(row.id) === String(select.value));
+    if (!service) return;
+    const price = servicePriceRub(service);
+    currentCalculation.services.push({id: service.id, name: service.name, description: 'Дополнительная услуга', volume: 1, unit: service.unit, price, currency: 'RUB', sum: price, isAdditional: true});
+    select.value = '';
+    recalculateServices();
 }
 async function saveCalculation(calc) {
     if (!calc) { calc = {id: Date.now(), ...collectInputs(), total_amount: 0, currency: 'RUB', notice: 'Черновик без детального расчета'}; }
@@ -655,6 +691,7 @@ calculateBtn.addEventListener('click', calculate);
 document.getElementById('save-draft-btn').addEventListener('click', () => saveCalculation(currentCalculation));
 document.getElementById('save-result-btn').addEventListener('click', () => saveCalculation(currentCalculation));
 document.getElementById('add-offer-btn').addEventListener('click', addToOffer);
+document.getElementById('result-service-add').addEventListener('click', addResultService);
 document.getElementById('export-excel-btn').addEventListener('click', exportExcel);
 document.getElementById('export-pdf-btn').addEventListener('click', exportPdf);
 renderOffer();
