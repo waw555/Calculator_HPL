@@ -30,6 +30,10 @@ assert.match(integration, /calculateShower/, 'Должен быть отдель
 assert.match(integration, /calculateBtn\.addEventListener\('click',[\s\S]*stopImmediatePropagation\(\)[\s\S]*calculateShower\(\)[\s\S]*true\)/, 'Кнопка должна запускать расчёт душевой вместо общего расчёта');
 assert.match(integration, /serviceVolumes\(layout, panel\)/, 'Объём услуг должен рассчитываться по геометрии листов и изделий');
 assert.match(integration, /\/торцеван\/i[\s\S]*\/раскро\/i[\s\S]*\/фаск\/i/, 'Для душевых должны выбираться три услуги из базы');
+assert.match(page, /id="shower-service-select"/, 'Должен быть выбор дополнительной услуги из базы');
+assert.match(page, /id="shower-service-add"/, 'Должна быть кнопка добавления услуги');
+assert.match(integration, /return defaults\.concat\(additional\)/, 'Три расчётные услуги должны дополняться выбранными услугами');
+assert.match(integration, /data-extra-service-volume/, 'Для дополнительной услуги должен задаваться объём');
 assert.match(integration, /estimatePanelLayout/, 'Расчёт должен использовать раскладку по листам');
 assert.match(integration, /buildRequirements/, 'Расчёт должен формировать спецификацию фурнитуры');
 assert.match(integration, /Группа: '[\s\S]*requirement\.groupLabel/, 'В строке роли должна отображаться выбранная группа товаров');
