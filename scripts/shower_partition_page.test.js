@@ -27,6 +27,7 @@ assert.match(page, /scripts\/shower_partition_page\.js/, 'Интеграция �
 assert.match(page, /FROM price_list pl/, 'Каталог фурнитуры должен загружаться из базы');
 assert.match(page, /fetch\('calculator_septic\.php'/, 'Сохранение должно отправляться в текущий обработчик');
 assert.match(integration, /calculateShower/, 'Должен быть отдельный расчёт душевой перегородки');
+assert.match(integration, /calculateBtn\.addEventListener\('click',[\s\S]*stopImmediatePropagation\(\)[\s\S]*calculateShower\(\)[\s\S]*true\)/, 'Кнопка должна запускать расчёт душевой вместо общего расчёта');
 assert.match(integration, /serviceVolumes\(layout, panel\)/, 'Объём услуг должен рассчитываться по геометрии листов и изделий');
 assert.match(integration, /\/торцеван\/i[\s\S]*\/раскро\/i[\s\S]*\/фаск\/i/, 'Для душевых должны выбираться три услуги из базы');
 assert.match(integration, /estimatePanelLayout/, 'Расчёт должен использовать раскладку по листам');

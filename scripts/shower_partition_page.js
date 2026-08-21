@@ -282,6 +282,11 @@
     });
     document.getElementById('collection_id').addEventListener('change', refresh);
     document.getElementById('shower_ceiling_mount').addEventListener('change', refresh);
+    calculateBtn.addEventListener('click', function (event) {
+        if (!showerSelected()) return;
+        event.stopImmediatePropagation();
+        calculateShower();
+    }, true);
     renderCollections();
     refresh();
 })();
