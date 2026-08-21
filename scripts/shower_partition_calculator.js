@@ -84,9 +84,9 @@
     }
 
     const ROLE_DEFINITIONS = {
-        floor_profile: {label: 'Крепление к полу', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профил'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профил']},
-        wall_profile: {label: 'Крепление к стене', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профил'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профил']},
-        ceiling_profile: {label: 'Крепление к потолку', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профил'], categoryKeywords: ['p-проф', 'п-проф', 'u-проф', 'профил']},
+        floor_profile: {label: 'Крепление к полу', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профил'], categoryNames: ['профиль']},
+        wall_profile: {label: 'Крепление к стене', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профил'], categoryNames: ['профиль']},
+        ceiling_profile: {label: 'Крепление к потолку', groupLabel: 'П-профиль', unit: 'м', unitKind: 'linear', keywords: ['p-проф', 'п-проф', 'u-проф', 'профил'], categoryNames: ['профиль']},
         floor_leg: {label: 'Крепление к полу', groupLabel: 'Ножка', unit: 'шт.', unitKind: 'piece', keywords: ['ножк', 'опор'], categoryKeywords: ['ножк', 'опор']},
         floor_angle: {label: 'Крепление к полу', groupLabel: 'Уголок', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов'], categoryKeywords: ['уголок', 'углов']},
         wall_angle: {label: 'Крепление к стене', groupLabel: 'Уголок', unit: 'шт.', unitKind: 'piece', keywords: ['уголок', 'углов'], categoryKeywords: ['уголок', 'углов']},
@@ -206,6 +206,9 @@
             .filter(item => !collectionId || Number(item.collection_id || 0) === collectionId)
             .filter(item => {
                 const category = normalizeText(item.category_name);
+                if ((requirementRow.categoryNames || []).length) {
+                    return requirementRow.categoryNames.some(name => category === normalizeText(name));
+                }
                 return (requirementRow.categoryKeywords || []).some(keyword => category.includes(normalizeText(keyword)));
             })
             .map(item => ({...item, matchScore: itemScore(requirementRow, item)}))
