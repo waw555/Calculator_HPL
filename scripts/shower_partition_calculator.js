@@ -104,20 +104,24 @@
         return {...definition, role, quantity: Math.round(quantity * 1000) / 1000, note};
     }
 
+    function roundedLinearRequirement(role, lengthMm, note = '') {
+        return requirement(role, Math.ceil(positive(lengthMm) / 1000), note);
+    }
+
     function buildRequirements(input = {}) {
         const config = normalizedConfig(input);
         const rows = [];
         const sideMultiplier = config.angleSides;
 
-        if (config.floorMount === 'profile') rows.push(requirement('floor_profile', config.depth * config.partitionCount / 1000, 'Суммарная длина нижних кромок'));
+        if (config.floorMount === 'profile') rows.push(roundedLinearRequirement('floor_profile', config.depth * config.partitionCount, 'Суммарная длина нижних кромок, округлённая до погонного метра'));
         else if (config.floorMount === 'leg') {
             rows.push(requirement('floor_leg', config.partitionCount, 'По одной ножке высотой 150 мм на перегородку'));
         } else rows.push(requirement('floor_angle', anglePointCount(config.depth) * config.partitionCount * sideMultiplier, sideMultiplier === 2 ? 'С двух сторон' : 'С одной стороны'));
 
-        if (config.wallMount === 'profile') rows.push(requirement('wall_profile', config.height * config.partitionCount / 1000, 'Суммарная высота стеновых кромок'));
+        if (config.wallMount === 'profile') rows.push(roundedLinearRequirement('wall_profile', config.height * config.partitionCount, 'Суммарная высота стеновых кромок, округлённая до погонного метра'));
         else rows.push(requirement('wall_angle', anglePointCount(config.height) * config.partitionCount * sideMultiplier, sideMultiplier === 2 ? 'С двух сторон' : 'С одной стороны'));
 
-        if (config.ceilingMount === 'profile') rows.push(requirement('ceiling_profile', config.depth * config.partitionCount / 1000, 'Суммарная длина верхних кромок'));
+        if (config.ceilingMount === 'profile') rows.push(roundedLinearRequirement('ceiling_profile', config.depth * config.partitionCount, 'Суммарная длина верхних кромок, округлённая до погонного метра'));
         else if (config.ceilingMount === 'angle') rows.push(requirement('ceiling_angle', anglePointCount(config.depth) * config.partitionCount * sideMultiplier, sideMultiplier === 2 ? 'С двух сторон' : 'С одной стороны'));
 
         if (config.railRoute !== 'none') {
@@ -125,7 +129,7 @@
             if (config.topSupport === 'aluminium_profile') {
                 rows.push(requirement('top_aluminium_profile', pipeLength, config.layoutLabel));
             } else {
-                rows.push(requirement('top_pipe', pipeLength, config.layoutLabel));
+                rows.push(requirement('top_pipe', Math.ceil(pipeLength), config.layoutLabel + ', округлено до погонного метра'));
                 rows.push(requirement('panel_pipe_holder', config.partitionCount, 'По одному на перегородку'));
                 rows.push(requirement('wall_pipe_holder', 2, 'Начальная и конечная точки'));
                 if (config.pipeElbows) rows.push(requirement('elbow_90', config.pipeElbows, config.pipeElbows === 1 ? 'Один поворот трубы' : 'Два поворота трубы'));
