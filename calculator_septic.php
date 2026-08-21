@@ -158,6 +158,7 @@ th { background: #edf6ff; color: #0f172a; font-size: 12px; text-transform: upper
 .offer-row-actions { display:flex; gap:6px; white-space:nowrap; }
 .offer-table td input, .offer-table td select { width:100%; padding:4px 6px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; background:#fff; }
 .offer-table td.no-edit { background:#f8fafc; }
+.calculation-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:11px}.calculation-table{min-width:1180px;margin:0}.calculation-table th{white-space:normal;text-align:center;font-style:italic}.calculation-table td{vertical-align:middle}.calculation-table .item-name{min-width:270px;line-height:1.55}.calculation-empty{padding:28px;text-align:center;color:var(--muted);background:#f8fafc}.calculation-toolbar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}.cutting-maps{display:grid;gap:10px;margin-top:18px}.cutting-map{border:1px solid var(--line);border-radius:10px;background:#fff}.cutting-map summary{padding:13px 15px;cursor:pointer;font-weight:800;color:#172033}.cutting-map__body{padding:0 15px 15px}.cutting-map svg{display:block;width:100%;max-width:760px;height:auto;background:#f8fafc;border:1px solid #cbd5e1}.calculation-total{margin-top:14px;text-align:right;font-size:18px;font-weight:900}
 
 /* Visual system shared with calculator_cutting.php */
 :root { --ink:#0f172a; --muted:#64748b; --line:#dfe6ef; --panel:#fff; --soft:#f6f8fb; --brand:#4f46e5; --accent:#e9164d; --dark:#111a2d; }
@@ -230,7 +231,10 @@ tbody tr:hover td { background:#fbfcfe; }
 <main class="container">
     <div class="tabs-bar">
         <button class="tab-btn active" onclick="switchTab('calc')" id="tab-btn-calc">
-            <span class="tab-icon">🧮</span> Расчёт
+            <span class="tab-icon">🧮</span> Калькулятор
+        </button>
+        <button class="tab-btn" onclick="switchTab('calculation')" id="tab-btn-calculation">
+            <span class="tab-icon">📋</span> Расчёт <span id="calculation-count" class="badge">0</span>
         </button>
         <button class="tab-btn" onclick="switchTab('offer')" id="tab-btn-offer">
             <span class="tab-icon">📄</span> Коммерческое предложение
@@ -353,12 +357,24 @@ tbody tr:hover td { background:#fbfcfe; }
                 <table><tbody id="totals-body"></tbody></table>
             </div>
         </div>
-        <div class="actions" style="margin-top:20px"><button id="save-result-btn" type="button">Сохранить расчет</button><button id="add-offer-btn" type="button" class="success">Добавить в Коммерческое предложение</button></div>
+        <div class="actions" style="margin-top:20px"><button id="save-result-btn" type="button">Сохранить расчет</button><button id="add-calculation-btn" type="button" class="success">Добавить в расчёт</button></div>
     </section>
 
     </div><!-- /tab-calc -->
 
-    <!-- ═══════════ ВКЛАДКА 2: КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ ═══════════ -->
+    <!-- ═══════════ ВКЛАДКА: СВОДНЫЙ РАСЧЁТ ═══════════ -->
+    <div class="tab-pane" id="tab-calculation">
+        <section class="panel">
+            <div class="calculation-toolbar">
+                <div><h2 style="margin-bottom:6px">Расчёт перегородок</h2><div class="hint">Все добавленные в расчёт перегородки и их итоговая стоимость.</div></div>
+                <div class="actions"><button id="cutting-map-btn" type="button" class="secondary">Карта раскроя</button><button id="create-offer-btn" type="button" class="success">Создать коммерческое предложение</button></div>
+            </div>
+            <div id="calculation-list"></div>
+            <div id="calculation-maps" class="cutting-maps"></div>
+        </section>
+    </div>
+
+    <!-- ═══════════ ВКЛАДКА: КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ ═══════════ -->
     <div class="tab-pane" id="tab-offer">
 
     <section class="panel printable-offer">
@@ -440,6 +456,8 @@ const calculateBtn = document.getElementById('calculate-btn');
 const resultPanel = document.getElementById('result-panel');
 let currentCalculation = null;
 let offerItems = [];
+let calculationItems = [];
+try { calculationItems = JSON.parse(localStorage.getItem('septic-calculation-items') || '[]'); } catch (_) { calculationItems = []; }
 let partitionCounter = 0;
 function money(value, currency = 'RUB') {
     const symbol = ({RUR: '₽', RUB: '₽', EUR: '€', USD: '$'})[currency] || currency;
@@ -661,14 +679,53 @@ async function saveCalculation(calc) {
     const result = await response.json();
     document.getElementById('save-message').textContent = result.message || (result.ok ? 'Сохранено.' : 'Ошибка сохранения.');
 }
-function addToOffer() {
-    if (!currentCalculation) return;
-    offerItems.push(JSON.parse(JSON.stringify(currentCalculation)));
+function createOffer() {
+    if (!calculationItems.length) return;
+    offerItems = JSON.parse(JSON.stringify(calculationItems));
     renderOffer();
-    resultPanel.classList.add('hidden');
-    currentCalculation = null;
     switchTab('offer');
 }
+function addToCalculation() {
+    if (!currentCalculation) return;
+    calculationItems.push(JSON.parse(JSON.stringify(currentCalculation)));
+    localStorage.setItem('septic-calculation-items', JSON.stringify(calculationItems));
+    renderCalculationList();
+    resultPanel.classList.add('hidden');
+    currentCalculation = null;
+    switchTab('calculation');
+}
+function calculationName(item) {
+    const cfg = item.showerConfig || {};
+    return `${item.partition_type_name || 'Перегородка'}<div class="hint">Помещения: ${escapeHtml(item.object_name || '—')}<br>Габаритный размер: ${formatter.format(item.length || cfg.roomWidth || 0)}×${formatter.format(item.height || cfg.height || 0)} мм.<br>Дверь: ${formatter.format(cfg.doorWidth || 0)}×${formatter.format(cfg.doorHeight || 0)} мм.<br>Цвет: ${escapeHtml(item.decor || '—')}</div>`;
+}
+function renderCalculationList() {
+    const node = document.getElementById('calculation-list');
+    document.getElementById('calculation-count').textContent = calculationItems.length;
+    if (!calculationItems.length) { node.innerHTML = '<div class="calculation-empty">В расчёте пока нет перегородок. Рассчитайте перегородку в калькуляторе и нажмите «Добавить в расчёт».</div>'; document.getElementById('calculation-maps').innerHTML=''; return; }
+    const rows = calculationItems.map((item,index) => {
+        const area = Number(item.totals?.areaM2 || 0), partitions = Number(item.showerConfig?.partitionCount || 1), cabins = Number(item.showerConfig?.sectionCount || item.doors || 1), total = Number(item.totals?.total || 0);
+        const unitArea = partitions > 0 ? area / partitions : area, cabinCost = cabins > 0 ? total / cabins : total, priceM2 = area > 0 ? total / area : 0;
+        return `<tr><td class="item-name">${calculationName(item)}</td><td class="text-center">${formatter.format(unitArea)}</td><td class="text-center">${formatter.format(area)}</td><td class="text-center">${formatter.format(partitions)}</td><td class="text-center">${formatter.format(cabins)}</td><td class="text-right">${money(cabinCost)}</td><td class="text-right">${money(priceM2)}</td><td class="text-right">${money(total)}</td><td class="text-right">${money(total)}</td><td><button type="button" class="danger" onclick="removeCalculationItem(${index})" aria-label="Удалить">🗑</button></td></tr>`;
+    }).join('');
+    const total = calculationItems.reduce((sum,item)=>sum+Number(item.totals?.total||0),0);
+    node.innerHTML = `<div class="calculation-table-wrap"><table class="calculation-table"><thead><tr><th>Наименование</th><th>Площадь панелей 1 перегородки, м²</th><th>Общая площадь, м²</th><th>Кол-во перегородок, шт</th><th>Кол. кабин в перегородке</th><th>Стоимость кабины</th><th>Цена за м²</th><th>Стоимость 1 перегородки</th><th>Итого стоимость</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="calculation-total">Итого: ${money(total)}</div>`;
+}
+function removeCalculationItem(index) { calculationItems.splice(index,1); localStorage.setItem('septic-calculation-items',JSON.stringify(calculationItems)); renderCalculationList(); }
+function cuttingPayload() {
+    const parts = calculationItems.flatMap((item,itemIndex)=>(item.products||[]).map((part,partIndex)=>({id:`${itemIndex+1}-${partIndex+1}`,name:`${item.partition_identifier || 'Перегородка '+(itemIndex+1)} · ${part.name}`,length:Number(part.length||0),width:Number(part.height||0),qty:Number(part.quantity||1),rotate:Boolean(item.showerConfig?.allowRotation),grainDirection:'none'})));
+    const materials = calculationItems.map(item=>item.panel).filter(Boolean).map((panel,index)=>({label:panel.name||`Лист ${index+1}`,height:Number(panel.height_mm),width:Number(panel.width_mm),qty:null,priceM2:Number(panel.price_per_m2||0),currency:panel.currency||'RUB',panelId:panel.id||null,manufacturerId:panel.manufacturer_id||null,grainDirection:panel.decor_direction||'none',margin:Number(calculationItems[index]?.showerConfig?.margin||0)})).filter(m=>m.height>0&&m.width>0);
+    return {source:'calculator_septic',parts,sourceMaterials:materials,settings:{kerf:Number(calculationItems[0]?.showerConfig?.kerf||4),margin:Number(calculationItems[0]?.showerConfig?.margin||5),method:'best'}};
+}
+function renderCuttingMaps() {
+    const maps=[];
+    calculationItems.forEach((item,itemIndex)=>(item.layout?.layouts||[]).forEach((sheet,sheetIndex)=>{
+        const panel=item.panel||{}, width=Number(panel.width_mm||1),height=Number(panel.height_mm||1),placed=sheet.placed||[];
+        const shapes=placed.map((p,i)=>`<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="hsl(${(i*67)%360} 65% 78%)" stroke="#334155"/><text x="${p.x+6}" y="${p.y+18}" font-size="12">${escapeHtml(p.name||'Деталь')}</text>`).join('');
+        maps.push(`<details class="cutting-map"><summary>Карта раскроя · ${escapeHtml(item.partition_identifier||'Перегородка '+(itemIndex+1))} · лист ${sheetIndex+1}</summary><div class="cutting-map__body"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Карта раскроя листа ${sheetIndex+1}"><rect width="${width}" height="${height}" fill="#fff" stroke="#0f172a" stroke-width="6"/>${shapes}</svg></div></details>`);
+    }));
+    document.getElementById('calculation-maps').innerHTML=maps.join('')||'<div class="notice">Для добавленных позиций нет готовых карт раскроя.</div>';
+}
+function openCuttingMaps() { if(!calculationItems.length)return; localStorage.setItem('calculator-cutting-import',JSON.stringify(cuttingPayload())); renderCuttingMaps(); window.open('calculator_cutting.php?import=septic','_blank','noopener'); }
 function offerRows(items) {
     return items.map((item, index) => {
         const area = item.totals?.areaM2 || 0;
@@ -738,14 +795,17 @@ typeSelect.addEventListener('change', renderParameters);
 calculateBtn.addEventListener('click', calculate);
 document.getElementById('save-draft-btn').addEventListener('click', () => saveCalculation(currentCalculation));
 document.getElementById('save-result-btn').addEventListener('click', () => saveCalculation(currentCalculation));
-document.getElementById('add-offer-btn').addEventListener('click', addToOffer);
+document.getElementById('add-calculation-btn').addEventListener('click', addToCalculation);
+document.getElementById('create-offer-btn').addEventListener('click', createOffer);
+document.getElementById('cutting-map-btn').addEventListener('click', openCuttingMaps);
 document.getElementById('result-service-add').addEventListener('click', addResultService);
 document.getElementById('export-excel-btn').addEventListener('click', exportExcel);
 document.getElementById('export-pdf-btn').addEventListener('click', exportPdf);
 renderOffer();
+renderCalculationList();
 
 function switchTab(name) {
-    ['calc','offer','history'].forEach(t => {
+    ['calc','calculation','offer','history'].forEach(t => {
         document.getElementById('tab-pane-' + t)?.classList.remove('active');
         document.getElementById('tab-btn-' + t)?.classList.remove('active');
         document.getElementById('tab-' + t)?.classList.remove('active');
