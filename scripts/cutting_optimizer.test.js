@@ -18,6 +18,8 @@ assert.ok(calculatorPage.includes('направление рисунка:'), 'н
 assert.ok(calculatorPage.includes('<span>Направление рисунка: <b>${sourceGrainLabel}</b></span>'), 'направление рисунка должно отображаться в информации о листе');
 assert.ok(calculatorPage.includes('>По длине листа</option>') && calculatorPage.includes('>По ширине листа</option>'), 'выбор направления должен использовать оси листа');
 assert.ok(adminPanelsPage.includes("'vertical' => 'По длине листа'") && adminPanelsPage.includes("'horizontal' => 'По ширине листа'"), 'справочник декоров должен использовать оси листа');
+assert.ok(calculatorPage.includes("sourceMaterials.every(material => (material.grainDirection || 'none') === 'none')"), 'поворот новой детали должен быть разрешён по умолчанию для декора без направления рисунка');
+assert.ok(calculatorPage.includes("rotate:defaultPartRotation()"), 'новая деталь должна получать настройку поворота из выбранного декора');
 function piece(overrides = {}) {
     return {id: 1, name: 'Деталь', w: 700, h: 1200, qtyLeft: 1, canRotate: false, grainDirection: 'none', ...overrides};
 }
