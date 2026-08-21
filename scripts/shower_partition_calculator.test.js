@@ -130,4 +130,17 @@ assert.equal(shower.anglePointCount(1000), 3, 'между крайними то�
     assert.equal(byRole.top_pipe, undefined);
 }
 
+{
+    const volumes = shower.serviceVolumes({
+        sheets: 2,
+        pieces: [
+            {width: 1000, height: 2000, quantity: 2},
+            {width: 700, height: 1900, quantity: 1}
+        ]
+    }, {width_mm: 1300, height_mm: 3050});
+    assert.equal(volumes.edging, 17.4, 'торцевание считается по периметру каждой целой панели');
+    assert.equal(volumes.cutting, 17.2, 'раскрой считается по периметру каждого изделия');
+    assert.equal(volumes.bevel, 11.8, 'фаска считается по двум сторонам высоты каждого изделия');
+}
+
 console.log('shower_partition_calculator: все тесты пройдены');

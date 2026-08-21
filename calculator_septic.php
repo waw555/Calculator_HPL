@@ -346,7 +346,7 @@ tbody tr:hover td { background:#fbfcfe; }
                 <p class="hint" id="products-summary"></p>
                 <div class="data-card" style="margin-top:18px">
                     <h3>Производство и услуги</h3>
-                    <table class="mini-table"><thead><tr><th>Наименование</th><th>Объем</th><th>Цена</th><th>Стоимость</th></tr></thead><tbody id="services-body"></tbody></table>
+                    <table class="mini-table"><thead><tr><th>Наименование</th><th>Объем</th><th>Цена из БД</th><th>Стоимость</th></tr></thead><tbody id="services-body"></tbody></table>
                 </div>
                 <table><tbody id="totals-body"></tbody></table>
             </div>
@@ -542,7 +542,7 @@ function renderCalculation(calc) {
     document.querySelectorAll('[data-hardware-index]').forEach(input => input.addEventListener('change', () => updateHardwareQty(Number(input.dataset.hardwareIndex), input.value)));
     document.getElementById('products-body').innerHTML = calc.products.map(item => `<tr><td>${escapeHtml(item.name)}<br><span class="hint">${escapeHtml(panelTitle)}</span></td><td class="text-center">${item.quantity}</td><td class="yellow-cell">${escapeHtml(item.size)}</td><td class="text-center">${formatter.format(item.area || calc.totals.areaM2)} м²</td><td class="text-right">${money(item.sum, item.currency)}</td></tr>`).join('');
     document.getElementById('products-summary').textContent = `Материал: ${formatter.format(calc.totals.sheets)} лист(ов), полезная площадь ${formatter.format(calc.totals.areaM2)} м². Ориентировочный отход: ${formatter.format(calc.totals.wasteArea)} м².`;
-    document.getElementById('services-body').innerHTML = calc.services.length ? calc.services.map(item => `<tr><td>${escapeHtml(item.name)}</td><td>${formatter.format(item.volume)} ${escapeHtml(item.unit)}</td><td>${money(item.price, item.currency)}</td><td>${money(item.sum, item.currency)}</td></tr>`).join('') : '<tr><td colspan="4">Активные услуги не заведены.</td></tr>';
+    document.getElementById('services-body').innerHTML = calc.services.length ? calc.services.map(item => `<tr><td>${escapeHtml(item.name)}${item.description ? `<div class="hint">${escapeHtml(item.description)}</div>` : ''}</td><td>${formatter.format(item.volume)} ${escapeHtml(item.unit)}</td><td>${money(item.price, item.currency)}</td><td>${money(item.sum, item.currency)}</td></tr>`).join('') : '<tr><td colspan="4">Добавьте в БД активные услуги «Торцевание», «Раскрой» и «Фаска».</td></tr>';
     document.getElementById('totals-body').innerHTML = `<tr><td>Стоимость отхода/остатка материала</td><td class="text-right">${money(calc.totals.wasteCost)}</td></tr><tr><td>Всего за изделие</td><td class="text-right"><strong>${money(calc.totals.total)}</strong></td></tr>`;
     document.getElementById('hardware-total-card').textContent = money(calc.totals.hardwareTotal);
     document.getElementById('material-total-card').textContent = money(calc.totals.materialTotal);

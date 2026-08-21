@@ -192,12 +192,19 @@
         return panel ? {panel: panel, layout: ShowerPartitionCalculator.estimatePanelLayout(current, panel, window.CuttingOptimizer)} : null;
     }
 
-    function serviceRows(area, quantity) {
-        return services.slice(0, 4).map(function (service) {
-            const volume = String(service.unit || '').toLocaleLowerCase('ru-RU').includes('м') ? area : quantity;
+    function serviceRows(layout, panel) {
+        const volumes = ShowerPartitionCalculator.serviceVolumes(layout, panel);
+        const showerServices = [
+            {pattern: /торцеван/i, volume: volumes.edging, description: 'Периметр всех использованных целых панелей'},
+            {pattern: /раскро/i, volume: volumes.cutting, description: 'Суммарный периметр каждого изделия'},
+            {pattern: /фаск/i, volume: volumes.bevel, description: 'Две стороны по высоте каждого изделия'}
+        ];
+        return showerServices.map(function (definition) {
+            const service = services.find(function (row) { return definition.pattern.test(String(row.name || '')); });
+            if (!service) return null;
             const price = toRub(service.price, service.currency);
-            return {name: service.name, volume: volume, unit: service.unit, price: price, currency: 'RUB', sum: volume * price};
-        });
+            return {name: service.name, description: definition.description, volume: definition.volume, unit: service.unit, price: price, currency: 'RUB', sum: definition.volume * price};
+        }).filter(Boolean);
     }
 
     function calculateShower() {
@@ -242,7 +249,7 @@
             return {name: piece.name, quantity: piece.quantity, length: piece.width, height: piece.height, depth: 0, area: piece.area, size: Math.round(piece.width) + '×' + Math.round(piece.height) + ' мм', price: piece.quantity ? sum / piece.quantity : 0, currency: 'RUB', sum: sum};
         });
         const hardwareTotal = hardware.reduce(function (sum, item) { return sum + item.sum; }, 0);
-        const calculatedServices = serviceRows(layout.usedArea, current.partitionCount);
+        const calculatedServices = serviceRows(layout, panel);
         const servicesTotal = calculatedServices.reduce(function (sum, item) { return sum + item.sum; }, 0);
         const wasteCost = layout.sheetArea > 0 ? layout.wasteArea * materialTotal / layout.sheetArea : 0;
         const total = materialTotal + hardwareTotal + servicesTotal;
