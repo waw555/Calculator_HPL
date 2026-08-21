@@ -367,7 +367,7 @@ tbody tr:hover td { background:#fbfcfe; }
         <section class="panel">
             <div class="calculation-toolbar">
                 <div><h2 style="margin-bottom:6px">Расчёт перегородок</h2><div class="hint">Все добавленные в расчёт перегородки и их итоговая стоимость.</div></div>
-                <div class="actions"><button id="cutting-map-btn" type="button" class="secondary">Карта раскроя</button><button id="create-offer-btn" type="button" class="success">Создать коммерческое предложение</button></div>
+                <div class="actions"><button id="save-calculation-btn" type="button">Сохранить</button><button id="cutting-map-btn" type="button" class="secondary">Карта раскроя</button><button id="create-offer-btn" type="button" class="success">Создать коммерческое предложение</button><span id="calculation-save-message" class="hint" role="status"></span></div>
             </div>
             <div id="calculation-list"></div>
             <div id="calculation-maps" class="cutting-maps"></div>
@@ -457,6 +457,7 @@ const resultPanel = document.getElementById('result-panel');
 let currentCalculation = null;
 let offerItems = [];
 let calculationItems = [];
+let editingCalculationIndex = null;
 try { calculationItems = JSON.parse(localStorage.getItem('septic-calculation-items') || '[]'); } catch (_) { calculationItems = []; }
 let partitionCounter = 0;
 function money(value, currency = 'RUB') {
@@ -670,14 +671,31 @@ function addResultService() {
     select.value = '';
     recalculateServices();
 }
-async function saveCalculation(calc) {
+async function saveCalculation(calc, messageNodeId = 'save-message') {
     if (!calc) { calc = {id: Date.now(), ...collectInputs(), total_amount: 0, currency: 'RUB', notice: 'Черновик без детального расчета'}; }
     const form = new FormData();
     form.append('action', 'save_calculation');
     form.append('payload_json', JSON.stringify(calc));
     const response = await fetch('calculator_septic.php', {method: 'POST', body: form});
     const result = await response.json();
-    document.getElementById('save-message').textContent = result.message || (result.ok ? 'Сохранено.' : 'Ошибка сохранения.');
+    const messageNode = document.getElementById(messageNodeId);
+    if (messageNode) messageNode.textContent = result.message || (result.ok ? 'Сохранено.' : 'Ошибка сохранения.');
+    return result;
+}
+function saveCalculationSummary() {
+    if (!calculationItems.length) {
+        document.getElementById('calculation-save-message').textContent = 'Добавьте хотя бы одну перегородку.';
+        return;
+    }
+    const total = calculationItems.reduce((sum, item) => sum + Number(item.totals?.total || item.total_amount || 0), 0);
+    const objects = [...new Set(calculationItems.map(item => item.object_name).filter(Boolean))];
+    saveCalculation({
+        object_name: objects.join(', '),
+        partition_identifier: `Расчёт (${calculationItems.length} поз.)`,
+        calculation_items: calculationItems,
+        total_amount: total,
+        currency: 'RUB'
+    }, 'calculation-save-message');
 }
 function createOffer() {
     if (!calculationItems.length) return;
@@ -687,7 +705,11 @@ function createOffer() {
 }
 function addToCalculation() {
     if (!currentCalculation) return;
-    calculationItems.push(JSON.parse(JSON.stringify(currentCalculation)));
+    const item = JSON.parse(JSON.stringify(currentCalculation));
+    if (editingCalculationIndex === null) calculationItems.push(item);
+    else calculationItems[editingCalculationIndex] = item;
+    editingCalculationIndex = null;
+    document.getElementById('add-calculation-btn').textContent = 'Добавить в расчёт';
     localStorage.setItem('septic-calculation-items', JSON.stringify(calculationItems));
     renderCalculationList();
     resultPanel.classList.add('hidden');
@@ -705,12 +727,47 @@ function renderCalculationList() {
     const rows = calculationItems.map((item,index) => {
         const area = Number(item.totals?.areaM2 || 0), partitions = Number(item.showerConfig?.partitionCount || 1), cabins = Number(item.showerConfig?.sectionCount || item.doors || 1), total = Number(item.totals?.total || 0);
         const unitArea = partitions > 0 ? area / partitions : area, cabinCost = cabins > 0 ? total / cabins : total, priceM2 = area > 0 ? total / area : 0;
-        return `<tr><td class="item-name">${calculationName(item)}</td><td class="text-center">${formatter.format(unitArea)}</td><td class="text-center">${formatter.format(area)}</td><td class="text-center">${formatter.format(partitions)}</td><td class="text-center">${formatter.format(cabins)}</td><td class="text-right">${money(cabinCost)}</td><td class="text-right">${money(priceM2)}</td><td class="text-right">${money(total)}</td><td class="text-right">${money(total)}</td><td><button type="button" class="danger" onclick="removeCalculationItem(${index})" aria-label="Удалить">🗑</button></td></tr>`;
+        return `<tr><td class="item-name">${calculationName(item)}</td><td class="text-center">${formatter.format(unitArea)}</td><td class="text-center">${formatter.format(area)}</td><td class="text-center">${formatter.format(partitions)}</td><td class="text-center">${formatter.format(cabins)}</td><td class="text-right">${money(cabinCost)}</td><td class="text-right">${money(priceM2)}</td><td class="text-right">${money(total)}</td><td class="text-right">${money(total)}</td><td><div class="actions"><button type="button" class="secondary" onclick="editCalculationItem(${index})" aria-label="Редактировать" title="Редактировать">✎</button><button type="button" class="danger" onclick="removeCalculationItem(${index})" aria-label="Удалить" title="Удалить">🗑</button></div></td></tr>`;
     }).join('');
     const total = calculationItems.reduce((sum,item)=>sum+Number(item.totals?.total||0),0);
     node.innerHTML = `<div class="calculation-table-wrap"><table class="calculation-table"><thead><tr><th>Наименование</th><th>Площадь панелей 1 перегородки, м²</th><th>Общая площадь, м²</th><th>Кол-во перегородок, шт</th><th>Кол. кабин в перегородке</th><th>Стоимость кабины</th><th>Цена за м²</th><th>Стоимость 1 перегородки</th><th>Итого стоимость</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><div class="calculation-total">Итого: ${money(total)}</div>`;
 }
 function removeCalculationItem(index) { calculationItems.splice(index,1); localStorage.setItem('septic-calculation-items',JSON.stringify(calculationItems)); renderCalculationList(); }
+function setInputValue(id, value) {
+    const node = document.getElementById(id);
+    if (node && value !== undefined && value !== null) node.value = String(value);
+}
+function editCalculationItem(index) {
+    const item = calculationItems[index];
+    if (!item) return;
+    editingCalculationIndex = index;
+    setInputValue('object_name', item.object_name);
+    setInputValue('partition_identifier', item.partition_identifier);
+    setInputValue('manufacturer_id', item.manufacturer_id || 0);
+    filterDecors();
+    setInputValue('decor_input', item.panel?.id || item.decor);
+    document.getElementById('decor_input').dispatchEvent(new Event('change'));
+    setInputValue('panel_format_id', item.panel_format_id || item.panel?.id || '__auto__');
+    setInputValue('partition_type_id', item.partition_type_id);
+    typeSelect.dispatchEvent(new Event('change'));
+    setInputValue('supplier_id', item.supplier_id || 0);
+    document.getElementById('supplier_id').dispatchEvent(new Event('change'));
+    setInputValue('collection_id', item.collection_id || 0);
+    Object.entries(item.parameters || {}).forEach(([name, parameter]) => {
+        const input = [...paramsNode.querySelectorAll('input')].find(node => node.dataset.paramName === name);
+        if (input) input.value = parameter.value;
+    });
+    const cfg = item.showerConfig || {};
+    const configFields = {layoutType:'shower_layout_type',sectionCount:'shower_partition_count',partitionCount:'shower_panel_count',roomWidth:'shower_room_width',depth:'shower_depth',height:'shower_height',fasciaWidth:'shower_fascia_width',fasciaHeight:'shower_fascia_height',doorCount:'shower_door_count',doorWidth:'shower_door_width',doorHeight:'shower_door_height',floorMount:'shower_floor_mount',wallMount:'shower_wall_mount',ceilingMount:'shower_ceiling_mount',topSupport:'shower_top_support',angleSides:'shower_angle_sides',kerf:'shower_kerf',margin:'shower_margin'};
+    Object.entries(configFields).forEach(([key, id]) => setInputValue(id, cfg[key]));
+    document.getElementById('shower_allow_rotation').checked = Boolean(cfg.allowPanelRotation || cfg.allowRotation);
+    document.getElementById('shower_ceiling_mount').dispatchEvent(new Event('change'));
+    currentCalculation = JSON.parse(JSON.stringify(item));
+    resultPanel.classList.add('hidden');
+    document.getElementById('add-calculation-btn').textContent = 'Сохранить изменения';
+    switchTab('calc');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
 function cuttingPayload() {
     const parts = calculationItems.flatMap((item,itemIndex)=>(item.products||[]).map((part,partIndex)=>({id:`${itemIndex+1}-${partIndex+1}`,name:`${item.partition_identifier || 'Перегородка '+(itemIndex+1)} · ${part.name}`,length:Number(part.length||0),width:Number(part.height||0),qty:Number(part.quantity||1),rotate:Boolean(item.showerConfig?.allowRotation),grainDirection:'none'})));
     const materials = calculationItems.map(item=>item.panel).filter(Boolean).map((panel,index)=>({label:panel.name||`Лист ${index+1}`,height:Number(panel.height_mm),width:Number(panel.width_mm),qty:null,priceM2:Number(panel.price_per_m2||0),currency:panel.currency||'RUB',panelId:panel.id||null,manufacturerId:panel.manufacturer_id||null,grainDirection:panel.decor_direction||'none',margin:Number(calculationItems[index]?.showerConfig?.margin||0)})).filter(m=>m.height>0&&m.width>0);
@@ -797,6 +854,7 @@ document.getElementById('save-draft-btn').addEventListener('click', () => saveCa
 document.getElementById('save-result-btn').addEventListener('click', () => saveCalculation(currentCalculation));
 document.getElementById('add-calculation-btn').addEventListener('click', addToCalculation);
 document.getElementById('create-offer-btn').addEventListener('click', createOffer);
+document.getElementById('save-calculation-btn').addEventListener('click', saveCalculationSummary);
 document.getElementById('cutting-map-btn').addEventListener('click', openCuttingMaps);
 document.getElementById('result-service-add').addEventListener('click', addResultService);
 document.getElementById('export-excel-btn').addEventListener('click', exportExcel);
