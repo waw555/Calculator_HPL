@@ -45,6 +45,11 @@ function furniture_sort_link(string $column, string $label, string $currentSort,
     return '<a class="sort-link' . ($isCurrent ? ' active' : '') . '" href="' . e($url) . '">' . e($label . $indicator) . '</a>';
 }
 
+function furniture_photo_url(int $id): string
+{
+    return 'admin_furniture_photo.php?' . http_build_query(['id' => $id]);
+}
+
 $errors = [];
 $editing = null;
 $editingItems = [];
@@ -368,7 +373,7 @@ button.photo-button{display:block;padding:0;border:0;background:none;box-shadow:
                 <div><label>Ед. изм.</label><select name="unit" required><?php foreach ($units as $u): ?><option value="<?php echo e($u['short_name']); ?>" <?php echo (string)($editing['unit']??'шт.')===$u['short_name']?'selected':''; ?>><?php echo e($u['short_name']); ?> — <?php echo e($u['full_name']); ?></option><?php endforeach; ?></select></div>
                 <div><label>Цена за ед. изм.</label><input type="number" step="0.01" min="0" name="price" required value="<?php echo e((string)($editing['price'] ?? '')); ?>"></div>
                 <div><label>Валюта</label><select name="currency"><?php foreach ($currencies as $cr): ?><option value="<?php echo e($cr['code']); ?>" data-rate="<?php echo e((string)$cr['rate_to_rub']); ?>" <?php echo (string)($editing['currency']??'RUB')===$cr['code']?'selected':''; ?>><?php echo e(app_currency_symbol((string)$cr['code'])); ?> — <?php echo e($cr['name']); ?></option><?php endforeach; ?></select></div>
-                <div><label>Фото</label><input type="file" name="photo" accept=".jpg,.jpeg,.png,.tif,.tiff,.webp"><p><img class="preview" id="photo_preview" src="<?php echo e((string)($editing['photo_path'] ?? '')); ?>" alt="" style="<?php echo empty($editing['photo_path'])?'display:none;':'' ?>"></p></div>
+                <div><label>Фото</label><input type="file" name="photo" accept=".jpg,.jpeg,.png,.tif,.tiff,.webp"><p><img class="preview" id="photo_preview" src="<?php echo !empty($editing['photo_path']) ? e(furniture_photo_url((int)$editing['id'])) : ''; ?>" alt="" style="<?php echo empty($editing['photo_path'])?'display:none;':'' ?>"></p></div>
             </div>
             <p><label><input type="checkbox" name="is_stock_program" <?php echo !empty($editing['is_stock_program'])?'checked':''; ?>> Складская программа</label></p>
             <p><label>Примечание</label><textarea name="note"><?php echo e((string)($editing['note'] ?? '')); ?></textarea></p>
@@ -394,7 +399,7 @@ button.photo-button{display:block;padding:0;border:0;background:none;box-shadow:
             <tbody>
             <?php foreach ($prices as $p): ?>
                 <tr>
-                    <td><?php if (!empty($p['photo_path'])): ?><button class="photo-button" type="button" data-photo="<?php echo e($p['photo_path']); ?>" aria-label="Увеличить фотографию"><img class="preview" src="<?php echo e($p['photo_path']); ?>" alt="Фотография: <?php echo e($p['material_name']); ?>"></button><?php else: ?>—<?php endif; ?></td>
+                    <td><?php if (!empty($p['photo_path'])): ?><?php $photoUrl = furniture_photo_url((int)$p['id']); ?><button class="photo-button" type="button" data-photo="<?php echo e($photoUrl); ?>" aria-label="Увеличить фотографию"><img class="preview" src="<?php echo e($photoUrl); ?>" alt="Фотография: <?php echo e($p['material_name']); ?>"></button><?php else: ?>—<?php endif; ?></td>
                     <td><?php echo e($p['material_name']); ?></td>
                     <td><?php echo e((string)($p['article'] ?? '—')); ?></td>
                     <td><?php echo e((string)($p['category_name'] ?? '—')); ?></td>
