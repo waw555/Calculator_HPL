@@ -42,6 +42,14 @@ assert.doesNotMatch(page, /Фурнитура из выбранной серии
 assert.doesNotMatch(page, /id="hardware-role-list"/, 'В форме не должно быть прежнего списка фурнитуры');
 assert.match(page, /data-hardware-item/, 'В результате расчёта должен быть выбор фурнитуры');
 assert.match(page, /function updateHardwareItem/, 'Смена фурнитуры должна пересчитывать результат');
+assert.match(page, /data-hardware-price/, 'Цена фурнитуры должна быть редактируемой');
+assert.match(page, /data-hardware-sum/, 'Сумма фурнитуры должна быть редактируемой');
+assert.match(page, /function updateHardwareSum[\s\S]*item\.price = item\.quantity > 0 \? item\.sum \/ item\.quantity : 0/, 'Изменение суммы фурнитуры должно пересчитывать цену за единицу');
+assert.match(page, /data-service-price/, 'Цена услуги должна быть редактируемой');
+assert.match(page, /data-service-sum/, 'Сумма услуги должна быть редактируемой');
+assert.match(page, /function updateServiceSum[\s\S]*item\.price = item\.volume > 0 \? item\.sum \/ item\.volume : 0/, 'Изменение суммы услуги должно пересчитывать цену за единицу');
+assert.match(page, /class="value-with-unit"[\s\S]*data-service-volume/, 'Единица измерения должна находиться справа от компактного числового поля');
+assert.match(page, /\.data-card h3 \{[^}]*color:#fff/, 'Заголовки карточек результата должны быть белыми на тёмном фоне');
 assert.match(integration, /const matches = ShowerPartitionCalculator\.matchingFurniture\(requirement, furnitureCatalog\);/, 'Выпадающий список должен содержать все товары выбранной группы');
 assert.match(integration, /matchingFurniture\(requirement, furnitureCatalog, preferredFilters\)/, 'Автовыбор должен учитывать производителя и серию');
 assert.match(integration, /function resetRoleSelections\(\)[\s\S]*supplier_id'[\s\S]*resetRoleSelections\(\)[\s\S]*collection_id'[\s\S]*resetRoleSelections\(\)/, 'Смена производителя или серии должна заново выбирать товары по умолчанию');
