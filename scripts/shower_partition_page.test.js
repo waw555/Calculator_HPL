@@ -29,11 +29,11 @@ assert.match(page, /fetch\('calculator_septic\.php'/, 'Сохранение до
 assert.match(integration, /calculateShower/, 'Должен быть отдельный расчёт душевой перегородки');
 assert.match(integration, /calculateBtn\.addEventListener\('click',[\s\S]*stopImmediatePropagation\(\)[\s\S]*calculateShower\(\)[\s\S]*true\)/, 'Кнопка должна запускать расчёт душевой вместо общего расчёта');
 assert.match(integration, /serviceVolumes\(layout, panel\)/, 'Объём услуг должен рассчитываться по геометрии листов и изделий');
-assert.match(integration, /\/торцеван\/i[\s\S]*\/раскро\/i[\s\S]*\/фаск\/i/, 'Для душевых должны выбираться три услуги из базы');
-assert.match(page, /id="shower-service-select"/, 'Должен быть выбор дополнительной услуги из базы');
-assert.match(page, /id="shower-service-add"/, 'Должна быть кнопка добавления услуги');
-assert.match(integration, /return defaults\.concat\(additional\)/, 'Три расчётные услуги должны дополняться выбранными услугами');
-assert.match(integration, /data-extra-service-volume/, 'Для дополнительной услуги должен задаваться объём');
+assert.match(integration, /service\.partition_type_id[\s\S]*typeSelect\.value/, 'В расчёт должны попадать базовые услуги выбранного типа перегородки');
+assert.doesNotMatch(page, /shower-service-select|shower-service-add/, 'В форме калькулятора не должно быть добавления услуг до расчёта');
+assert.doesNotMatch(integration, /extraServices|data-extra-service-volume/, 'Интеграция не должна добавлять дополнительные услуги до расчёта');
+assert.match(page, /id="result-service-select"/, 'После расчёта должен быть выбор дополнительной услуги');
+assert.match(page, /id="result-service-add"/, 'После расчёта должна быть кнопка добавления услуги');
 assert.match(integration, /estimatePanelLayout/, 'Расчёт должен использовать раскладку по листам');
 assert.match(integration, /buildRequirements/, 'Расчёт должен формировать спецификацию фурнитуры');
 assert.match(integration, /Группа: '[\s\S]*requirement\.groupLabel/, 'В строке роли должна отображаться выбранная группа товаров');

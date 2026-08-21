@@ -9,7 +9,6 @@
     const showerNode = document.getElementById('shower-config');
     const formatSelect = document.getElementById('panel_format_id');
     const roleSelections = {};
-    const extraServices = [];
     let availableFormats = [];
 
     function value(id) {
@@ -201,41 +200,18 @@
 
     function serviceRows(layout, panel) {
         const volumes = ShowerPartitionCalculator.serviceVolumes(layout, panel);
-        const showerServices = [
-            {name: 'Торцевание', pattern: /торцеван/i, volume: volumes.edging, description: 'Периметр всех использованных целых панелей'},
-            {name: 'Раскрой', pattern: /раскро/i, volume: volumes.cutting, description: 'Суммарный периметр каждого изделия с учётом количества'},
-            {name: 'Фаска', pattern: /фаск/i, volume: volumes.bevel, description: 'Две вертикальные стороны каждого изделия с учётом количества'}
-        ];
-        const defaults = showerServices.map(function (definition) {
-            const service = services.find(function (row) { return definition.pattern.test(String(row.name || '')); });
-            const price = toRub(service?.price, service?.currency);
-            return {id: service?.id || null, name: service?.name || definition.name, description: definition.description, volume: definition.volume, unit: service?.unit || 'м', price: price, currency: 'RUB', sum: definition.volume * price};
-        });
-        const additional = extraServices.map(function (entry) {
-            const service = services.find(function (row) { return String(row.id) === String(entry.id); });
-            if (!service) return null;
+        return services.filter(function (service) {
+            return String(service.partition_type_id) === String(typeSelect.value);
+        }).map(function (service) {
+            const name = String(service.name || '');
+            let volume = 1;
+            let description = 'Базовая услуга типа перегородки';
+            if (/торцеван/i.test(name)) { volume = volumes.edging; description = 'Периметр всех использованных целых панелей'; }
+            else if (/раскро/i.test(name)) { volume = volumes.cutting; description = 'Суммарный периметр каждого изделия с учётом количества'; }
+            else if (/фаск/i.test(name)) { volume = volumes.bevel; description = 'Две вертикальные стороны каждого изделия с учётом количества'; }
             const price = toRub(service.price, service.currency);
-            return {id: service.id, name: service.name, description: 'Дополнительная услуга из базы', volume: entry.volume, unit: service.unit, price: price, currency: 'RUB', sum: entry.volume * price};
-        }).filter(Boolean);
-        return defaults.concat(additional);
-    }
-
-    function defaultServiceIds() {
-        return services.filter(function (service) { return /торцеван|раскро|фаск/i.test(String(service.name || '')); }).map(function (service) { return String(service.id); });
-    }
-
-    function renderExtraServices() {
-        const select = document.getElementById('shower-service-select');
-        const unavailable = defaultServiceIds().concat(extraServices.map(function (entry) { return String(entry.id); }));
-        const available = services.filter(function (service) { return !unavailable.includes(String(service.id)); });
-        select.innerHTML = '<option value="">— Выберите услугу из базы —</option>' + available.map(function (service) {
-            return '<option value="' + escapeHtml(service.id) + '">' + escapeHtml(service.name) + ' · ' + escapeHtml(service.unit || '') + '</option>';
-        }).join('');
-        document.getElementById('shower-service-add').disabled = !available.length;
-        document.getElementById('shower-extra-services').innerHTML = extraServices.map(function (entry, index) {
-            const service = services.find(function (row) { return String(row.id) === String(entry.id); });
-            return '<div class="extra-service"><div><strong>' + escapeHtml(service?.name || '') + '</strong><div class="hint">Цена из БД: ' + money(toRub(service?.price, service?.currency)) + ' / ' + escapeHtml(service?.unit || '') + '</div></div><label>Объём, ' + escapeHtml(service?.unit || '') + '<input type="number" min="0" step="0.01" value="' + escapeHtml(entry.volume) + '" data-extra-service-volume="' + index + '"></label><button type="button" data-extra-service-remove="' + index + '">Удалить</button></div>';
-        }).join('');
+            return {id: service.id, name: service.name, description: description, volume: volume, unit: service.unit, price: price, currency: 'RUB', sum: volume * price};
+        });
     }
 
     function calculateShower() {
@@ -317,28 +293,11 @@
         refresh();
     });
     document.getElementById('shower_ceiling_mount').addEventListener('change', refresh);
-    document.getElementById('shower-service-add').addEventListener('click', function () {
-        const select = document.getElementById('shower-service-select');
-        if (!select.value) return;
-        extraServices.push({id: select.value, volume: 1});
-        renderExtraServices();
-    });
-    document.getElementById('shower-extra-services').addEventListener('input', function (event) {
-        const index = Number(event.target.dataset.extraServiceVolume);
-        if (Number.isInteger(index) && extraServices[index]) extraServices[index].volume = Math.max(0, Number(event.target.value) || 0);
-    });
-    document.getElementById('shower-extra-services').addEventListener('click', function (event) {
-        const index = Number(event.target.dataset.extraServiceRemove);
-        if (!Number.isInteger(index) || !extraServices[index]) return;
-        extraServices.splice(index, 1);
-        renderExtraServices();
-    });
     calculateBtn.addEventListener('click', function (event) {
         if (!showerSelected()) return;
         event.stopImmediatePropagation();
         calculateShower();
     }, true);
     renderCollections();
-    renderExtraServices();
     refresh();
 })();

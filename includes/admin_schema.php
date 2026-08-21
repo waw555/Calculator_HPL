@@ -341,6 +341,23 @@ function ensure_partition_type_kits_table(PDO $pdo): void
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
+function ensure_partition_type_services_table(PDO $pdo): void
+{
+    ensure_partition_types_table($pdo);
+    ensure_services_table($pdo);
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS partition_type_services (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        partition_type_id INT NOT NULL,
+        service_id INT NOT NULL,
+        sort_order INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_partition_type_service (partition_type_id, service_id),
+        CONSTRAINT fk_pts_type FOREIGN KEY (partition_type_id) REFERENCES partition_types(id) ON DELETE CASCADE,
+        CONSTRAINT fk_pts_service FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
 function ensure_parameters_table(PDO $pdo): void
 {
     ensure_units_table($pdo);
@@ -372,6 +389,7 @@ function ensure_calculator_tables(PDO $pdo): void
     ensure_furniture_collections_table($pdo);
     ensure_services_table($pdo);
     ensure_partition_type_kits_table($pdo);
+    ensure_partition_type_services_table($pdo);
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS partition_type_parameters (
         id INT AUTO_INCREMENT PRIMARY KEY,

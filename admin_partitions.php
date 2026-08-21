@@ -81,6 +81,16 @@ function save_partition_type_parameters(PDO $pdo, int $typeId): void
     }
 }
 
+function save_partition_type_services(PDO $pdo, int $typeId): void
+{
+    $pdo->prepare('DELETE FROM partition_type_services WHERE partition_type_id = :id')->execute(['id' => $typeId]);
+    $stmt = $pdo->prepare('INSERT IGNORE INTO partition_type_services (partition_type_id, service_id, sort_order) VALUES (:type_id, :service_id, :sort_order)');
+    foreach (array_values(array_unique(array_map('intval', $_POST['service_id'] ?? []))) as $index => $serviceId) {
+        if ($serviceId <= 0) continue;
+        $stmt->execute(['type_id' => $typeId, 'service_id' => $serviceId, 'sort_order' => ($index + 1) * 10]);
+    }
+}
+
 $operators = ['='=>'равно','!='=>'не равно','>'=>'больше','>='=>'больше или равно','<'=>'меньше','<='=>'меньше или равно','contains'=>'содержит','any'=>'любое'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -120,6 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $typeId = (int)$pdo->lastInsertId();
             }
             save_partition_type_parameters($pdo, $typeId);
+            save_partition_type_services($pdo, $typeId);
             header('Location: admin_partitions.php?tab=types'); exit;
         }
         $activeTab = 'types';
@@ -319,12 +330,17 @@ $rules = $pdo->query('SELECT r.*, pt.name AS partition_type_name, m.full_name AS
 $typeFields = $pdo->query('SELECT f.*, pt.name AS type_name FROM partition_type_fields f LEFT JOIN partition_types pt ON pt.id = f.partition_type_id ORDER BY pt.name, f.sort_order, f.id')->fetchAll();
 $compParts = $pdo->query('SELECT partition_type_id, parts FROM partition_compositions ORDER BY sort_order, id')->fetchAll();
 $formulas = $pdo->query('SELECT f.*, pt.name AS type_name FROM partition_formulas f LEFT JOIN partition_types pt ON pt.id = f.partition_type_id ORDER BY pt.name, f.sort_order, f.id')->fetchAll();
+$services = $pdo->query('SELECT id, name, unit, price, currency FROM services WHERE is_active = 1 ORDER BY name ASC')->fetchAll();
 
 $assignedParameters = [];
+$assignedServiceIds = [];
 if ($editingType) {
     $stmt = $pdo->prepare('SELECT ptp.*, cp.name, cp.default_value, mu.short_name AS unit_short_name FROM partition_type_parameters ptp JOIN calculation_parameters cp ON cp.id = ptp.parameter_id LEFT JOIN measurement_units mu ON mu.id = cp.unit_id WHERE ptp.partition_type_id = :id ORDER BY ptp.sort_order ASC, cp.name ASC');
     $stmt->execute(['id' => $editingType['id']]);
     $assignedParameters = $stmt->fetchAll();
+    $stmt = $pdo->prepare('SELECT service_id FROM partition_type_services WHERE partition_type_id = :id ORDER BY sort_order, id');
+    $stmt->execute(['id' => $editingType['id']]);
+    $assignedServiceIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
 }
 
 $typeFieldsByType = [];
@@ -406,6 +422,7 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
 .part-tag{background:#dbeafe;color:#1e40af;border-radius:20px;padding:4px 12px;font-size:13px;font-weight:600}
 .part-tag::before{content:"→ ";opacity:.5}
 .part-tag:first-child::before{content:""}
+.service-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;max-height:280px;overflow:auto;padding:12px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc}.service-options label{display:flex;align-items:center;gap:8px;margin:0;padding:9px;border-radius:8px;background:#fff}.service-options small{margin-left:auto;color:#64748b;font-weight:400}
 </style>
 <?php echo app_header_styles(); ?>
 </head>
@@ -451,6 +468,14 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
                 <?php endif; ?>
             </div>
             <p><button class="button secondary" type="button" id="add-parameter">+ Добавить параметр</button></p>
+            <div class="section-title">Базовые услуги калькулятора</div>
+            <p class="hint">Выбранные услуги автоматически попадут в расчёт для этого типа перегородки. Дополнительные услуги можно добавить уже после расчёта в разделе «Услуги».</p>
+            <div class="service-options">
+                <?php foreach ($services as $service): ?>
+                    <label><input type="checkbox" name="service_id[]" value="<?php echo e((string)$service['id']); ?>" <?php echo in_array((int)$service['id'], $assignedServiceIds, true) ? 'checked' : ''; ?>> <span><?php echo e($service['name']); ?></span><small><?php echo e($service['unit']); ?> · <?php echo e(number_format((float)$service['price'], 2, ',', ' ')); ?> <?php echo e($service['currency']); ?></small></label>
+                <?php endforeach; ?>
+                <?php if (!$services): ?><div class="hint">Нет активных услуг. Сначала добавьте их в разделе «Услуги».</div><?php endif; ?>
+            </div>
             <div class="form-actions"><button type="submit">Сохранить</button><?php if ($editingType): ?><a class="button secondary" href="admin_partitions.php?tab=types">Отмена</a><?php endif; ?></div>
         </form>
     </section>
