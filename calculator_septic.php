@@ -302,11 +302,6 @@ tbody tr:hover td { background:#fbfcfe; }
                             <label class="shower-check"><input id="shower_allow_rotation" type="checkbox"><span>Разрешить поворот деталей на листе</span></label>
                         </div>
                     </div>
-                    <div class="shower-step">
-                        <div class="shower-step__title"><span class="shower-step__number">04</span>Фурнитура из выбранной серии</div>
-                        <div id="hardware-role-list" class="hardware-picker"></div>
-                        <div class="shower-note">По умолчанию подставляется товар из выбранных производителя и серии. Его можно заменить любым товаром из той же группы: ножкой, П-профилем или уголком. Перед расчётом проверьте выбранный артикул для каждой роли.</div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -553,7 +548,12 @@ function renderCalculation(calc) {
     const panelTitle = calc.panel ? `${calc.panel.name} ${calc.panel.decor_number || ''} ${calc.panel.decor_name || ''}`.trim() : 'Панель не выбрана';
     document.getElementById('calculation-heading').textContent = `${calc.partition_type_name || 'Перегородка'} ${calc.manufacturer_name ? calc.manufacturer_name : ''}`.trim();
     document.getElementById('calculation-subtitle').textContent = `Объект: ${calc.object_name || 'не указан'} · Позиция: ${calc.partition_identifier || 'без идентификатора'} · Декор: ${calc.decor || panelTitle}`;
-    document.getElementById('hardware-body').innerHTML = calc.hardware.length ? calc.hardware.map((item, index) => `<tr><td>${escapeHtml(item.name)}<div class="hint">${escapeHtml(item.category)}</div></td><td><input data-hardware-index="${index}" type="number" step="0.001" value="${item.quantity}"> ${escapeHtml(item.unit)}</td><td>${money(item.price, item.currency)}</td><td>${money(item.sum, item.currency)}</td></tr>`).join('') : '<tr><td colspan="4">Выбран вариант «Без фурнитуры» или комплект пуст.</td></tr>';
+    document.getElementById('hardware-body').innerHTML = calc.hardware.length ? calc.hardware.map((item, index) => {
+        const options = (item.options || []).map(option => `<option value="${escapeHtml(option.id)}" ${String(option.id) === String(item.id) ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
+        const selector = options ? `<select data-hardware-item="${index}" aria-label="Выбрать фурнитуру для ${escapeHtml(item.roleLabel || item.name)}">${item.id ? '' : '<option value="">— Выберите фурнитуру —</option>'}${options}</select>` : escapeHtml(item.name);
+        return `<tr><td>${selector}<div class="hint">${escapeHtml(item.category)}</div></td><td><input data-hardware-index="${index}" type="number" step="0.001" value="${item.quantity}"> ${escapeHtml(item.unit)}</td><td>${money(item.price, item.currency)}</td><td>${money(item.sum, item.currency)}</td></tr>`;
+    }).join('') : '<tr><td colspan="4">Выбран вариант «Без фурнитуры» или комплект пуст.</td></tr>';
+    document.querySelectorAll('[data-hardware-item]').forEach(select => select.addEventListener('change', () => updateHardwareItem(Number(select.dataset.hardwareItem), select.value)));
     document.querySelectorAll('[data-hardware-index]').forEach(input => input.addEventListener('change', () => updateHardwareQty(Number(input.dataset.hardwareIndex), input.value)));
     document.getElementById('products-body').innerHTML = calc.products.map(item => `<tr><td>${escapeHtml(item.name)}<br><span class="hint">${escapeHtml(panelTitle)}</span></td><td class="text-center">${item.quantity}</td><td class="yellow-cell">${escapeHtml(item.size)}</td><td class="text-center">${formatter.format(item.area || calc.totals.areaM2)} м²</td><td class="text-right">${money(item.sum, item.currency)}</td></tr>`).join('');
     document.getElementById('products-summary').textContent = `Материал: ${formatter.format(calc.totals.sheets)} лист(ов), полезная площадь ${formatter.format(calc.totals.areaM2)} м². Ориентировочный отход: ${formatter.format(calc.totals.wasteArea)} м².`;
@@ -578,6 +578,18 @@ function updateHardwareQty(index, value) {
     currentCalculation.totals.total = currentCalculation.totals.hardwareTotal + currentCalculation.totals.materialTotal + currentCalculation.totals.servicesTotal;
     currentCalculation.total_amount = currentCalculation.totals.total;
     renderCalculation(currentCalculation);
+}
+function updateHardwareItem(index, id) {
+    if (!currentCalculation) return;
+    const item = currentCalculation.hardware[index];
+    const selected = item?.options?.find(option => String(option.id) === String(id));
+    if (!item || !selected) return;
+    item.id = selected.id;
+    item.name = selected.name;
+    item.unit = selected.unit;
+    item.price = selected.price;
+    item.sum = item.quantity * item.price;
+    updateHardwareQty(index, item.quantity);
 }
 function recalculateServices() {
     currentCalculation.totals.servicesTotal = currentCalculation.services.reduce((sum, row) => sum + row.sum, 0);
