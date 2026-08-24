@@ -428,7 +428,7 @@ function populateFormats() {
         const key = f.width_mm + 'x' + f.height_mm;
         if (seen.has(key)) return;
         seen.add(key);
-        const label = f.width_mm + '×' + f.height_mm + ' мм' + (f.manufacturer_name ? ' (' + f.manufacturer_name + ')' : '');
+        const label = f.height_mm + '×' + f.width_mm + ' мм' + (f.manufacturer_name ? ' (' + f.manufacturer_name + ')' : '');
         const opt = document.createElement('option');
         opt.value = key;
         opt.textContent = label;
