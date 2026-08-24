@@ -11,5 +11,8 @@ assert.match(page, /расход на м² × площадь панелей/, '�
 assert.match(page, /расход на м\.п\. × длина профиля с запасом/, 'Подсказка должна объяснять расчёт по профилю');
 assert.match(page, /Количество штук = ceil/, 'Подсказка должна объяснять округление до штук');
 assert.match(page, /const label = f\.height_mm \+ '×' \+ f\.width_mm/, 'Формат листа должен отображать сначала высоту, затем ширину');
+assert.match(page, /<th style="width:120px">Всего<\/th>/, 'После единицы измерения должна быть колонка «Всего»');
+assert.match(page, /totalLength: totalProfileMWithReserve/, 'Для профиля должен сохраняться общий погонный метраж');
+assert.match(page, /const totalLengthHtml = group\.title === 'Профиль' \? fmt\(item\.totalLength, 0\) \+ ' м\.п\.'/, 'Общий погонный метраж профиля должен выводиться в строке материала');
 
 console.log('Подсказки с формулами расхода материалов присутствуют.');
