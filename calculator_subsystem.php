@@ -127,6 +127,12 @@ body { font-family: 'Inter', Arial, sans-serif; background: #f5f7fb; margin: 0; 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; }
 input, select { width: 100%; box-sizing: border-box; padding: 9px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
+input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
+.input-with-unit { position: relative; }
+.input-with-unit input { padding-right: 44px; }
+.input-with-unit .field-unit { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 12px; font-weight: 700; pointer-events: none; }
 button, .button { border: 0; border-radius: 8px; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; cursor: pointer; display: inline-block; font-weight: 600; font-size: 14px; }
 button.secondary { background: #64748b; }
 button.success { background: #16a34a; }
@@ -223,31 +229,31 @@ table.data-table tr.total-row td { border-top: 2px solid #2563eb; }
         </div>
         <div id="custom-format-wrap" class="hidden">
             <label for="custom_length">Длина, мм</label>
-            <input id="custom_length" type="number" min="1" value="3660">
+            <div class="input-with-unit"><input id="custom_length" type="number" min="1" value="3660"><span class="field-unit">мм</span></div>
         </div>
         <div id="custom-format-wrap2" class="hidden">
             <label for="custom_width">Ширина, мм</label>
-            <input id="custom_width" type="number" min="1" value="1525">
+            <div class="input-with-unit"><input id="custom_width" type="number" min="1" value="1525"><span class="field-unit">мм</span></div>
         </div>
         <div>
             <label for="sheet_qty">Количество листов</label>
-            <input id="sheet_qty" type="number" min="1" value="1">
+            <div class="input-with-unit"><input id="sheet_qty" type="number" min="1" value="1"><span class="field-unit">шт.</span></div>
         </div>
         <div>
             <label for="sheet_area">Количество м²</label>
-            <input id="sheet_area" type="number" min="0" step="0.01">
+            <div class="input-with-unit"><input id="sheet_area" type="number" min="0" step="0.01"><span class="field-unit">м²</span></div>
         </div>
         <div>
             <label for="profile_step">Шаг профиля, мм</label>
-            <input id="profile_step" type="number" min="1" value="400">
+            <div class="input-with-unit"><input id="profile_step" type="number" min="1" value="400"><span class="field-unit">мм</span></div>
         </div>
         <div>
             <label for="corner_qty">Количество углов</label>
-            <input id="corner_qty" type="number" min="0" value="0">
+            <div class="input-with-unit"><input id="corner_qty" type="number" min="0" value="0"><span class="field-unit">шт.</span></div>
         </div>
         <div>
             <label for="subsystem_height">Высота подсистемы, мм</label>
-            <input id="subsystem_height" type="number" min="0" placeholder="По длине листа">
+            <div class="input-with-unit"><input id="subsystem_height" type="number" min="0" placeholder="По длине листа"><span class="field-unit">мм</span></div>
         </div>
         <div>
             <label for="enclosure_type">Тип стены</label>
@@ -271,11 +277,11 @@ table.data-table tr.total-row td { border-top: 2px solid #2563eb; }
         </div>
         <div>
             <label for="reserve_pct">Запас, %</label>
-            <input id="reserve_pct" type="number" min="0" max="100" step="0.1" value="0">
+            <div class="input-with-unit"><input id="reserve_pct" type="number" min="0" max="100" step="0.1" value="0"><span class="field-unit">%</span></div>
         </div>
         <div id="h-strengthen-step-wrap" class="hidden">
             <label for="h_strengthen_step">Шаг перемычки, мм</label>
-            <input id="h_strengthen_step" type="number" min="1" value="1000">
+            <div class="input-with-unit"><input id="h_strengthen_step" type="number" min="1" value="1000"><span class="field-unit">мм</span></div>
         </div>
     </div>
 
@@ -618,7 +624,7 @@ function calc() {
                 price = parseFloat(si.price_per_piece) || price;
                 formula = pieceFormula(formula, total, qtyPerPiece);
             }
-            profileItems.push({ id: 'si_' + si.id, name: si.name, unit: showUnit, qty: showQty, totalLength: totalProfileMWithReserve, price: price, sum: price * showQty, perPieceText: perPieceText, formula: formula });
+            profileItems.push({ id: 'si_' + si.id, name: si.name, unit: showUnit, qty: showQty, total: total, totalUnit: si.unit, price: price, sum: price * showQty, perPieceText: perPieceText, formula: formula });
         });
         if (profileItems.length) allGroups.push({ title: 'Профиль', items: profileItems });
     }
@@ -650,7 +656,7 @@ function calc() {
                 price = parseFloat(m.price_per_piece) || price;
                 formula = pieceFormula(formula, total, qtyPerPiece);
             }
-            kleevayaItems.push({ id: 'm_' + m.id, name: m.name, unit: showUnit, qty: showQty, price: price, sum: price * showQty, perPieceText: perPieceText, formula: formula });
+            kleevayaItems.push({ id: 'm_' + m.id, name: m.name, unit: showUnit, qty: showQty, total: total, totalUnit: m.unit, price: price, sum: price * showQty, perPieceText: perPieceText, formula: formula });
         });
         if (kleevayaItems.length) allGroups.push({ title: 'Клеевая система', items: kleevayaItems });
     }
@@ -682,7 +688,7 @@ function calc() {
                 price = parseFloat(f.price_per_piece) || price;
                 formula = pieceFormula(formula, total, qtyPerPiece);
             }
-            metizyItems.push({ id: 'f_' + f.id, name: f.name, unit: showUnit, qty: showQty, price: price, sum: price * showQty, perPieceText: perPieceText, formula: formula });
+            metizyItems.push({ id: 'f_' + f.id, name: f.name, unit: showUnit, qty: showQty, total: total, totalUnit: f.unit, price: price, sum: price * showQty, perPieceText: perPieceText, formula: formula });
         });
         if (metizyItems.length) allGroups.push({ title: 'Метизы', items: metizyItems });
     }
@@ -701,9 +707,8 @@ function calc() {
             const tr = document.createElement('tr');
             tr.dataset.itemId = item.id;
             const unitHtml = item.perPieceText ? esc(item.unit) + ' <span style="color:#6b7280;font-size:11px;font-weight:normal;">(по ' + esc(item.perPieceText) + ')</span>' : esc(item.unit);
-            const totalLengthCell = group.title === 'Профиль' ? `<td class="num profile-total-length">${fmt(item.totalLength, 0)} м.п.</td>` : '';
-            const priceColspan = group.title === 'Профиль' ? '' : ' colspan="2"';
-            tr.innerHTML = `<td>${idx}</td><td><span class="material-name-with-help"><span>${esc(item.name)}</span>${materialFormulaHelp(item.formula, item.name)}</span></td><td class="num"><input type="number" class="mat-qty" value="${item.qty}" min="0" step="0.1" style="width:80px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td>${unitHtml}</td>${totalLengthCell}<td class="num mat-price-cell"${priceColspan}><input type="number" class="mat-price" value="${item.price}" min="0" step="0.01" style="width:100px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num mat-sum"><b>${fmt(item.sum, 2)}</b></td><td style="text-align:center"><button type="button" class="mat-del" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px;" title="Удалить">&times;</button></td>`;
+            const totalCell = `<td class="num material-total">${fmt(item.total, 2)} ${esc(item.totalUnit)}</td>`;
+            tr.innerHTML = `<td>${idx}</td><td><span class="material-name-with-help"><span>${esc(item.name)}</span>${materialFormulaHelp(item.formula, item.name)}</span></td><td class="num"><input type="number" class="mat-qty" value="${item.qty}" min="0" step="0.1" style="width:80px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td>${unitHtml}</td>${totalCell}<td class="num mat-price-cell"><input type="number" class="mat-price" value="${item.price}" min="0" step="0.01" style="width:100px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num mat-sum"><b>${fmt(item.sum, 2)}</b></td><td style="text-align:center"><button type="button" class="mat-del" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px;" title="Удалить">&times;</button></td>`;
             materialsTbody.appendChild(tr);
         });
 
@@ -722,7 +727,7 @@ function calc() {
             const tr = document.createElement('tr');
             tr.classList.add('custom-row');
             tr.dataset.customId = cr.id;
-            tr.innerHTML = `<td>${idx}</td><td><input type="text" class="mat-name" value="${esc(cr.name)}" style="width:150px;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num"><input type="number" class="mat-qty" value="${cr.qty}" min="0" step="0.1" style="width:80px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td><input type="text" class="mat-unit" value="${esc(cr.unit)}" style="width:60px;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num mat-price-cell" colspan="2"><input type="number" class="mat-price" value="${cr.price}" min="0" step="0.01" style="width:100px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num mat-sum"><b>${fmt(cr.qty * cr.price, 2)}</b></td><td style="text-align:center"><button type="button" class="mat-del" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px;" title="Удалить">&times;</button></td>`;
+            tr.innerHTML = `<td>${idx}</td><td><input type="text" class="mat-name" value="${esc(cr.name)}" style="width:150px;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num"><input type="number" class="mat-qty" value="${cr.qty}" min="0" step="0.1" style="width:80px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td><input type="text" class="mat-unit" value="${esc(cr.unit)}" style="width:60px;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num material-total">${fmt(cr.qty, 2)} ${esc(cr.unit)}</td><td class="num mat-price-cell"><input type="number" class="mat-price" value="${cr.price}" min="0" step="0.01" style="width:100px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num mat-sum"><b>${fmt(cr.qty * cr.price, 2)}</b></td><td style="text-align:center"><button type="button" class="mat-del" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px;" title="Удалить">&times;</button></td>`;
             materialsTbody.appendChild(tr);
         });
     }
@@ -762,6 +767,13 @@ function recalcTotals() {
             const sum = qty * price;
             const sumCell = tr.querySelector('.mat-sum');
             sumCell.innerHTML = `<b>${fmt(sum, 2)}</b>`;
+            const unit = tr.querySelector('.mat-unit')?.value || '';
+            tr.querySelector('.material-total').textContent = `${fmt(qty, 2)} ${unit}`.trim();
+            const customRow = customRows.find(r => r.id === tr.dataset.customId);
+            if (customRow) {
+                customRow.qty = qty;
+                customRow.price = price;
+            }
             curGroupTotal += sum;
         }
     }
@@ -1081,7 +1093,7 @@ function exportExcel() {
         } else if (cells.length >= 7) {
             var qtyVal = cells[2].querySelector('input') ? cells[2].querySelector('input').value : cells[2].textContent.trim();
             var unitText = cells[3].textContent.trim();
-            var totalLengthCell = tr.querySelector('.profile-total-length');
+            var totalCell = tr.querySelector('.material-total');
             var priceVal = tr.querySelector('.mat-price').value;
             var sumVal = tr.querySelector('.mat-sum').textContent.trim();
             html += '<tr>';
@@ -1089,12 +1101,8 @@ function exportExcel() {
             html += '<td>' + cells[1].textContent.trim() + '</td>';
             html += '<td style="text-align:right;">' + qtyVal + '</td>';
             html += '<td style="text-align:center;">' + unitText + '</td>';
-            if (totalLengthCell) {
-                html += '<td style="text-align:right;">' + totalLengthCell.textContent.trim() + '</td>';
-                html += '<td style="text-align:right;">' + priceVal + '</td>';
-            } else {
-                html += '<td colspan="2" style="text-align:right;">' + priceVal + '</td>';
-            }
+            html += '<td style="text-align:right;">' + (totalCell ? totalCell.textContent.trim() : '') + '</td>';
+            html += '<td style="text-align:right;">' + priceVal + '</td>';
             html += '<td style="text-align:right;font-weight:bold;">' + sumVal + '</td>';
             html += '</tr>';
         }
