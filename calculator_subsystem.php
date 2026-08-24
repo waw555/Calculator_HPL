@@ -148,6 +148,11 @@ table.data-table tr.total-row td { border-top: 2px solid #2563eb; }
 .hidden { display: none !important; }
 .editable-price { background: #fffbe6; border: 1px dashed #d4a017; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-family: monospace; font-size: 13px; }
 .editable-price:hover { background: #fef3c7; }
+.material-name-with-help { display: flex; align-items: center; gap: 7px; }
+.material-formula-help { color: #2563eb; border-color: #93c5fd; font-style: normal; }
+.material-formula-help .app-field-help__tooltip { width: min(390px, 80vw); }
+.material-formula-help:hover .app-field-help__tooltip,
+.material-formula-help:focus .app-field-help__tooltip { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
 @media print {
     body { background: #fff !important; margin: 0; }
     .header, .quick-links, .actions-row, form, button, .hidden, #toast,
@@ -501,6 +506,22 @@ function getSheetDimensions() {
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmt(v, d) { return new Intl.NumberFormat('ru-RU', {minimumFractionDigits: d || 0, maximumFractionDigits: d || 0}).format(v || 0); }
 
+function materialFormulaHelp(formula, name) {
+    return `<span class="app-field-help material-formula-help" role="button" tabindex="0" aria-label="Формула расчёта: ${esc(name)}" aria-expanded="false">i<span class="app-field-help__tooltip" role="tooltip">${esc(formula)}</span></span>`;
+}
+
+function consumptionFormula(consumption, consumptionUnit, totalArea, totalProfile, reservePct) {
+    if (consumption <= 0) return 'Расход не задан: количество = 0.';
+    if (consumptionUnit === 'панель') {
+        return `Количество = ceil(расход на м² × площадь панелей × (1 + запас / 100)) = ceil(${fmt(consumption, 3)} × ${fmt(totalArea, 2)} × (1 + ${fmt(reservePct, 1)} / 100)).`;
+    }
+    return `Количество = ceil(расход на м.п. × длина профиля с запасом) = ceil(${fmt(consumption, 3)} × ${fmt(totalProfile, 0)}).`;
+}
+
+function pieceFormula(formula, total, qtyPerPiece) {
+    return `${formula} Количество штук = ceil(расчётный расход / количество в одной штуке) = ceil(${fmt(total, 2)} / ${fmt(qtyPerPiece, 2)}).`;
+}
+
 var grandTotal = 0;
 var deletedItems = new Set();
 var customRows = [];
@@ -567,18 +588,21 @@ function calc() {
         const selectedProfileItem = parseInt(document.getElementById('profile_item').value) || 0;
         DB_SUB_ITEMS.filter(si => si.supplier_id == supplierProfile && selectedProfileItem && si.id == selectedProfileItem && !deletedItems.has('si_' + si.id)).forEach(si => {
             let total = 0;
+            let formula = '';
             if (si.unit === 'м.п.' || si.unit === 'мп') {
                 total = totalProfileMWithReserve;
+                formula = `Длина профиля = ceil((ceil(вертикальные профили) + ceil(угловые профили) + ceil(перемычки)) × (1 + запас / 100)) = ${fmt(totalProfileMWithReserve, 0)} м.п.`;
             } else {
                 let consumption = parseFloat(si.consumption_per_m) || 0;
+                const cUnit = (si.consumption_unit || 'Профиль').toLowerCase();
                 if (consumption > 0) {
-                    const cUnit = (si.consumption_unit || 'Профиль').toLowerCase();
                     if (cUnit === 'панель') {
                         total = Math.ceil(consumption * totalArea * (1 + reservePct / 100));
                     } else {
                         total = Math.ceil(consumption * totalProfileMWithReserve);
                     }
                 }
+                formula = consumptionFormula(consumption, cUnit, totalArea, totalProfileMWithReserve, reservePct);
             }
             let price = parseFloat(si.price_per_unit) || 0;
             let showUnit = si.unit;
@@ -591,8 +615,9 @@ function calc() {
                 showUnit = 'шт.';
                 perPieceText = fmt(qtyPerPiece, 0) + ' ' + si.unit;
                 price = parseFloat(si.price_per_piece) || price;
+                formula = pieceFormula(formula, total, qtyPerPiece);
             }
-            profileItems.push({ id: 'si_' + si.id, name: si.name, unit: showUnit, qty: showQty, price: price, sum: price * showQty, perPieceText: perPieceText });
+            profileItems.push({ id: 'si_' + si.id, name: si.name, unit: showUnit, qty: showQty, price: price, sum: price * showQty, perPieceText: perPieceText, formula: formula });
         });
         if (profileItems.length) allGroups.push({ title: 'Профиль', items: profileItems });
     }
@@ -602,8 +627,8 @@ function calc() {
         DB_MATERIALS.filter(m => m.supplier_id == supplierKleevaya && !deletedItems.has('m_' + m.id)).forEach(m => {
             let consumption = parseFloat(m.consumption_per_m) || 0;
             let total = 0;
+            const cUnit = (m.consumption_unit || 'Профиль').toLowerCase();
             if (consumption > 0) {
-                const cUnit = (m.consumption_unit || 'Профиль').toLowerCase();
                 if (cUnit === 'панель') {
                     total = Math.ceil(consumption * totalArea * (1 + reservePct / 100));
                 } else {
@@ -614,6 +639,7 @@ function calc() {
             let showUnit = m.unit;
             let showQty = total;
             let perPieceText = '';
+            let formula = consumptionFormula(consumption, cUnit, totalArea, totalProfileMWithReserve, reservePct);
             if (roundToPieces && parseFloat(m.quantity_per_piece) > 0) {
                 const qtyPerPiece = parseFloat(m.quantity_per_piece);
                 const piecesCount = Math.ceil(total / qtyPerPiece);
@@ -621,8 +647,9 @@ function calc() {
                 showUnit = 'шт.';
                 perPieceText = fmt(qtyPerPiece, 0) + ' ' + m.unit;
                 price = parseFloat(m.price_per_piece) || price;
+                formula = pieceFormula(formula, total, qtyPerPiece);
             }
-            kleevayaItems.push({ id: 'm_' + m.id, name: m.name, unit: showUnit, qty: showQty, price: price, sum: price * showQty, perPieceText: perPieceText });
+            kleevayaItems.push({ id: 'm_' + m.id, name: m.name, unit: showUnit, qty: showQty, price: price, sum: price * showQty, perPieceText: perPieceText, formula: formula });
         });
         if (kleevayaItems.length) allGroups.push({ title: 'Клеевая система', items: kleevayaItems });
     }
@@ -632,8 +659,8 @@ function calc() {
         DB_FASTENERS.filter(f => f.supplier_id == supplierMetizy && !deletedItems.has('f_' + f.id)).forEach(f => {
             let consumption = parseFloat(f.consumption_per_m) || 0;
             let total = 0;
+            const cUnit = (f.consumption_unit || 'Профиль').toLowerCase();
             if (consumption > 0) {
-                const cUnit = (f.consumption_unit || 'Профиль').toLowerCase();
                 if (cUnit === 'панель') {
                     total = Math.ceil(consumption * totalArea * (1 + reservePct / 100));
                 } else {
@@ -644,6 +671,7 @@ function calc() {
             let showUnit = f.unit;
             let showQty = total;
             let perPieceText = '';
+            let formula = consumptionFormula(consumption, cUnit, totalArea, totalProfileMWithReserve, reservePct);
             if (roundToPieces && parseFloat(f.quantity_per_piece) > 0) {
                 const qtyPerPiece = parseFloat(f.quantity_per_piece);
                 const piecesCount = Math.ceil(total / qtyPerPiece);
@@ -651,8 +679,9 @@ function calc() {
                 showUnit = 'шт.';
                 perPieceText = fmt(qtyPerPiece, 0) + ' ' + f.unit;
                 price = parseFloat(f.price_per_piece) || price;
+                formula = pieceFormula(formula, total, qtyPerPiece);
             }
-            metizyItems.push({ id: 'f_' + f.id, name: f.name, unit: showUnit, qty: showQty, price: price, sum: price * showQty, perPieceText: perPieceText });
+            metizyItems.push({ id: 'f_' + f.id, name: f.name, unit: showUnit, qty: showQty, price: price, sum: price * showQty, perPieceText: perPieceText, formula: formula });
         });
         if (metizyItems.length) allGroups.push({ title: 'Метизы', items: metizyItems });
     }
@@ -671,7 +700,7 @@ function calc() {
             const tr = document.createElement('tr');
             tr.dataset.itemId = item.id;
             const unitHtml = item.perPieceText ? esc(item.unit) + ' <span style="color:#6b7280;font-size:11px;font-weight:normal;">(по ' + esc(item.perPieceText) + ')</span>' : esc(item.unit);
-            tr.innerHTML = `<td>${idx}</td><td>${esc(item.name)}</td><td class="num"><input type="number" class="mat-qty" value="${item.qty}" min="0" step="0.1" style="width:80px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td>${unitHtml}</td><td class="num"><input type="number" class="mat-price" value="${item.price}" min="0" step="0.01" style="width:100px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num"><b>${fmt(item.sum, 2)}</b></td><td style="text-align:center"><button type="button" class="mat-del" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px;" title="Удалить">&times;</button></td>`;
+            tr.innerHTML = `<td>${idx}</td><td><span class="material-name-with-help"><span>${esc(item.name)}</span>${materialFormulaHelp(item.formula, item.name)}</span></td><td class="num"><input type="number" class="mat-qty" value="${item.qty}" min="0" step="0.1" style="width:80px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td>${unitHtml}</td><td class="num"><input type="number" class="mat-price" value="${item.price}" min="0" step="0.01" style="width:100px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num"><b>${fmt(item.sum, 2)}</b></td><td style="text-align:center"><button type="button" class="mat-del" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px;" title="Удалить">&times;</button></td>`;
             materialsTbody.appendChild(tr);
         });
 
