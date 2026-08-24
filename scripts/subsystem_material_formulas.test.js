@@ -14,5 +14,7 @@ assert.match(page, /const label = f\.height_mm \+ '×' \+ f\.width_mm/, 'Фор�
 assert.match(page, /<th style="width:120px">Всего<\/th>/, 'После единицы измерения должна быть колонка «Всего»');
 assert.match(page, /totalLength: totalProfileMWithReserve/, 'Для профиля должен сохраняться общий погонный метраж');
 assert.match(page, /const totalLengthHtml = group\.title === 'Профиль' \? fmt\(item\.totalLength, 0\) \+ ' м\.п\.'/, 'Общий погонный метраж профиля должен выводиться в строке материала');
+assert.match(page, /group\.title === 'Профиль' \? fmt\(item\.totalLength, 0\) \+ ' м\.п\.' : ''/, 'Для остальных материалов колонка «Всего» должна оставаться пустой');
+assert.doesNotMatch(page, /<td class="num">—<\/td>/, 'В дополнительных материалах колонка «Всего» не должна отображаться');
 
 console.log('Подсказки с формулами расхода материалов присутствуют.');
