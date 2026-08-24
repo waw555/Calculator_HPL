@@ -13,8 +13,11 @@ assert.match(page, /Количество штук = расчётный расх�
 assert.doesNotMatch(page, /Количество = ceil|Количество штук = ceil|Длина профиля = ceil/, 'Во всплывающих подсказках не должно быть технического обозначения ceil');
 assert.match(page, /const label = f\.height_mm \+ '×' \+ f\.width_mm/, 'Формат листа должен отображать сначала высоту, затем ширину');
 assert.match(page, /<th style="width:120px">Всего<\/th>/, 'В таблицу должна быть возвращена колонка «Всего»');
-assert.match(page, /const totalLengthCell = group\.title === 'Профиль' \? `<td class="num profile-total-length">\$\{fmt\(item\.totalLength, 0\)\} м\.п\.<\/td>` : '';/, 'Общий метраж должен выводиться только в строках профиля');
-assert.match(page, /const priceColspan = group\.title === 'Профиль' \? '' : ' colspan="2"';/, 'В остальных строках отдельной ячейки колонки «Всего» быть не должно');
+assert.match(page, /const totalCell = `<td class="num material-total">\$\{fmt\(item\.total, 2\)\} \$\{esc\(item\.totalUnit\)\}<\/td>`;/, 'Количество всего должно выводиться для каждой позиции материала');
+assert.match(page, /class="num material-total">\$\{fmt\(cr\.qty, 2\)\}/, 'Количество всего должно выводиться и для дополнительных строк');
+assert.doesNotMatch(page, /priceColspan|profile-total-length/, 'Колонка «Всего» не должна объединяться с ценой или ограничиваться профилем');
+assert.match(page, /input\[type="number"\]::\-webkit-inner-spin-button/, 'У числовых полей должны быть скрыты кнопки прибавления и убавления');
+assert.match(page, /class="input-with-unit"/, 'Единицы измерения числовых параметров должны отображаться внутри полей');
 assert.match(page, /\.material-formula-help \.app-field-help__tooltip \{ top: calc\(100% \+ 8px\); bottom: auto;/, 'Подсказка профиля должна раскрываться вниз и не обрезаться верхней границей окна');
 
 console.log('Подсказки с формулами расхода материалов присутствуют.');
