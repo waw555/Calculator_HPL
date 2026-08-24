@@ -12,7 +12,9 @@ assert.match(page, /расход на м\.п\. × длина профиля с �
 assert.match(page, /Количество штук = расчётный расход \/ количество в одной штуке, с округлением вверх/, 'Подсказка должна объяснять округление до штук понятными словами');
 assert.doesNotMatch(page, /Количество = ceil|Количество штук = ceil|Длина профиля = ceil/, 'Во всплывающих подсказках не должно быть технического обозначения ceil');
 assert.match(page, /const label = f\.height_mm \+ '×' \+ f\.width_mm/, 'Формат листа должен отображать сначала высоту, затем ширину');
-assert.doesNotMatch(page, /<th style="width:120px">Всего<\/th>/, 'Пустая колонка «Всего» должна быть полностью удалена');
+assert.match(page, /<th style="width:120px">Всего<\/th>/, 'В таблицу должна быть возвращена колонка «Всего»');
+assert.match(page, /const totalLengthCell = group\.title === 'Профиль' \? `<td class="num profile-total-length">\$\{fmt\(item\.totalLength, 0\)\} м\.п\.<\/td>` : '';/, 'Общий метраж должен выводиться только в строках профиля');
+assert.match(page, /const priceColspan = group\.title === 'Профиль' \? '' : ' colspan="2"';/, 'В остальных строках отдельной ячейки колонки «Всего» быть не должно');
 assert.match(page, /\.material-formula-help \.app-field-help__tooltip \{ top: calc\(100% \+ 8px\); bottom: auto;/, 'Подсказка профиля должна раскрываться вниз и не обрезаться верхней границей окна');
 
 console.log('Подсказки с формулами расхода материалов присутствуют.');

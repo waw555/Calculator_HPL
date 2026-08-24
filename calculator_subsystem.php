@@ -325,6 +325,7 @@ table.data-table tr.total-row td { border-top: 2px solid #2563eb; }
                 <th>Наименование</th>
                 <th style="width:100px">Кол-во</th>
                 <th style="width:150px">Ед. изм.</th>
+                <th style="width:120px">Всего</th>
                 <th style="width:120px">Цена за ед.</th>
                 <th style="width:120px">Сумма</th>
                 <th style="width:40px"></th>
@@ -692,7 +693,7 @@ function calc() {
     allGroups.forEach(group => {
         let groupTotal = 0;
         const trGroup = document.createElement('tr');
-        trGroup.innerHTML = `<td colspan="7" style="background:#f1f5f9;font-weight:700;padding:8px 12px;color:#374151;">${esc(group.title)}</td>`;
+        trGroup.innerHTML = `<td colspan="8" style="background:#f1f5f9;font-weight:700;padding:8px 12px;color:#374151;">${esc(group.title)}</td>`;
         materialsTbody.appendChild(trGroup);
 
         group.items.forEach(item => {
@@ -700,26 +701,28 @@ function calc() {
             const tr = document.createElement('tr');
             tr.dataset.itemId = item.id;
             const unitHtml = item.perPieceText ? esc(item.unit) + ' <span style="color:#6b7280;font-size:11px;font-weight:normal;">(по ' + esc(item.perPieceText) + ')</span>' : esc(item.unit);
-            tr.innerHTML = `<td>${idx}</td><td><span class="material-name-with-help"><span>${esc(item.name)}</span>${materialFormulaHelp(item.formula, item.name)}</span></td><td class="num"><input type="number" class="mat-qty" value="${item.qty}" min="0" step="0.1" style="width:80px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td>${unitHtml}</td><td class="num"><input type="number" class="mat-price" value="${item.price}" min="0" step="0.01" style="width:100px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num"><b>${fmt(item.sum, 2)}</b></td><td style="text-align:center"><button type="button" class="mat-del" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px;" title="Удалить">&times;</button></td>`;
+            const totalLengthCell = group.title === 'Профиль' ? `<td class="num profile-total-length">${fmt(item.totalLength, 0)} м.п.</td>` : '';
+            const priceColspan = group.title === 'Профиль' ? '' : ' colspan="2"';
+            tr.innerHTML = `<td>${idx}</td><td><span class="material-name-with-help"><span>${esc(item.name)}</span>${materialFormulaHelp(item.formula, item.name)}</span></td><td class="num"><input type="number" class="mat-qty" value="${item.qty}" min="0" step="0.1" style="width:80px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td>${unitHtml}</td>${totalLengthCell}<td class="num mat-price-cell"${priceColspan}><input type="number" class="mat-price" value="${item.price}" min="0" step="0.01" style="width:100px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num mat-sum"><b>${fmt(item.sum, 2)}</b></td><td style="text-align:center"><button type="button" class="mat-del" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px;" title="Удалить">&times;</button></td>`;
             materialsTbody.appendChild(tr);
         });
 
             const trGroupTotal = document.createElement('tr');
             trGroupTotal.classList.add('group-total');
-            trGroupTotal.innerHTML = `<td colspan="6" style="text-align:right;font-weight:600;color:#64748b;">Итого ${esc(group.title)}:</td><td class="num"><b>0.00</b></td>`;
+            trGroupTotal.innerHTML = `<td colspan="7" style="text-align:right;font-weight:600;color:#64748b;">Итого ${esc(group.title)}:</td><td class="num"><b>0.00</b></td>`;
         materialsTbody.appendChild(trGroupTotal);
     });
 
     if (customRows.length) {
         const trGroup = document.createElement('tr');
-        trGroup.innerHTML = `<td colspan="7" style="background:#f1f5f9;font-weight:700;padding:8px 12px;color:#374151;">Дополнительно</td>`;
+        trGroup.innerHTML = `<td colspan="8" style="background:#f1f5f9;font-weight:700;padding:8px 12px;color:#374151;">Дополнительно</td>`;
         materialsTbody.appendChild(trGroup);
         customRows.forEach(cr => {
             idx++;
             const tr = document.createElement('tr');
             tr.classList.add('custom-row');
             tr.dataset.customId = cr.id;
-            tr.innerHTML = `<td>${idx}</td><td><input type="text" class="mat-name" value="${esc(cr.name)}" style="width:150px;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num"><input type="number" class="mat-qty" value="${cr.qty}" min="0" step="0.1" style="width:80px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td><input type="text" class="mat-unit" value="${esc(cr.unit)}" style="width:60px;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num"><input type="number" class="mat-price" value="${cr.price}" min="0" step="0.01" style="width:100px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num"><b>${fmt(cr.qty * cr.price, 2)}</b></td><td style="text-align:center"><button type="button" class="mat-del" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px;" title="Удалить">&times;</button></td>`;
+            tr.innerHTML = `<td>${idx}</td><td><input type="text" class="mat-name" value="${esc(cr.name)}" style="width:150px;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num"><input type="number" class="mat-qty" value="${cr.qty}" min="0" step="0.1" style="width:80px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td><input type="text" class="mat-unit" value="${esc(cr.unit)}" style="width:60px;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num mat-price-cell" colspan="2"><input type="number" class="mat-price" value="${cr.price}" min="0" step="0.01" style="width:100px;text-align:right;border:1px solid #d1d5db;border-radius:4px;padding:4px;"></td><td class="num mat-sum"><b>${fmt(cr.qty * cr.price, 2)}</b></td><td style="text-align:center"><button type="button" class="mat-del" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px;" title="Удалить">&times;</button></td>`;
             materialsTbody.appendChild(tr);
         });
     }
@@ -729,7 +732,7 @@ function calc() {
     if (allGroups.length > 1 || customRows.length) {
         const trGrand = document.createElement('tr');
         trGrand.classList.add('grand-total');
-        trGrand.innerHTML = `<td colspan="6" style="text-align:right;font-weight:700;background:#eff6ff;border-top:2px solid #2563eb;">ИТОГО:</td><td class="num" style="background:#eff6ff;border-top:2px solid #2563eb;font-size:15px;"><b>${fmt(grandTotal, 2)}</b></td>`;
+        trGrand.innerHTML = `<td colspan="7" style="text-align:right;font-weight:700;background:#eff6ff;border-top:2px solid #2563eb;">ИТОГО:</td><td class="num" style="background:#eff6ff;border-top:2px solid #2563eb;font-size:15px;"><b>${fmt(grandTotal, 2)}</b></td>`;
         materialsTbody.appendChild(trGrand);
     }
 }
@@ -748,7 +751,7 @@ function recalcTotals() {
             const qty = parseFloat(qtyInput?.value) || 0;
             const price = parseFloat(priceInput?.value) || 0;
             const sum = qty * price;
-            const sumCell = tr.querySelectorAll('td')[5];
+            const sumCell = tr.querySelector('.mat-sum');
             sumCell.innerHTML = `<b>${fmt(sum, 2)}</b>`;
             curGroupTotal += sum;
         } else if (tr.classList.contains('custom-row')) {
@@ -757,7 +760,7 @@ function recalcTotals() {
             const qty = parseFloat(qtyInput?.value) || 0;
             const price = parseFloat(priceInput?.value) || 0;
             const sum = qty * price;
-            const sumCell = tr.querySelectorAll('td')[5];
+            const sumCell = tr.querySelector('.mat-sum');
             sumCell.innerHTML = `<b>${fmt(sum, 2)}</b>`;
             curGroupTotal += sum;
         }
@@ -820,7 +823,7 @@ materialsTbody.addEventListener('click', function(e) {
     if (hasMultipleGroups || customRows.length) {
         const trGrand = document.createElement('tr');
         trGrand.classList.add('grand-total');
-        trGrand.innerHTML = `<td colspan="6" style="text-align:right;font-weight:700;background:#eff6ff;border-top:2px solid #2563eb;">ИТОГО:</td><td class="num" style="background:#eff6ff;border-top:2px solid #2563eb;font-size:15px;"><b>${fmt(grandTotal, 2)}</b></td>`;
+        trGrand.innerHTML = `<td colspan="7" style="text-align:right;font-weight:700;background:#eff6ff;border-top:2px solid #2563eb;">ИТОГО:</td><td class="num" style="background:#eff6ff;border-top:2px solid #2563eb;font-size:15px;"><b>${fmt(grandTotal, 2)}</b></td>`;
         materialsTbody.appendChild(trGrand);
     }
 });
@@ -1011,7 +1014,7 @@ function exportExcel() {
     const calcName = document.getElementById('calc_name').value || '';
     const date = new Date().toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    const excelColCount = 8;
+    const excelColCount = 7;
     let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
     html += '<head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Расчёт</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
     html += '<body>';
@@ -1063,7 +1066,7 @@ function exportExcel() {
     headerRow('РАСХОД МАТЕРИАЛОВ');
     emptyRow();
     var showPerPiece = roundToPiecesSelect.value === '1';
-    colHeaderRow(['№', 'Наименование', 'Кол-во', 'Ед. изм.', 'Цена за ед.', 'Сумма']);
+    colHeaderRow(['№', 'Наименование', 'Кол-во', 'Ед. изм.', 'Всего', 'Цена за ед.', 'Сумма']);
 
     const tbody = document.getElementById('materials-tbody');
     let grandTotal = 0;
@@ -1074,25 +1077,31 @@ function exportExcel() {
             const label = cells[0].textContent.trim();
             const val = cells[cells.length - 1].textContent.trim();
             grandTotal += parseFloat(val.replace(/\s/g, '').replace(',', '.')) || 0;
-            html += '<tr><td colspan="5" style="background:#f1f5f9;font-weight:bold;text-align:right;">' + label + '</td><td style="background:#f1f5f9;font-weight:bold;text-align:right;">' + val + '</td></tr>';
+            html += '<tr><td colspan="6" style="background:#f1f5f9;font-weight:bold;text-align:right;">' + label + '</td><td style="background:#f1f5f9;font-weight:bold;text-align:right;">' + val + '</td></tr>';
         } else if (cells.length >= 7) {
             var qtyVal = cells[2].querySelector('input') ? cells[2].querySelector('input').value : cells[2].textContent.trim();
             var unitText = cells[3].textContent.trim();
-            var priceVal = cells[4].querySelector('input') ? cells[4].querySelector('input').value : cells[4].textContent.trim();
-            var sumVal = cells[5].textContent.trim();
+            var totalLengthCell = tr.querySelector('.profile-total-length');
+            var priceVal = tr.querySelector('.mat-price').value;
+            var sumVal = tr.querySelector('.mat-sum').textContent.trim();
             html += '<tr>';
             html += '<td style="text-align:center;">' + cells[0].textContent.trim() + '</td>';
             html += '<td>' + cells[1].textContent.trim() + '</td>';
             html += '<td style="text-align:right;">' + qtyVal + '</td>';
             html += '<td style="text-align:center;">' + unitText + '</td>';
-            html += '<td style="text-align:right;">' + priceVal + '</td>';
+            if (totalLengthCell) {
+                html += '<td style="text-align:right;">' + totalLengthCell.textContent.trim() + '</td>';
+                html += '<td style="text-align:right;">' + priceVal + '</td>';
+            } else {
+                html += '<td colspan="2" style="text-align:right;">' + priceVal + '</td>';
+            }
             html += '<td style="text-align:right;font-weight:bold;">' + sumVal + '</td>';
             html += '</tr>';
         }
     });
 
     emptyRow();
-    html += '<tr><td colspan="5" style="background:#1d4ed8;color:#fff;font-weight:bold;font-size:14px;text-align:right;padding:10px;">ИТОГО:</td>';
+    html += '<tr><td colspan="6" style="background:#1d4ed8;color:#fff;font-weight:bold;font-size:14px;text-align:right;padding:10px;">ИТОГО:</td>';
     html += '<td style="background:#1d4ed8;color:#fff;font-weight:bold;font-size:14px;text-align:right;padding:10px;">' + grandTotal.toFixed(2) + '</td></tr>';
 
     html += '</table></body></html>';
