@@ -77,12 +77,28 @@ function ensure_supplier_products_table(PDO $pdo): void
 {
     ensure_suppliers_table($pdo);
 
+    $hadCalculatorKeys = table_exists($pdo, 'supplier_products')
+        && column_exists($pdo, 'supplier_products', 'calculator_keys');
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS supplier_products (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(160) NOT NULL UNIQUE,
         note TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    add_column_if_missing(
+        $pdo,
+        'supplier_products',
+        'calculator_keys',
+        "calculator_keys VARCHAR(255) NOT NULL DEFAULT 'septic,countertops,cutting,subsystem'"
+    );
+
+    // При первом обновлении сохраняем прежнее поведение для существующей продукции,
+    // но клеевые системы сразу относим только к калькулятору подсистемы.
+    if (!$hadCalculatorKeys) {
+        $pdo->exec("UPDATE supplier_products SET calculator_keys = 'subsystem' WHERE LOWER(name) LIKE '%клеев%' OR LOWER(name) LIKE '%герметик%'");
+    }
 }
 
 function ensure_units_table(PDO $pdo): void

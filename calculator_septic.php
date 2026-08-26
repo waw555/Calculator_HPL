@@ -11,6 +11,7 @@ require_once __DIR__ . '/includes/admin_schema.php';
 ensure_calculator_tables($pdo);
 ensure_organization_table($pdo);
 ensure_currencies_table($pdo);
+ensure_supplier_products_table($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_calculation') {
     header('Content-Type: application/json; charset=utf-8');
@@ -54,7 +55,7 @@ foreach ($parameterRows as $row) {
 $manufacturers = $pdo->query('SELECT * FROM manufacturers ORDER BY full_name ASC')->fetchAll();
 $panels = $pdo->query('SELECT pf.*, m.full_name AS manufacturer_name FROM panel_formats pf LEFT JOIN manufacturers m ON m.id = pf.manufacturer_id WHERE pf.is_active = 1 AND pf.is_stock_program = 1 ORDER BY m.full_name ASC, pf.decor_number ASC, pf.decor_name ASC, pf.name ASC')->fetchAll();
 $panelsJson = json_encode(array_values($panels), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-$suppliersList = $pdo->query('SELECT * FROM suppliers ORDER BY company_name ASC')->fetchAll();
+$suppliersList = $pdo->query("SELECT DISTINCT s.* FROM suppliers s INNER JOIN supplier_products sp ON sp.name = s.products WHERE FIND_IN_SET('septic', sp.calculator_keys) > 0 ORDER BY s.company_name ASC")->fetchAll();
 $defaultSupplierId = null;
 foreach ($suppliersList as $supplier) {
     if (trim((string)($supplier['company_name'] ?? '')) === 'Китай') {
