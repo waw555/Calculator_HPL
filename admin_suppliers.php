@@ -14,6 +14,12 @@ if (!in_array($activeTab, $validTabs, true)) $activeTab = 'suppliers';
 
 $errors = [];
 $editing = null;
+$calculators = [
+    'septic' => 'Сантехнические кабины',
+    'countertops' => 'Столешницы',
+    'cutting' => 'Раскрой панелей',
+    'subsystem' => 'Подсистема',
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -63,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)($_POST['id'] ?? 0);
         $name = trim($_POST['name'] ?? '');
         $note = trim($_POST['note'] ?? '');
+        $calculatorKeys = array_values(array_intersect(array_keys($calculators), (array)($_POST['calculator_keys'] ?? [])));
         if ($name === '') $errors[] = 'Укажите название продукции.';
         if (!$errors) {
             $dupCheck = $pdo->prepare('SELECT id FROM supplier_products WHERE name=:name AND id!=:id');
@@ -71,10 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if (!$errors) {
             if ($action === 'update_product' && $id > 0) {
-                $pdo->prepare('UPDATE supplier_products SET name=:name,note=:note WHERE id=:id')->execute(['name'=>$name,'note'=>$note?:null,'id'=>$id]);
+                $pdo->prepare('UPDATE supplier_products SET name=:name,note=:note,calculator_keys=:calculator_keys WHERE id=:id')->execute(['name'=>$name,'note'=>$note?:null,'calculator_keys'=>implode(',', $calculatorKeys),'id'=>$id]);
                 header('Location: admin_suppliers.php?tab=products&edit='.$id); exit;
             } else {
-                $pdo->prepare('INSERT INTO supplier_products (name,note) VALUES (:name,:note)')->execute(['name'=>$name,'note'=>$note?:null]);
+                $pdo->prepare('INSERT INTO supplier_products (name,note,calculator_keys) VALUES (:name,:note,:calculator_keys)')->execute(['name'=>$name,'note'=>$note?:null,'calculator_keys'=>implode(',', $calculatorKeys)]);
                 header('Location: admin_suppliers.php?tab=products&edit='.$pdo->lastInsertId()); exit;
             }
         }
@@ -129,6 +136,9 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
 .quick-link:hover{background:#eff6ff;border-color:#93c5fd;color:#2563eb}
 .quick-link.active{background:#2563eb;border-color:#2563eb;color:#fff}
 .tab-pane{display:none}.tab-pane.active{display:block}
+.calculator-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px;margin-top:8px}
+.calculator-option{display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc;font-weight:600}
+.calculator-option input{width:auto;margin:0}
 </style>
 <?php echo app_header_styles(); ?>
 </head>
@@ -196,17 +206,28 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
                 <div><label>Название продукции</label><input name="name" required value="<?php echo e((string)($editing['name'] ?? '')); ?>"></div>
                 <div><label>Примечание</label><textarea name="note"><?php echo e((string)($editing['note'] ?? '')); ?></textarea></div>
             </div>
+            <?php $selectedCalculators = array_filter(explode(',', (string)($editing['calculator_keys'] ?? ''))); ?>
+            <div style="margin-top:14px">
+                <label>Связь с калькуляторами</label>
+                <div class="calculator-options">
+                    <?php foreach ($calculators as $key => $title): ?>
+                        <label class="calculator-option"><input type="checkbox" name="calculator_keys[]" value="<?php echo e($key); ?>" <?php echo in_array($key, $selectedCalculators, true) ? 'checked' : ''; ?>> <?php echo e($title); ?></label>
+                    <?php endforeach; ?>
+                </div>
+                <div class="hint">Поставщик этой продукции будет доступен только в отмеченных калькуляторах.</div>
+            </div>
             <p style="margin-top:14px"><button type="submit">Сохранить</button><?php if ($editing): ?><a class="button secondary" href="admin_suppliers.php?tab=products">Отмена</a><?php endif; ?></p>
         </form>
     </section>
     <section class="panel">
         <h2>Список продукции</h2>
         <table>
-            <thead><tr><th>Название</th><th>Примечание</th><th>Действия</th></tr></thead>
+            <thead><tr><th>Название</th><th>Калькуляторы</th><th>Примечание</th><th>Действия</th></tr></thead>
             <tbody>
             <?php foreach ($supplierProducts as $sp): ?>
                 <tr>
                     <td><?php echo e($sp['name']); ?></td>
+                    <td><?php $keys=array_filter(explode(',', (string)($sp['calculator_keys'] ?? ''))); echo $keys ? e(implode(', ', array_intersect_key($calculators, array_flip($keys)))) : '—'; ?></td>
                     <td><?php echo e((string)($sp['note'] ?? '')); ?></td>
                     <td class="actions">
                         <a class="button secondary" href="admin_suppliers.php?tab=products&edit=<?php echo e((string)$sp['id']); ?>">Изменить</a>
@@ -214,7 +235,7 @@ th{background:#edf6ff;color:#0f172a;font-size:12px;text-transform:uppercase;lett
                     </td>
                 </tr>
             <?php endforeach; ?>
-            <?php if (!$supplierProducts): ?><tr><td colspan="3">Продукция пока не добавлена.</td></tr><?php endif; ?>
+            <?php if (!$supplierProducts): ?><tr><td colspan="4">Продукция пока не добавлена.</td></tr><?php endif; ?>
             </tbody>
         </table>
     </section>
