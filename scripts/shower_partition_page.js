@@ -242,7 +242,7 @@
         const materialTotal = layout.sheets * materialPrice;
         const products = layout.pieces.map(function (piece) {
             const sum = layout.usedArea > 0 ? materialTotal * piece.area / layout.usedArea : 0;
-            return {name: piece.name, quantity: piece.quantity, length: piece.width, height: piece.height, depth: 0, area: piece.area, size: Math.round(piece.width) + '×' + Math.round(piece.height) + ' мм', price: piece.quantity ? sum / piece.quantity : 0, currency: 'RUB', sum: sum};
+            return {name: piece.name, quantity: piece.quantity, unit: 'шт.', length: piece.width, height: piece.height, depth: 0, area: piece.area, size: Math.round(piece.width) + '×' + Math.round(piece.height) + ' мм', price: piece.quantity ? sum / piece.quantity : 0, currency: 'RUB', sum: sum};
         });
         const hardwareTotal = hardware.reduce(function (sum, item) { return sum + item.sum; }, 0);
         const calculatedServices = serviceRows(layout, panel);
