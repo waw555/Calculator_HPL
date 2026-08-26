@@ -213,7 +213,7 @@ tbody tr:hover td { background:#fbfcfe; }
 .data-card table { min-width:520px; }
 .data-card td,.data-card th { padding:9px 10px; border:0; border-bottom:1px solid #e7edf4; }
 .cost-input{width:104px;min-width:86px;text-align:right;background:#fffbe6;border-color:#e8c95b;font-variant-numeric:tabular-nums}.cost-input:focus{background:#fff;border-color:#e9164d;box-shadow:0 0 0 2px rgba(233,22,77,.12)}
-.input-with-suffix{position:relative;display:inline-block;min-width:86px}.input-with-suffix input{width:100%;padding-right:34px!important}.input-with-suffix__text{position:absolute;right:10px;top:50%;color:#64748b;transform:translateY(-50%);pointer-events:none}.parameter-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.parameter-summary__item{padding:10px 12px;border:1px solid #e2e8f0;border-radius:9px;background:#f8fafc}.parameter-summary__item span{display:block;color:#64748b;font-size:10px;font-weight:750;text-transform:uppercase}.parameter-summary__item strong{display:block;margin-top:4px;color:#172033;font-size:13px}
+.input-with-suffix{position:relative;display:inline-block;min-width:86px}.input-with-suffix input{width:100%;padding-right:34px!important}.input-with-suffix__text{position:absolute;right:10px;top:50%;color:#64748b;transform:translateY(-50%);pointer-events:none}
 .quantity-input{width:110px;min-width:110px}.quantity-input input{min-width:0;padding-right:48px!important;font-variant-numeric:tabular-nums}
 .yellow-cell { background:#fff6f8; color:#9f1239; }
 .cost-stack { overflow:hidden; border:0; border-radius:11px; background:var(--dark); color:#fff; }
@@ -283,7 +283,7 @@ tbody tr:hover td { background:#fbfcfe; }
         <div id="dynamic-parameters" class="grid" style="margin-top:14px"></div>
         <div id="shower-config" class="shower-config hidden">
             <div class="shower-config__intro">
-                <div><h3>Конфигурация душевой перегородки</h3><p>Выберите тип размещения и задайте размеры. Выберите материал и фурнитуру, чтобы рассчитать состав и стоимость изделия.</p></div>
+                <div><h3>Конфигурация перегородки</h3><p>Выберите тип размещения и задайте размеры. Выберите материал и фурнитуру, чтобы рассчитать состав и стоимость изделия.</p></div>
                 <span class="shower-badge">Душевая перегородка</span>
             </div>
             <div class="shower-workspace">
@@ -370,10 +370,6 @@ tbody tr:hover td { background:#fbfcfe; }
                 </div>
                 <table><tbody id="totals-body"></tbody></table>
             </div>
-        </div>
-        <div class="data-card" style="margin-top:18px">
-            <h3>Параметры расчёта</h3>
-            <div id="calculation-parameters" class="parameter-summary"></div>
         </div>
         <div class="actions" style="margin-top:20px"><button id="save-result-btn" type="button">Сохранить расчет</button><button id="add-calculation-btn" type="button" class="success">Добавить в расчёт</button></div>
     </section>
@@ -621,24 +617,7 @@ function renderCalculation(calc) {
     document.getElementById('services-total-card').textContent = money(calc.totals.servicesTotal);
     document.getElementById('project-total-card').textContent = money(calc.totals.total);
     document.getElementById('grand-total').textContent = money(calc.totals.total);
-    renderCalculationParameters(calc);
     resultPanel.classList.remove('hidden');
-}
-function renderCalculationParameters(calc) {
-    const rows = Object.entries(calc.parameters || {}).map(([name, parameter]) => [name, `${formatter.format(parameter.value)}${parameter.unit ? ` ${parameter.unit}` : ''}`]);
-    const shower = calc.showerConfig;
-    if (shower) rows.push(
-        ['Количество кабин', `${formatter.format(shower.sectionCount)} шт.`],
-        ['Количество перегородок', `${formatter.format(shower.partitionCount)} шт.`],
-        ['Длина фасада', `${formatter.format(shower.roomWidth)} мм`],
-        ['Глубина', `${formatter.format(shower.depth)} мм`],
-        ['Высота', `${formatter.format(shower.height)} мм`],
-        ['Пропил', `${formatter.format(shower.kerf)} мм`],
-        ['Торцевание листа', `${formatter.format(shower.margin)} мм`]
-    );
-    document.getElementById('calculation-parameters').innerHTML = rows.length
-        ? rows.map(([name, value]) => `<div class="parameter-summary__item"><span>${escapeHtml(name)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')
-        : '<div class="hint">Дополнительные параметры для этого типа перегородки не заданы.</div>';
 }
 function updateHardwareQty(index, value) {
     if (!currentCalculation) return;
