@@ -290,13 +290,13 @@ tbody tr:hover td { background:#fbfcfe; }
                         <div class="shower-step__title"><span class="shower-step__number">01</span>Геометрия и состав</div>
                         <div class="shower-fields">
                             <div><label for="shower_layout_type">Тип размещения</label><select id="shower_layout_type"><option value="built_in">Прямая</option><option value="corner">Угловая</option><option value="freestanding">П-образная</option></select></div>
-                            <div><label for="shower_partition_count">Количество кабин</label><input id="shower_partition_count" type="number" min="2" step="1" value="2"></div>
-                            <div><label for="shower_panel_count">Количество перегородок</label><input id="shower_panel_count" type="number" min="1" step="1" value="1"><div id="shower-panel-count-hint" class="hint">Количество HPL-панелей для расчёта.</div></div>
+                            <div><label for="shower_partition_count">Количество кабин, шт.</label><input id="shower_partition_count" type="number" min="2" step="1" value="2"></div>
+                            <div><label for="shower_panel_count">Количество перегородок, шт.</label><input id="shower_panel_count" type="number" min="1" step="1" value="1"><div id="shower-panel-count-hint" class="hint">Количество HPL-панелей для расчёта.</div></div>
                             <div><label for="shower_room_width">Длина фасада, мм</label><input id="shower_room_width" type="number" min="1" step="1" value="3000"></div>
                             <div><label for="shower_depth">Глубина перегородки, мм</label><input id="shower_depth" type="number" min="1" step="1" value="1000"></div>
                             <div><label for="shower_height">Высота перегородки, мм</label><input id="shower_height" type="number" min="1" step="1" value="2000"></div>
                             <div id="shower-fascia-fields" class="field-hidden"><div><label for="shower_fascia_width">Ширина перемычки, мм</label><input id="shower_fascia_width" type="number" min="1" step="1" value="200"></div><div><label for="shower_fascia_height">Высота перемычки, мм</label><input id="shower_fascia_height" type="number" min="1" step="1" value="2000"><div class="hint">По умолчанию равна высоте перегородки.</div></div></div>
-                            <div id="shower-door-count-fields" class="field-hidden"><label for="shower_door_count">Количество дверей</label><input id="shower_door_count" type="number" min="1" step="1" value="1"></div>
+                            <div id="shower-door-count-fields" class="field-hidden"><label for="shower_door_count">Количество дверей, шт.</label><input id="shower_door_count" type="number" min="1" step="1" value="1"></div>
                             <div id="shower-door-width-fields" class="field-hidden"><label for="shower_door_width">Ширина двери, мм</label><input id="shower_door_width" type="number" min="1" step="1" value="700"></div>
                             <div id="shower-door-height-fields" class="field-hidden"><label for="shower_door_height">Высота двери, мм</label><input id="shower_door_height" type="number" min="1" step="1" value="1900"></div>
                         </div>
