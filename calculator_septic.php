@@ -213,6 +213,7 @@ tbody tr:hover td { background:#fbfcfe; }
 .data-card table { min-width:520px; }
 .data-card td,.data-card th { padding:9px 10px; border:0; border-bottom:1px solid #e7edf4; }
 .value-with-unit{display:flex;align-items:center;justify-content:flex-start;gap:6px;white-space:nowrap}.value-with-unit input{width:76px;min-width:0}.cost-input{width:104px;min-width:86px;text-align:right;background:#fffbe6;border-color:#e8c95b;font-variant-numeric:tabular-nums}.cost-input:focus{background:#fff;border-color:#e9164d;box-shadow:0 0 0 2px rgba(233,22,77,.12)}
+.input-with-suffix{position:relative;display:inline-block;min-width:86px}.input-with-suffix input{width:100%;padding-right:34px!important}.input-with-suffix__text{position:absolute;right:10px;top:50%;color:#64748b;transform:translateY(-50%);pointer-events:none}.parameter-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.parameter-summary__item{padding:10px 12px;border:1px solid #e2e8f0;border-radius:9px;background:#f8fafc}.parameter-summary__item span{display:block;color:#64748b;font-size:10px;font-weight:750;text-transform:uppercase}.parameter-summary__item strong{display:block;margin-top:4px;color:#172033;font-size:13px}
 .yellow-cell { background:#fff6f8; color:#9f1239; }
 .cost-stack { overflow:hidden; border:0; border-radius:11px; background:var(--dark); color:#fff; }
 .cost-line { gap:18px; padding:12px 14px; border-bottom:1px solid #263148; font-size:12px; }
@@ -362,12 +363,16 @@ tbody tr:hover td { background:#fbfcfe; }
                 <p class="hint" id="products-summary"></p>
                 <div class="data-card" style="margin-top:18px">
                     <h3>Производство и услуги</h3>
-                    <table class="mini-table"><thead><tr><th>Наименование</th><th>Объем</th><th>Цена из БД</th><th>Стоимость</th></tr></thead><tbody id="services-body"></tbody></table>
+                    <table class="mini-table"><thead><tr><th>Наименование</th><th>Объем</th><th>Цена</th><th>Стоимость</th></tr></thead><tbody id="services-body"></tbody></table>
                     <div class="service-adder" style="margin-top:12px"><select id="result-service-select" aria-label="Дополнительная услуга"><option value="">— Добавить услугу —</option><?php foreach ($allServices as $service): ?><option value="<?php echo e((string)$service['id']); ?>"><?php echo e($service['name']); ?> · Код: <?php echo e((string)($service['nomenclature'] ?: '—')); ?> · Толщ.: <?php echo !empty($service['thickness']) ? e(rtrim(rtrim((string)$service['thickness'], '0'), '.') . ' мм') : '—'; ?> · h: <?php echo e($serviceHLabels[$service['h_size'] ?? 'no'] ?? 'Нет'); ?> · d: <?php echo e($serviceDLabels[$service['d_size'] ?? 'no'] ?? 'Нет'); ?> · Шаг: <?php echo e($serviceStepLabels[$service['step_mm'] ?? 'no'] ?? 'Нет'); ?> · <?php echo e(number_format((float)$service['price'], 2, ',', ' ')); ?> <?php echo e(app_currency_symbol((string)$service['currency'])); ?> / <?php echo e($service['unit']); ?></option><?php endforeach; ?></select><button id="result-service-add" type="button">Добавить</button></div>
                     <p class="hint">Дополнительные услуги добавляются после основного расчёта. Количество можно изменить в таблице.</p>
                 </div>
                 <table><tbody id="totals-body"></tbody></table>
             </div>
+        </div>
+        <div class="data-card" style="margin-top:18px">
+            <h3>Параметры расчёта</h3>
+            <div id="calculation-parameters" class="parameter-summary"></div>
         </div>
         <div class="actions" style="margin-top:20px"><button id="save-result-btn" type="button">Сохранить расчет</button><button id="add-calculation-btn" type="button" class="success">Добавить в расчёт</button></div>
     </section>
@@ -473,8 +478,16 @@ let editingCalculationIndex = null;
 try { calculationItems = JSON.parse(localStorage.getItem('septic-calculation-items') || '[]'); } catch (_) { calculationItems = []; }
 let partitionCounter = 0;
 function money(value, currency = 'RUB') {
+    if (window.AppCurrency) return AppCurrency.format(AppCurrency.convert(value, currency, AppCurrency.code), AppCurrency.code);
     const symbol = ({RUR: '₽', RUB: '₽', EUR: '€', USD: '$'})[currency] || currency;
     return `${formatter.format(Number(value) || 0)} ${symbol}`;
+}
+function displayCurrency() { return window.AppCurrency?.code || 'RUB'; }
+function currencySymbol() { const code = displayCurrency(); return ({RUR:'₽', RUB:'₽', EUR:'€', USD:'$'})[code] || code; }
+function fromRub(value) { return window.AppCurrency ? AppCurrency.fromRub(value) : Number(value || 0); }
+function toRubFromDisplay(value) { return window.AppCurrency ? AppCurrency.convert(value, displayCurrency(), 'RUB') : Number(value || 0); }
+function moneyInput(value, attribute, index, label) {
+    return `<span class="input-with-suffix"><input class="cost-input" ${attribute}="${index}" aria-label="${escapeHtml(label)}, ${escapeHtml(currencySymbol())}" type="number" min="0" step="0.01" value="${fromRub(value).toFixed(2)}"><span class="input-with-suffix__text" aria-hidden="true">${escapeHtml(currencySymbol())}</span></span>`;
 }
 function servicePriceRub(service) {
     const code = String(service.currency || 'RUB').toUpperCase();
@@ -514,7 +527,8 @@ function renderParameters() {
     params.forEach(param => {
         const code = `param_${param.parameter_id}`;
         const div = document.createElement('div');
-        div.innerHTML = `<label for="${code}">${escapeHtml(param.name)}${param.is_required == 1 ? ' *' : ''}</label><input id="${code}" data-param-name="${escapeHtml(param.name)}" data-unit="${escapeHtml(param.unit_short_name || '')}" type="number" step="0.001" value="${escapeHtml(param.default_value || '')}" ${param.is_required == 1 ? 'required' : ''}><div class="hint">${escapeHtml(param.note || param.unit_short_name || '')}</div>`;
+        const unit = escapeHtml(param.unit_short_name || '');
+        div.innerHTML = `<label for="${code}">${escapeHtml(param.name)}${param.is_required == 1 ? ' *' : ''}</label><span class="input-with-suffix"><input id="${code}" data-param-name="${escapeHtml(param.name)}" data-unit="${unit}" type="number" step="0.001" value="${escapeHtml(param.default_value || '')}" ${param.is_required == 1 ? 'required' : ''}>${unit ? `<span class="input-with-suffix__text" aria-hidden="true">${unit}</span>` : ''}</span><div class="hint">${escapeHtml(param.note || param.unit_short_name || '')}</div>`;
         paramsNode.append(div);
     });
     calculateBtn.classList.toggle('hidden', typeId === '0');
@@ -556,14 +570,14 @@ function calculate() {
     const panel = selectedPanel();
     const areaM2 = Math.max(0, length * height / 1000000);
     const sheets = panel ? Math.max(1, Math.ceil(areaM2 / ((Number(panel.width_mm) * Number(panel.height_mm)) / 1000000))) : 0;
-    const materialPrice = panel ? Number(panel.price_per_sheet || (Number(panel.price_per_m2 || 0) * Number(panel.width_mm || 0) * Number(panel.height_mm || 0) / 1000000)) : 0;
+    const materialPrice = panel ? servicePriceRub({price: Number(panel.price_per_sheet || (Number(panel.price_per_m2 || 0) * Number(panel.width_mm || 0) * Number(panel.height_mm || 0) / 1000000)), currency: panel.currency}) : 0;
     const materialTotal = sheets * materialPrice;
     const usedArea = areaM2;
     const sheetArea = panel ? sheets * Number(panel.width_mm) * Number(panel.height_mm) / 1000000 : 0;
     const wasteArea = Math.max(0, sheetArea - usedArea);
     const hardware = [];
     const hardwareTotal = hardware.reduce((sum, item) => sum + item.sum, 0);
-    const products = [{name: inputs.partition_type_name || 'Перегородка', quantity: doors, length, height, depth, area: areaM2, size: `${Math.round(length / doors)}×${Math.round(height)} мм`, price: materialPrice, currency: panel?.currency || 'RUB', sum: materialTotal}];
+    const products = [{name: inputs.partition_type_name || 'Перегородка', quantity: doors, unit: 'шт.', length, height, depth, area: areaM2, size: `${Math.round(length / doors)}×${Math.round(height)} мм`, price: materialPrice, currency: 'RUB', sum: materialTotal}];
     const serviceRows = services.filter(service => String(service.partition_type_id) === String(inputs.partition_type_id)).map(service => {
         const volume = String(service.unit || '').includes('м') ? areaM2 : doors;
         const price = servicePriceRub(service);
@@ -583,15 +597,15 @@ function renderCalculation(calc) {
     document.getElementById('hardware-body').innerHTML = calc.hardware.length ? calc.hardware.map((item, index) => {
         const options = (item.options || []).map(option => `<option value="${escapeHtml(option.id)}" ${String(option.id) === String(item.id) ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
         const selector = options ? `<select data-hardware-item="${index}" aria-label="Выбрать фурнитуру для ${escapeHtml(item.roleLabel || item.name)}">${item.id ? '' : '<option value="">— Выберите фурнитуру —</option>'}${options}</select>` : escapeHtml(item.name);
-        return `<tr><td>${selector}<div class="hint">${escapeHtml(item.category)}</div></td><td><span class="value-with-unit"><input data-hardware-index="${index}" type="number" min="0" step="0.001" value="${item.quantity}"><span>${escapeHtml(item.unit)}</span></span></td><td><input class="cost-input" data-hardware-price="${index}" aria-label="Цена за единицу" type="number" min="0" step="0.01" value="${Number(item.price || 0).toFixed(2)}"></td><td><input class="cost-input" data-hardware-sum="${index}" aria-label="Сумма" type="number" min="0" step="0.01" value="${Number(item.sum || 0).toFixed(2)}"></td></tr>`;
+        return `<tr><td>${selector}<div class="hint">${escapeHtml(item.category)}</div></td><td><span class="value-with-unit"><input data-hardware-index="${index}" type="number" min="0" step="0.001" value="${item.quantity}"><span>${escapeHtml(item.unit || 'шт.')}</span></span></td><td>${moneyInput(item.price, 'data-hardware-price', index, 'Цена за единицу')}</td><td>${moneyInput(item.sum, 'data-hardware-sum', index, 'Стоимость')}</td></tr>`;
     }).join('') : '<tr><td colspan="4">Выбран вариант «Без фурнитуры» или комплект пуст.</td></tr>';
     document.querySelectorAll('[data-hardware-item]').forEach(select => select.addEventListener('change', () => updateHardwareItem(Number(select.dataset.hardwareItem), select.value)));
     document.querySelectorAll('[data-hardware-index]').forEach(input => input.addEventListener('change', () => updateHardwareQty(Number(input.dataset.hardwareIndex), input.value)));
     document.querySelectorAll('[data-hardware-price]').forEach(input => input.addEventListener('change', () => updateHardwarePrice(Number(input.dataset.hardwarePrice), input.value)));
     document.querySelectorAll('[data-hardware-sum]').forEach(input => input.addEventListener('change', () => updateHardwareSum(Number(input.dataset.hardwareSum), input.value)));
-    document.getElementById('products-body').innerHTML = calc.products.map(item => `<tr><td>${escapeHtml(item.name)}<br><span class="hint">${escapeHtml(panelTitle)}</span></td><td class="text-center">${item.quantity}</td><td class="yellow-cell">${escapeHtml(item.size)}</td><td class="text-center">${formatter.format(item.area || calc.totals.areaM2)} м²</td><td class="text-right">${money(item.sum, item.currency)}</td></tr>`).join('');
+    document.getElementById('products-body').innerHTML = calc.products.map(item => `<tr><td>${escapeHtml(item.name)}<br><span class="hint">${escapeHtml(panelTitle)}</span></td><td class="text-center">${item.quantity} ${escapeHtml(item.unit || 'шт.')}</td><td class="yellow-cell">${escapeHtml(item.size)}</td><td class="text-center">${formatter.format(item.area || calc.totals.areaM2)} м²</td><td class="text-right">${money(item.sum, item.currency)}</td></tr>`).join('');
     document.getElementById('products-summary').textContent = `Материал: ${formatter.format(calc.totals.sheets)} лист(ов), полезная площадь ${formatter.format(calc.totals.areaM2)} м². Ориентировочный отход: ${formatter.format(calc.totals.wasteArea)} м².`;
-    document.getElementById('services-body').innerHTML = calc.services.length ? calc.services.map((item, index) => `<tr><td>${escapeHtml(item.name)}${item.description ? `<div class="hint">${escapeHtml(item.description)}</div>` : ''}${item.isAdditional ? `<button type="button" class="danger" data-service-remove="${index}" style="margin-top:5px;padding:4px 8px">Удалить</button>` : ''}</td><td><span class="value-with-unit"><input data-service-volume="${index}" type="number" min="0" step="0.01" value="${item.volume}"><span>${escapeHtml(item.unit)}</span></span></td><td><input class="cost-input" data-service-price="${index}" aria-label="Цена за единицу" type="number" min="0" step="0.01" value="${Number(item.price || 0).toFixed(2)}"></td><td><input class="cost-input" data-service-sum="${index}" aria-label="Сумма" type="number" min="0" step="0.01" value="${Number(item.sum || 0).toFixed(2)}"></td></tr>`).join('') : '<tr><td colspan="4">Для этого типа перегородки базовые услуги не выбраны.</td></tr>';
+    document.getElementById('services-body').innerHTML = calc.services.length ? calc.services.map((item, index) => `<tr><td>${escapeHtml(item.name)}${item.description ? `<div class="hint">${escapeHtml(item.description)}</div>` : ''}${item.isAdditional ? `<button type="button" class="danger" data-service-remove="${index}" style="margin-top:5px;padding:4px 8px">Удалить</button>` : ''}</td><td><span class="value-with-unit"><input data-service-volume="${index}" type="number" min="0" step="0.01" value="${item.volume}"><span>${escapeHtml(item.unit || 'шт.')}</span></span></td><td>${moneyInput(item.price, 'data-service-price', index, 'Цена за единицу')}</td><td>${moneyInput(item.sum, 'data-service-sum', index, 'Стоимость')}</td></tr>`).join('') : '<tr><td colspan="4">Для этого типа перегородки базовые услуги не выбраны.</td></tr>';
     document.querySelectorAll('[data-service-volume]').forEach(input => input.addEventListener('change', () => updateServiceVolume(Number(input.dataset.serviceVolume), input.value)));
     document.querySelectorAll('[data-service-price]').forEach(input => input.addEventListener('change', () => updateServicePrice(Number(input.dataset.servicePrice), input.value)));
     document.querySelectorAll('[data-service-sum]').forEach(input => input.addEventListener('change', () => updateServiceSum(Number(input.dataset.serviceSum), input.value)));
@@ -602,7 +616,24 @@ function renderCalculation(calc) {
     document.getElementById('services-total-card').textContent = money(calc.totals.servicesTotal);
     document.getElementById('project-total-card').textContent = money(calc.totals.total);
     document.getElementById('grand-total').textContent = money(calc.totals.total);
+    renderCalculationParameters(calc);
     resultPanel.classList.remove('hidden');
+}
+function renderCalculationParameters(calc) {
+    const rows = Object.entries(calc.parameters || {}).map(([name, parameter]) => [name, `${formatter.format(parameter.value)}${parameter.unit ? ` ${parameter.unit}` : ''}`]);
+    const shower = calc.showerConfig;
+    if (shower) rows.push(
+        ['Количество кабин', `${formatter.format(shower.sectionCount)} шт.`],
+        ['Количество перегородок', `${formatter.format(shower.partitionCount)} шт.`],
+        ['Длина фасада', `${formatter.format(shower.roomWidth)} мм`],
+        ['Глубина', `${formatter.format(shower.depth)} мм`],
+        ['Высота', `${formatter.format(shower.height)} мм`],
+        ['Пропил', `${formatter.format(shower.kerf)} мм`],
+        ['Торцевание листа', `${formatter.format(shower.margin)} мм`]
+    );
+    document.getElementById('calculation-parameters').innerHTML = rows.length
+        ? rows.map(([name, value]) => `<div class="parameter-summary__item"><span>${escapeHtml(name)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')
+        : '<div class="hint">Дополнительные параметры для этого типа перегородки не заданы.</div>';
 }
 function updateHardwareQty(index, value) {
     if (!currentCalculation) return;
@@ -618,14 +649,14 @@ function updateHardwareQty(index, value) {
 function updateHardwarePrice(index, value) {
     const item = currentCalculation?.hardware[index];
     if (!item) return;
-    item.price = Math.max(0, parseFloat(value || '0') || 0);
+    item.price = Math.max(0, toRubFromDisplay(parseFloat(value || '0') || 0));
     item.sum = item.quantity * item.price;
     updateHardwareQty(index, item.quantity);
 }
 function updateHardwareSum(index, value) {
     const item = currentCalculation?.hardware[index];
     if (!item) return;
-    item.sum = Math.max(0, parseFloat(value || '0') || 0);
+    item.sum = Math.max(0, toRubFromDisplay(parseFloat(value || '0') || 0));
     item.price = item.quantity > 0 ? item.sum / item.quantity : 0;
     updateHardwareQty(index, item.quantity);
 }
@@ -657,14 +688,14 @@ function updateServiceVolume(index, value) {
 function updateServicePrice(index, value) {
     const item = currentCalculation?.services[index];
     if (!item) return;
-    item.price = Math.max(0, parseFloat(value || '0') || 0);
+    item.price = Math.max(0, toRubFromDisplay(parseFloat(value || '0') || 0));
     item.sum = item.volume * item.price;
     recalculateServices();
 }
 function updateServiceSum(index, value) {
     const item = currentCalculation?.services[index];
     if (!item) return;
-    item.sum = Math.max(0, parseFloat(value || '0') || 0);
+    item.sum = Math.max(0, toRubFromDisplay(parseFloat(value || '0') || 0));
     item.price = item.volume > 0 ? item.sum / item.volume : 0;
     recalculateServices();
 }
@@ -871,6 +902,11 @@ document.getElementById('cutting-map-btn').addEventListener('click', openCutting
 document.getElementById('result-service-add').addEventListener('click', addResultService);
 document.getElementById('export-excel-btn').addEventListener('click', exportExcel);
 document.getElementById('export-pdf-btn').addEventListener('click', exportPdf);
+window.addEventListener('appcurrencychange', () => {
+    if (currentCalculation) renderCalculation(currentCalculation);
+    renderCalculationList();
+    if (offerItems.length) renderOffer();
+});
 renderOffer();
 renderCalculationList();
 
