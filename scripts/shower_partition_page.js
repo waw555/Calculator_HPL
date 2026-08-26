@@ -23,7 +23,7 @@
     }
 
     function showerSelected() {
-        return (typeSelect.selectedOptions[0]?.textContent || '').toLocaleLowerCase('ru-RU').includes('душ');
+        return String(typeSelect.value || '0') !== '0';
     }
 
     function partitionVariant() {

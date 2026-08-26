@@ -43,6 +43,8 @@ assert.match(page, /<details class="cutting-map">/, 'Карты раскроя �
 assert.match(page, /FROM price_list pl/, 'Каталог фурнитуры должен загружаться из базы');
 assert.match(page, /fetch\('calculator_septic\.php'/, 'Сохранение должно отправляться в текущий обработчик');
 assert.match(integration, /calculateShower/, 'Должен быть отдельный расчёт душевой перегородки');
+assert.match(integration, /function showerSelected\(\) \{[\s\S]*String\(typeSelect\.value \|\| '0'\) !== '0'/, 'Конфигурация должна отображаться для любого выбранного типа перегородки');
+assert.doesNotMatch(integration, /function showerSelected\(\)[\s\S]*includes\('душ'\)/, 'Отображение конфигурации не должно зависеть от слова «душ» в названии типа');
 assert.match(integration, /calculateBtn\.addEventListener\('click',[\s\S]*stopImmediatePropagation\(\)[\s\S]*calculateShower\(\)[\s\S]*true\)/, 'Кнопка должна запускать расчёт душевой вместо общего расчёта');
 assert.match(integration, /serviceVolumes\(layout, panel\)/, 'Объём услуг должен рассчитываться по геометрии листов и изделий');
 assert.match(integration, /service\.partition_type_id[\s\S]*typeSelect\.value/, 'В расчёт должны попадать базовые услуги выбранного типа перегородки');
