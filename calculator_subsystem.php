@@ -315,9 +315,9 @@ table.data-table tr.total-row td { border-top: 2px solid #2563eb; }
 
     <div id="panel-info-block" class="info-box hidden" style="margin-top:14px">
         <b>Формат:</b> <span id="info-format">—</span> |
-        <b>Площадь листа:</b> <span id="info-sheet-area">—</span> м² |
+        <b>Общая площадь:</b> <span id="info-sheet-area">—</span> м² |
         <b>Шаг профиля:</b> <span id="info-sheet-perimeter">—</span>
-        <b>Итого профиль:</b> <span id="info-edges-total">—</span> м.п.
+        <b>Итого профиль:</b> <span id="info-edges-total">—</span>
     </div>
 </section>
 
@@ -574,7 +574,7 @@ function calc() {
     const infoBlock = document.getElementById('panel-info-block');
     if (dim.w > 0 && dim.h > 0 && qty > 0) {
         infoBlock.classList.remove('hidden');
-        document.getElementById('info-format').textContent = dim.w + '×' + dim.h + ' мм';
+        document.getElementById('info-format').textContent = dim.h + '×' + dim.w + ' мм';
         document.getElementById('info-sheet-area').textContent = fmt(totalArea, 2);
         document.getElementById('info-sheet-perimeter').textContent = fmt(exactStep, 1) + ' мм (' + profilesPerSheet + ' шт./лист)';
         document.getElementById('info-edges-total').textContent = fmt(totalProfileMWithReserve, 0) + ' м.п.';
