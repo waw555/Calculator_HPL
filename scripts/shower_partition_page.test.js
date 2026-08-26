@@ -61,7 +61,9 @@ assert.match(page, /function updateHardwareSum[\s\S]*item\.price = item\.quantit
 assert.match(page, /data-service-price/, 'Цена услуги должна быть редактируемой');
 assert.match(page, /data-service-sum/, 'Сумма услуги должна быть редактируемой');
 assert.match(page, /function updateServiceSum[\s\S]*item\.price = item\.volume > 0 \? item\.sum \/ item\.volume : 0/, 'Изменение суммы услуги должно пересчитывать цену за единицу');
-assert.match(page, /class="value-with-unit"[\s\S]*data-service-volume/, 'Единица измерения должна находиться справа от компактного числового поля');
+assert.match(page, /class="input-with-suffix quantity-input"[\s\S]*data-hardware-index[\s\S]*class="input-with-suffix__text"/, 'Единица измерения количества фурнитуры должна находиться внутри числового поля');
+assert.match(page, /class="input-with-suffix quantity-input"[\s\S]*data-service-volume[\s\S]*class="input-with-suffix__text"/, 'Единица измерения объема услуги должна находиться внутри числового поля');
+assert.match(page, /\.quantity-input input\{[^}]*padding-right:48px!important/, 'Число не должно перекрывать единицу измерения внутри поля');
 assert.match(page, /\.data-card h3 \{[^}]*color:#fff/, 'Заголовки карточек результата должны быть белыми на тёмном фоне');
 assert.match(integration, /const matches = ShowerPartitionCalculator\.matchingFurniture\(requirement, furnitureCatalog\);/, 'Выпадающий список должен содержать все товары выбранной группы');
 assert.match(integration, /matchingFurniture\(requirement, furnitureCatalog, preferredFilters\)/, 'Автовыбор должен учитывать производителя и серию');
