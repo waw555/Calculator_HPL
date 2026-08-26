@@ -331,7 +331,7 @@ table.data-table tr.total-row td { border-top: 2px solid #2563eb; }
                 <th>Наименование</th>
                 <th style="width:100px">Кол-во</th>
                 <th style="width:150px">Ед. изм.</th>
-                <th style="width:120px">Всего</th>
+                <th style="width:150px">Количество в ед. изм.</th>
                 <th style="width:120px">Цена за ед.</th>
                 <th style="width:120px">Сумма</th>
                 <th style="width:40px"></th>
