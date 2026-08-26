@@ -7,6 +7,9 @@ const page = fs.readFileSync(path.join(root, 'calculator_septic.php'), 'utf8');
 const integration = fs.readFileSync(path.join(__dirname, 'shower_partition_page.js'), 'utf8');
 
 assert.match(page, /id="shower-config"/, 'Форма душевой перегородки должна присутствовать');
+assert.match(page, /<h3>Конфигурация перегородки<\/h3>/, 'Форма должна называться «Конфигурация перегородки»');
+assert.doesNotMatch(page, /Конфигурация душевой перегородки/, 'В заголовке конфигурации не должно быть прежнего уточнения');
+assert.doesNotMatch(page, /id="calculation-parameters"|class="parameter-summary"|function renderCalculationParameters/, 'Внизу результата не должно быть блока параметров расчёта');
 assert.match(page, /<label for="object_name">Объект<\/label><input id="object_name"[^>]*>/, 'Поле объекта должно быть необязательным');
 assert.doesNotMatch(page.match(/<input id="object_name"[^>]*>/)?.[0] || '', /\brequired\b/, 'Поле объекта не должно блокировать расчёт');
 assert.match(page, /id="panel_format_id"/, 'Должен быть выбор формата листа');
