@@ -453,8 +453,8 @@ tbody tr:hover td { background:#fbfcfe; }
     </div><!-- /tab-history -->
 
 </main>
-<script src="scripts/cutting_optimizer.js"></script>
-<script src="scripts/shower_partition_calculator.js"></script>
+<script src="scripts/cutting_optimizer.js?v=<?php echo rawurlencode(app_version()); ?>"></script>
+<script src="scripts/shower_partition_calculator.js?v=<?php echo rawurlencode(app_version()); ?>"></script>
 <script>
 const partitionTypes = <?php echo json_encode($partitionTypes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 const parametersByType = <?php echo json_encode($parametersByType, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
@@ -910,6 +910,6 @@ function loadCalculation(id) {
     alert('Загрузка расчёта #' + id + ' будет реализована после подключения API загрузки.');
 }
 </script>
-<script src="scripts/shower_partition_page.js"></script>
+<script src="scripts/shower_partition_page.js?v=<?php echo rawurlencode(app_version()); ?>"></script>
 </body>
 </html>
