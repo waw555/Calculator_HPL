@@ -29,9 +29,9 @@ assert.doesNotMatch(page, /Выберите поставщика для филь
 assert.doesNotMatch(page, /3D-модель|трёхмерная модель/i, 'На странице не должно быть упоминаний 3D-модели');
 assert.doesNotMatch(page, /id="shower-model-(?:trigger|modal)/, 'На странице не должно быть элементов 3D-модели');
 assert.doesNotMatch(integration, /renderSchematic|openModelModal|shower-schematic-svg/, 'Интеграция не должна создавать 3D-модель');
-assert.match(page, /scripts\/cutting_optimizer\.js/, 'Оптимизатор раскроя должен загружаться');
-assert.match(page, /scripts\/shower_partition_calculator\.js/, 'Расчётный модуль должен загружаться');
-assert.match(page, /scripts\/shower_partition_page\.js/, 'Интеграция страницы должна загружаться');
+assert.match(page, /scripts\/cutting_optimizer\.js\?v=<\?php echo rawurlencode\(app_version\(\)\); \?>/, 'Оптимизатор раскроя должен загружаться с версией для сброса кеша');
+assert.match(page, /scripts\/shower_partition_calculator\.js\?v=<\?php echo rawurlencode\(app_version\(\)\); \?>/, 'Расчётный модуль должен загружаться с версией для сброса кеша');
+assert.match(page, /scripts\/shower_partition_page\.js\?v=<\?php echo rawurlencode\(app_version\(\)\); \?>/, 'Интеграция страницы должна загружаться с версией для сброса кеша');
 assert.match(page, /id="tab-btn-calculation"[\s\S]*Расчёт/, 'Должна быть отдельная вкладка сводного расчёта');
 assert.match(page, /id="add-calculation-btn"[^>]*>Добавить в расчёт</, 'В результате должна быть кнопка добавления перегородки в расчёт');
 assert.match(page, /id="create-offer-btn"[^>]*>Создать коммерческое предложение</, 'Кнопка создания КП должна находиться в сводном расчёте');
